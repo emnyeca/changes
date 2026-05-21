@@ -1,0 +1,20 @@
+# Compiled source files
+*.py[cod]
+__pycache__/
+
+# Distribution directories
+build/
+dist/
+*.egg-info/
+
+# Virtual environment directories
+.env
+.venv
+venv/
+ENV/
+env/
+
+# OS and IDE files
+.DS_Store
+.idea/
+.vscode/

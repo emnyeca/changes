@@ -3,16 +3,35 @@ name = "harmony-cloud"
 version = "0.1.0"
 description = "A machine-jazz harmony engine for generating six-voice jazz chord clouds and recording them to Digitone II via MIDI."
 authors = [
-    { name = "Emnyeca", email = "" },
+    { name = "Emnyeca" },
 ]
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = [
+    "mido>=1.2.10",
+    "PyYAML>=5.3.1",
+]
 
-[project.dependencies]
-mido = ">=1.2.10"
-python-rtmidi = ">=1.4.9"
-PyYAML = ">=5.3.1"
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+realtime = [
+    "python-rtmidi>=1.4.9",
+]
+
+[project.scripts]
+harmony-cloud = "harmony_cloud.cli:main"
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

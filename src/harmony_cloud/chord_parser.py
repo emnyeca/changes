@@ -1,12 +1,12 @@
-"""
-Chord progression parser for Harmony Cloud.
+"""Chord progression and chord symbol parser for Harmony Cloud."""
 
-This module reads a YAML file defining a chord progression and returns the
-progression as a list of lists of chord symbols.
-"""
+from __future__ import annotations
 
-from typing import List, Sequence
+import re
+from typing import Dict, List, Sequence
 import yaml
+
+_CHORD_RE = re.compile(r"^(?P<root>[A-G](?:#|b)?)(?P<quality>maj7|m7|7)$")
 
 
 def parse_progression(path: str) -> Sequence[Sequence[str]]:
@@ -38,3 +38,23 @@ def parse_progression(path: str) -> Sequence[Sequence[str]]:
             normalized.append([str(element)])
 
     return normalized
+
+
+def parse_chord_symbol(chord: str) -> Dict[str, str]:
+    """Parse chord symbols for the core ii-V-I set: Cmaj7 / Dm7 / G7."""
+    m = _CHORD_RE.match(chord.strip())
+    if not m:
+        raise ValueError(f"Unsupported chord symbol: {chord}")
+
+    root = m.group("root")
+    quality = m.group("quality")
+    return {
+        "symbol": chord.strip(),
+        "root": root,
+        "quality": quality,
+    }
+
+
+def flatten_progression(progression: Sequence[Sequence[str]]) -> List[str]:
+    """Flatten bars/groups into a single sequence of chord symbols."""
+    return [chord for bar in progression for chord in bar]

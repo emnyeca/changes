@@ -9,6 +9,7 @@ can be extended with additional options as the project grows.
 import argparse
 
 from .chord_parser import parse_progression
+from .voicing import progression_to_voicings
 from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
 
@@ -36,8 +37,9 @@ def main() -> None:
     args = parser.parse_args()
 
     progression = parse_progression(args.input)
-    voices = generate_voice_leading(progression)
-    write_midi(voices, args.output, tempo=args.tempo)
+    voicings = progression_to_voicings(progression)
+    voices_led = generate_voice_leading(voicings)
+    write_midi(voices_led, args.output, tempo=args.tempo)
 
 
 if __name__ == "__main__":

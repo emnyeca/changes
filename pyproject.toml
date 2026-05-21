@@ -19,6 +19,9 @@ test = [
 realtime = [
     "python-rtmidi>=1.4.9",
 ]
+ui = [
+    "streamlit>=1.35",
+]
 
 [project.scripts]
 harmony-cloud = "harmony_cloud.cli:main"

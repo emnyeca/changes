@@ -13,3 +13,26 @@ The core concept is to:
 This project prioritizes deterministic behavior, readable music‑theory logic, and performance‑safe MIDI output.  It is intended to be used in Emnyeca/EMN Records’ machine‑jazz sessions and Embient events, but the code may be adapted for other live harmony generation setups.
 
 Contributions and issue reports are welcome once the basic architecture is in place.
+
+## Minimal Streamlit UI (drag & drop)
+
+You can run a simple GUI for non-terminal workflows:
+
+1. Install UI dependencies:
+
+	- `pip install -e .[ui]`
+
+2. Launch app:
+
+	- `streamlit run src/harmony_cloud/ui_streamlit.py`
+
+The UI supports:
+
+- Drag & drop YAML progression
+- Tempo input
+- MIDI file generation
+- Realtime send to selected MIDI output port
+
+For realtime send, also install:
+
+- `pip install -e .[realtime]`

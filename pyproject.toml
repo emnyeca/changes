@@ -1,0 +1,18 @@
+[project]
+name = "harmony-cloud"
+version = "0.1.0"
+description = "A machine-jazz harmony engine for generating six-voice jazz chord clouds and recording them to Digitone II via MIDI."
+authors = [
+    { name = "Emnyeca", email = "" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
+
+[project.dependencies]
+mido = ">=1.2.10"
+python-rtmidi = ">=1.4.9"
+PyYAML = ">=5.3.1"
+
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"

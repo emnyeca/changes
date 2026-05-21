@@ -1,0 +1,13 @@
+name: "Waltz"
+key: "F"
+time_signature: "3/4"
+tempo: 120
+sections:
+  - name: "A"
+    progression:
+      - [Fmaj7]
+      - [A7, Dm7]
+  - name: "A"
+    progression:
+      - [Gm7, C7, Fmaj7]
+      - [Fmaj7]

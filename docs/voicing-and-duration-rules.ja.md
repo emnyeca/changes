@@ -132,114 +132,65 @@ Diminished 系は MVP のスケール候補に含める。
 
 ### 基本方針
 
-Harmony Cloud は、Digitone II へ録音するために、**可能な限り最小のステップ数(Length)** でコード進行を表現する。
+Harmony Cloud は、Digitone II へ録音するために、**小節単位で拍子に整合する最小ステップ数(Length)** を計算する。
 
-そのため、コードイベント数を先に決め、その後に Digitone II 側の `Tempo`, `Length`, `Speed` を調整する。
+実装上は、YAML の `sections[].progression`（または後方互換の `progression`）を「小節の配列」として扱い、各小節内のコードイベント数を用いて step grid を決める。
 
 基本方針は以下。
 
-1. 1 つのコードイベントを、原則として 1 ステップに割り当てる。
-2. 1 小節内に 2 コードある場合、その小節は 2 ステップで表現する。
-3. 1 小節内に 3 コードある場合、その小節は 3 ステップで表現する。
-4. コードイベント数が小節ごとに異なる場合は、曲全体で最も細かい小節を基準にする。
-5. まず最小 Length で表現できるかを試し、必要に応じて Tempo と Speed を調整する。
-6. Tempo が Digitone II の最小値を下回る場合のみ、Length を整数倍に増やして対応する。
-
-つまり、最初に目指すのは「拍数に対応した固定ステップ数」ではなく、**コードイベントそのものを最小ステップ数で並べること**である。
+1. 進行は必ず小節単位で扱う（`sections[].progression` または `progression: [[bar1...], [bar2...], ...]`）。
+2. `Speed` は原則 `1/8` を固定で用いる。
+3. 小節内コードイベント数の混在に対応するため、`steps_per_bar = lcm(各小節のイベント数)` を採用する。
+4. 解析に使う tempo/拍子は UI 入力値を使用する（YAML の `tempo`/`time_signature` はファイル選択時の既定値として UI に反映）。
+5. 拍子は tempo 換算に使う（同じ実時間を維持するため `tempo_out = tempo_in * (steps_per_bar / eighths_per_bar)`）。
+6. 各イベントの音価（step数）は `duration_steps = steps_per_bar / その小節のイベント数`。
+7. 全体 Length は `steps_per_bar * 小節数`。
+8. 推奨 tempo が Digitone II の下限 30 を下回る場合のみ、tempo と Length と各 event の duration_steps を同倍率で倍化する。
 
 ### Step / Duration の計算
 
-入力進行では、1 小節内のコードイベント数を `n` とする。
+入力進行で小節ごとのイベント数が混在する場合、以下のように計算する。
 
-例えば 4/4 で `[Dm7, G7]` なら、`n = 2` なので、Dm7 を 1 step、G7 を 1 step として扱う。
+### 例: Waltz (3/4, Tempo 120)
 
-この場合、1 step が実時間上は 2 拍ぶんの長さになる必要がある。
+```yaml
+name: "Waltz"
+key: "F"
+time_signature: "3/4"
+tempo: 120
+sections:
+  - name: "A"
+    progression:
+      - [Fmaj7]
+      - [A7, Dm7]
+      - [Gm7, C7, Fmaj7]
+```
 
-Harmony Cloud は、この「1 step あたりの必要な実時間」を満たすように Digitone II 側の `Tempo` と `Speed` を計算する。
+- 小節内イベント数は `1, 2, 3`
+- `steps_per_bar = lcm(1, 2, 3) = 6`
+- 各イベント音価:
+  - bar1: `6/1 = 6`
+  - bar2: `6/2 = 3`
+  - bar3: `6/3 = 2`
+- 全体 Length: `6 * 3 = 18`
 
-`Speed = 1/8` が最も遅い設定であるため、まずは `Speed = 1/8` を優先して使う。
-
-そのうえで、必要な step duration を満たす Tempo を計算する。
-
-計算された Tempo が Digitone II の範囲内であれば、その Tempo を採用する。
-
-計算された Tempo が最小値を下回る場合は、Length を 2 倍、4 倍……と増やし、1 コードイベントあたりの step 数を増やす。
-
-### 例: 4/4、Tempo 120、`[Dm7, G7]`
-
-4/4 の 1 小節に `Dm7` と `G7` の 2 コードがある。
-
-この場合、各コードは 2 拍ずつ持つ。
-
-ただし Harmony Cloud では、最小ステップ数を優先するため、
-
-- `Dm7` = 1 step
-- `G7` = 1 step
-
-として出力する。
-
-つまり、この小節は 2 step で表現される。
-
-各 step は実時間上 2 拍ぶんの長さを持つ必要がある。
-
-この場合の Digitone II 設定例:
-Tempo  = 30
-Length = 2
-Speed  = 1/8
-
-このように、Length を 8 に増やすのではなく、まず最小 Length = 2 を維持し、Tempo と Speed で step duration を合わせる。
-
-### 例: 3/4、Tempo 60、`[Dm7, G7]`
-
-3/4 の 1 小節に `Dm7` と `G7` の 2 コードがある。
-
-この場合、各コードは 1.5 拍ずつ持つ。
-
-最小ステップ数を優先するため、
-
-- `Dm7` = 1 step
-- `G7` = 1 step
-
-として扱う。
-
-ただし、1 step が 1.5 拍ぶんの長さを持つ必要があるため、Digitone II の Tempo と Speed で調整する。
-
-`Speed = 1/8` かつ最小 Length = 2 で Tempo が Digitone II の下限を下回る場合は、Length を倍にして、
-
-- `Dm7` = 2 steps
-- `G7` = 2 steps
-
-のように割り当てる。
-
-この場合、設定例は以下のようになる。
-
-Tempo  = 30 以上を維持
-Length = 4
-Speed  = 1/8
-
-正確な Tempo は、Digitone II の Speed 設定における 1 step あたりの実時間から逆算する。
-
-### 例: Tempo 30、`[Dm7, G7]`
-
-4/4 で `[Dm7, G7]` を Tempo 30 で扱う場合、各コードは 2 拍ぶんの長さを持つ。
-
-最小 Length = 2 のまま処理しようとすると、必要な Digitone II 側 Tempo が 30 BPM を下回る。
-
-Digitone II の最小 Tempo を 30 BPM とするため、この場合は Length を倍化する。
-
-設定例:
+このときの推奨値:
 
 ```text
-Tempo  = 30
-Length = 8
-Speed  = 1/8
+Digitone
+tempo:120 Length:18 Speed:1/8
+```
 
-この場合のステップ割り当て:
+イベントログ（step開始位置）:
 
-Dm7   = 4 steps
-G7    = 4 steps
-
-低速テンポでは、最小 Length よりも Tempo 下限を優先し、Length を整数倍に増やして duration を確保する。
+```text
+Step:1  コード:Fmaj7 duration:6
+Step:7  コード:A7   duration:3
+Step:10 コード:Dm7  duration:3
+Step:13 コード:Gm7  duration:2
+Step:15 コード:C7   duration:2
+Step:17 コード:Fmaj7 duration:2
+```
 
 ### 録音手順
 
@@ -259,7 +210,7 @@ G7    = 4 steps
 - スケールに 7 音以上含まれていても、出力は常に 6 音です。
 - 欠けている度数は Current Chord Symbol から補います。
 - どうしても決まらない場合は **C ドリアン** を用います。
-- Intro / Ending / Tag などセクション区別は将来の拡張とし、現時点では progression をそのまま処理します。
+- Intro / Ending / Tag などセクション区別は `sections` で扱える。重複するセクション名は `A`, `A2`, `A3` のように内部正規化する。
 
 ## 6. 例
 

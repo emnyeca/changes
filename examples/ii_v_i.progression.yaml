@@ -1,4 +1,13 @@
 name: "II-V-I"
 key: "C"
+time_signature: "4/4"
+tempo: 120
 progression:
-- [Dm7, G7, Cmaj7]
+  - [Dm7, G7, Cmaj7]
+sections:
+  - name: "A"
+    progression:
+      - [Dm7, G7, Cmaj7]
+  - name: "B"
+    progression:
+      - [Dm7, G7, Cmaj7]

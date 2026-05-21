@@ -1,7 +1,13 @@
 name: "Blue Moon"
 key: "C"
-progression:
-  - [Cmaj7, Am7, Dm7, G7]
-  - [Cmaj7, Am7, Dm7, G7]
-  - [Fmaj7, Fm7, Cmaj7, A7]
-  - [Dm7, G7, Cmaj7, Cmaj7]
+time_signature: "4/4"
+tempo: 124
+sections:
+  - name: "A"
+    progression:
+      - [Cmaj7, Am7, Dm7, G7]
+      - [Cmaj7, Am7, Dm7, G7]
+  - name: "B"
+    progression:
+      - [Fmaj7, Fm7, Cmaj7, A7]
+      - [Dm7, G7, Cmaj7, Cmaj7]

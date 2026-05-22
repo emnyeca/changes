@@ -24,12 +24,14 @@ You can run a simple GUI for non-terminal workflows:
 
 2. Launch app:
 
-	- `streamlit run src/harmony_cloud/ui_streamlit.py`
+	- `python -m streamlit run src/harmony_cloud/ui_streamlit.py`
 
 The UI supports:
 
 - Drag & drop YAML progression
-- Tempo input
+- Tempo / meter input
+- Hold Trigger ON/OFF switch (same-pitch retrigger policy)
+- Per-track MIDI channel assignment (6 tracks, each 1-16)
 - MIDI file generation
 - Realtime send to selected MIDI output port
 

@@ -18,7 +18,7 @@ from typing import Dict, List, Tuple
 import streamlit as st
 import yaml
 
-from harmony_cloud.midi_writer import write_midi
+from harmony_cloud.midi_writer import write_midi_with_events
 from harmony_cloud.note import midi_to_note_name
 from harmony_cloud.voicing import progression_to_voicings
 from harmony_cloud.voice_leading import generate_voice_leading
@@ -248,6 +248,123 @@ def _build_voicings_from_bars(chord_bars: List[List[str]]) -> List[List[int]]:
     return generate_voice_leading(raw_voicings)
 
 
+def _build_note_triggers(
+    events: List[Dict[str, int | str]],
+    voicings: List[List[int]],
+) -> List[List[Dict[str, int]]]:
+    """Build per-event trigger list with hold duration for each voice.
+
+    A trigger is emitted only when a voice pitch changes from the previous event.
+    """
+    count = min(len(events), len(voicings))
+    if count == 0:
+        return []
+
+    max_voices = max(len(v) for v in voicings[:count])
+    triggers: List[List[Dict[str, int]]] = [[] for _ in range(count)]
+
+    for voice_idx in range(max_voices):
+        idx = 0
+        while idx < count:
+            chord = voicings[idx]
+            note = int(chord[voice_idx]) if voice_idx < len(chord) else None
+            if note is None:
+                idx += 1
+                continue
+
+            prev_note = None
+            if idx > 0 and voice_idx < len(voicings[idx - 1]):
+                prev_note = int(voicings[idx - 1][voice_idx])
+
+            if prev_note == note:
+                idx += 1
+                continue
+
+            hold_steps = 0
+            j = idx
+            while j < count:
+                next_chord = voicings[j]
+                next_note = int(next_chord[voice_idx]) if voice_idx < len(next_chord) else None
+                if next_note != note:
+                    break
+                hold_steps += int(events[j]["duration_steps"])
+                j += 1
+
+            triggers[idx].append(
+                {
+                    "voice": voice_idx,
+                    "note": note,
+                    "duration_steps": hold_steps,
+                }
+            )
+            idx += 1
+
+    return triggers
+
+
+def _format_trigger_event_lines(
+    events: List[Dict[str, int | str]],
+    voicings: List[List[int]],
+) -> List[str]:
+    """Format trigger events in a hold-aware human-readable style."""
+    count = min(len(events), len(voicings))
+    triggers = _build_note_triggers(events, voicings)
+    lines: List[str] = []
+
+    for idx in range(count):
+        event = events[idx]
+        event_triggers = sorted(triggers[idx], key=lambda x: int(x["voice"])) if idx < len(triggers) else []
+
+        if event_triggers:
+            parts = []
+            for item in event_triggers:
+                note_name = midi_to_note_name(int(item["note"]))
+                parts.append(
+                    f"[{int(item['voice'])}:{note_name} duration:{int(item['duration_steps'])}]"
+                )
+            note_text = " ".join(parts)
+        else:
+            note_text = "(hold)"
+
+        lines.append(
+            f"Step:{int(event['step'])} コード:\"{str(event['chord'])}\" {note_text}"
+        )
+
+    return lines
+
+
+def _format_basic_event_lines(
+    events: List[Dict[str, int | str]],
+    voicings: List[List[int]],
+) -> List[str]:
+    """Format events without hold merge (all voices are triggered each step)."""
+    count = min(len(events), len(voicings))
+    lines: List[str] = []
+
+    for idx in range(count):
+        event = events[idx]
+        notes = voicings[idx]
+        duration = int(event["duration_steps"])
+        parts = [
+            f"[{voice_idx}:{midi_to_note_name(int(note))} duration:{duration}]"
+            for voice_idx, note in enumerate(notes)
+        ]
+        note_text = " ".join(parts) if parts else "(rest)"
+        lines.append(f'Step:{int(event["step"])} コード:"{str(event["chord"])}" {note_text}')
+
+    return lines
+
+
+def _resolve_channel_map(raw_values: List[int]) -> List[int]:
+    """Clamp channel assignments into valid MIDI range 1..16."""
+    channels: List[int] = []
+    for value in raw_values[:6]:
+        channels.append(max(1, min(16, int(value))))
+    if len(channels) < 6:
+        channels.extend([1] * (6 - len(channels)))
+    return channels
+
+
 def _format_chord_voicing_lines(
     events: List[Dict[str, int | str]],
     voicings: List[List[int]],
@@ -417,6 +534,8 @@ def _send_with_optional_debug(
     events: List[Dict[str, int | str]],
     send_tempo: int,
     selected_port: str,
+    hold_same_pitch: bool,
+    channel_map: List[int],
 ) -> List[str]:
     """Send MIDI or simulate send in DEBUG mode; return send logs."""
     logs: List[str] = []
@@ -424,15 +543,43 @@ def _send_with_optional_debug(
     step_seconds = 30.0 / float(send_tempo)
 
     count = min(len(events), len(voicings))
+    if count == 0:
+        return logs
+
+    max_voices = max(len(v) for v in voicings[:count])
+    channels = _resolve_channel_map(channel_map)
+
+    def _voice_note(chord: List[int], voice_idx: int) -> int | None:
+        return int(chord[voice_idx]) if voice_idx < len(chord) else None
+
+    previous_chord: List[int] | None = None
+
     if selected_port == "DEBUG":
         debug_epoch = time.time()
         debug_elapsed = 0.0
         for idx in range(count):
             event = events[idx]
+            chord_notes = voicings[idx]
+            triggered: List[str] = []
+
+            for voice_idx in range(max_voices):
+                prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
+                cur_note = _voice_note(chord_notes, voice_idx)
+                ch = channels[voice_idx]
+
+                if hold_same_pitch:
+                    if cur_note is not None and cur_note != prev_note:
+                        triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
+                else:
+                    if cur_note is not None:
+                        triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
+
             duration = step_seconds * int(event["duration_steps"])
             ts = datetime.fromtimestamp(debug_epoch + debug_elapsed).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            logs.append(f"Send:{ts} コード:{str(event['chord'])} duration:{duration:.3f}s")
+            trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
+            logs.append(f"Send:{ts} コード:{str(event['chord'])} {trigger_text} duration:{duration:.3f}s")
             debug_elapsed += duration
+            previous_chord = chord_notes
         return logs
 
     if mido is None:
@@ -442,20 +589,59 @@ def _send_with_optional_debug(
         for idx in range(count):
             event = events[idx]
             chord_notes = voicings[idx]
+            triggered: List[str] = []
 
             started_at = time.time()
             ts = datetime.fromtimestamp(started_at).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-            for note in chord_notes:
-                outport.send(mido.Message("note_on", note=int(note), velocity=100))
+            for voice_idx in range(max_voices):
+                prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
+                cur_note = _voice_note(chord_notes, voice_idx)
+                ch = channels[voice_idx] - 1
+
+                if hold_same_pitch:
+                    if prev_note is not None and prev_note != cur_note:
+                        outport.send(mido.Message("note_off", note=int(prev_note), velocity=0, channel=ch))
+                    if cur_note is not None and prev_note != cur_note:
+                        outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
+                        triggered.append(f"v{voice_idx}:ch{ch + 1}:{midi_to_note_name(cur_note)}")
+                else:
+                    if cur_note is not None:
+                        outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
+                        triggered.append(f"v{voice_idx}:ch{ch + 1}:{midi_to_note_name(cur_note)}")
 
             time.sleep(step_seconds * int(event["duration_steps"]))
 
-            for note in chord_notes:
-                outport.send(mido.Message("note_off", note=int(note), velocity=0))
-
             duration_actual = time.time() - started_at
-            logs.append(f"Send:{ts} コード:{str(event['chord'])} duration:{duration_actual:.3f}s")
+            trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
+            logs.append(f"Send:{ts} コード:{str(event['chord'])} {trigger_text} duration:{duration_actual:.3f}s")
+            if not hold_same_pitch:
+                for voice_idx in range(max_voices):
+                    cur_note = _voice_note(chord_notes, voice_idx)
+                    if cur_note is not None:
+                        outport.send(
+                            mido.Message(
+                                "note_off",
+                                note=int(cur_note),
+                                velocity=0,
+                                channel=channels[voice_idx] - 1,
+                            )
+                        )
+
+            previous_chord = chord_notes
+
+        if hold_same_pitch and previous_chord is not None:
+            for voice_idx in range(max_voices):
+                note = _voice_note(previous_chord, voice_idx)
+                if note is not None:
+                    outport.send(
+                        mido.Message(
+                            "note_off",
+                            note=int(note),
+                            velocity=0,
+                            channel=channels[voice_idx] - 1,
+                        )
+                    )
 
     return logs
 
@@ -582,6 +768,24 @@ def main() -> None:
         value=str(Path.home() / "Downloads" / "harmony_cloud_output.mid"),
     )
 
+    hold_same_pitch = st.checkbox(
+        "同音連続を保持して再トリガーしない (Hold Trigger)",
+        value=True,
+    )
+    st.caption("ON: 同一トラックで同音は保持。OFF: 毎Stepで再トリガー。")
+
+    st.markdown("**トラック別 MIDI Channel (1-16)**")
+    channel_cols_top = st.columns(3)
+    ch1 = channel_cols_top[0].number_input("Track 1", min_value=1, max_value=16, value=1, step=1)
+    ch2 = channel_cols_top[1].number_input("Track 2", min_value=1, max_value=16, value=2, step=1)
+    ch3 = channel_cols_top[2].number_input("Track 3", min_value=1, max_value=16, value=3, step=1)
+    channel_cols_bottom = st.columns(3)
+    ch4 = channel_cols_bottom[0].number_input("Track 4", min_value=1, max_value=16, value=4, step=1)
+    ch5 = channel_cols_bottom[1].number_input("Track 5", min_value=1, max_value=16, value=5, step=1)
+    ch6 = channel_cols_bottom[2].number_input("Track 6", min_value=1, max_value=16, value=6, step=1)
+    channel_map = _resolve_channel_map([int(ch1), int(ch2), int(ch3), int(ch4), int(ch5), int(ch6)])
+    st.caption(f"現在のChannel割り当て: {channel_map}")
+
     st.caption(f"YAML既定値: tempo={default_tempo}, 拍子={default_numerator}/{default_denominator}")
 
     effective_tempo = int(tempo)
@@ -630,10 +834,10 @@ def main() -> None:
     st.code("\n".join(formatted_lines), language="text")
 
     st.subheader("イベント割り当て")
-    event_lines = [
-        f"Step:{int(event['step'])} コード:{str(event['chord'])} duration:{int(event['duration_steps'])}"
-        for event in scheduled_events
-    ]
+    if hold_same_pitch:
+        event_lines = _format_trigger_event_lines(scheduled_events, voicings)
+    else:
+        event_lines = _format_basic_event_lines(scheduled_events, voicings)
     st.code("\n".join(event_lines), language="text")
 
     st.subheader("録音後にDigitoneで設定する値")
@@ -672,7 +876,14 @@ def main() -> None:
     with col1:
         if st.button("生成 (MIDIファイル)", use_container_width=True):
             try:
-                write_midi(voicings, output_path, tempo=effective_tempo)
+                write_midi_with_events(
+                    voicings,
+                    scheduled_events,
+                    output_path,
+                    tempo=effective_tempo,
+                    hold_same_pitch=hold_same_pitch,
+                    channel_map=channel_map,
+                )
                 st.success(f"保存しました: {output_path}")
             except Exception as e:
                 st.error(f"MIDI保存エラー: {e}")
@@ -689,6 +900,8 @@ def main() -> None:
                         events=scheduled_events,
                         send_tempo=int(send_tempo),
                         selected_port=selected_port,
+                        hold_same_pitch=hold_same_pitch,
+                        channel_map=channel_map,
                     )
                     st.success("送信完了")
                     st.subheader("送信ログ")
@@ -750,13 +963,25 @@ def main() -> None:
             st.caption(
                 f"tempo:{section_digitone_tempo} Length:{section_digitone_length} Speed:1/8"
             )
+            if hold_same_pitch:
+                section_event_lines = _format_trigger_event_lines(section_scheduled_events, section_voicings)
+            else:
+                section_event_lines = _format_basic_event_lines(section_scheduled_events, section_voicings)
+            st.code("\n".join(section_event_lines), language="text")
 
             section_col1, section_col2 = st.columns(2)
             with section_col1:
                 if st.button(f"{section_name} を生成", key=f"generate_section_{sec_idx}", use_container_width=True):
                     try:
                         section_output = _section_output_path(output_path, section_name)
-                        write_midi(section_voicings, section_output, tempo=effective_tempo)
+                        write_midi_with_events(
+                            section_voicings,
+                            section_scheduled_events,
+                            section_output,
+                            tempo=effective_tempo,
+                            hold_same_pitch=hold_same_pitch,
+                            channel_map=channel_map,
+                        )
                         st.success(f"{section_name} を保存しました: {section_output}")
                     except Exception as e:
                         st.error(f"{section_name} のMIDI保存エラー: {e}")
@@ -777,6 +1002,8 @@ def main() -> None:
                                 events=section_scheduled_events,
                                 send_tempo=int(send_tempo),
                                 selected_port=selected_port,
+                                hold_same_pitch=hold_same_pitch,
+                                channel_map=channel_map,
                             )
                             st.success(f"{section_name} の送信完了")
                             st.code("\n".join(section_send_logs), language="text")

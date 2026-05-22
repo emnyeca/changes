@@ -10,7 +10,7 @@ Functions:
 
 """
 
-from typing import Sequence
+from typing import Dict, List, Sequence
 import mido
 
 
@@ -46,4 +46,122 @@ def write_midi(voicings: Sequence[Sequence[int]], filename: str, tempo: int = 12
         for i, note in enumerate(chord):
             track = tracks[i]
             track.append(mido.Message('note_off', note=note, velocity=0, time=duration_ticks))
+    mid.save(filename)
+
+
+def write_midi_with_events(
+    voicings: Sequence[Sequence[int]],
+    events: Sequence[Dict[str, int | str]],
+    filename: str,
+    tempo: int = 120,
+    hold_same_pitch: bool = True,
+    channel_map: Sequence[int] | None = None,
+) -> None:
+    """Write MIDI from scheduled events while preserving held notes per voice.
+
+    Consecutive same-pitch notes on the same voice are merged into one long note,
+    and note_on is emitted only when that voice pitch changes.
+    """
+    mid = mido.MidiFile()
+    tracks = [mido.MidiTrack() for _ in range(6)]
+    for track in tracks:
+        mid.tracks.append(track)
+
+    tracks[0].append(mido.MetaMessage("set_tempo", tempo=mido.bpm2tempo(tempo)))
+
+    count = min(len(voicings), len(events))
+    ticks_per_step = int(mid.ticks_per_beat)
+    channels = list(channel_map) if channel_map is not None else [1, 2, 3, 4, 5, 6]
+    if len(channels) < 6:
+        channels.extend([1] * (6 - len(channels)))
+
+    def _voice_channel(voice_idx: int) -> int:
+        ch = int(channels[voice_idx]) if voice_idx < len(channels) else 1
+        return max(1, min(16, ch)) - 1
+
+    for voice_idx in range(6):
+        absolute_tick = 0
+        active_note: int | None = None
+        voice_events: List[tuple[int, mido.Message]] = []
+        channel = _voice_channel(voice_idx)
+
+        for idx in range(count):
+            chord = voicings[idx]
+            note = int(chord[voice_idx]) if voice_idx < len(chord) else None
+            duration_steps = int(events[idx].get("duration_steps", 1))
+
+            if hold_same_pitch:
+                if note != active_note:
+                    if active_note is not None:
+                        voice_events.append(
+                            (
+                                absolute_tick,
+                                mido.Message(
+                                    "note_off",
+                                    note=active_note,
+                                    velocity=0,
+                                    channel=channel,
+                                    time=0,
+                                ),
+                            )
+                        )
+                    if note is not None:
+                        voice_events.append(
+                            (
+                                absolute_tick,
+                                mido.Message(
+                                    "note_on",
+                                    note=note,
+                                    velocity=100,
+                                    channel=channel,
+                                    time=0,
+                                ),
+                            )
+                        )
+                    active_note = note
+
+                absolute_tick += duration_steps * ticks_per_step
+            else:
+                if note is not None:
+                    voice_events.append(
+                        (
+                            absolute_tick,
+                            mido.Message(
+                                "note_on",
+                                note=note,
+                                velocity=100,
+                                channel=channel,
+                                time=0,
+                            ),
+                        )
+                    )
+                    voice_events.append(
+                        (
+                            absolute_tick + duration_steps * ticks_per_step,
+                            mido.Message(
+                                "note_off",
+                                note=note,
+                                velocity=0,
+                                channel=channel,
+                                time=0,
+                            ),
+                        )
+                    )
+
+                absolute_tick += duration_steps * ticks_per_step
+
+        if hold_same_pitch and active_note is not None:
+            voice_events.append(
+                (
+                    absolute_tick,
+                    mido.Message("note_off", note=active_note, velocity=0, channel=channel, time=0),
+                )
+            )
+
+        last_tick = 0
+        for tick, message in voice_events:
+            message.time = tick - last_tick
+            tracks[voice_idx].append(message)
+            last_tick = tick
+
     mid.save(filename)

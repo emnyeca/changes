@@ -4,6 +4,7 @@ pytest.importorskip("streamlit")
 
 from harmony_cloud.ui_streamlit import (
   _extract_bars_with_meta,
+  _format_trigger_event_lines,
   _format_chord_voicing_lines,
   _parse_uploaded_yaml_payload,
 )
@@ -64,3 +65,26 @@ def test_voicing_output_shows_rehearsal_mark_only_on_first_bar_of_section():
     assert lines[1].startswith("       [1:")
     assert lines[2].startswith("  bar2:")
     assert lines[3].startswith("B bar1:")
+
+
+def test_trigger_event_lines_merge_same_pitch_holds_per_voice():
+    events = [
+      {"step": 1, "duration_steps": 1, "chord": "Cmaj7"},
+      {"step": 2, "duration_steps": 1, "chord": "Am7"},
+      {"step": 3, "duration_steps": 1, "chord": "Dm7"},
+      {"step": 4, "duration_steps": 1, "chord": "G7"},
+    ]
+    voicings = [
+      [48, 52, 55, 57, 62, 64],
+      [48, 52, 57, 59, 62, 66],
+      [50, 53, 57, 59, 64, 67],
+      [50, 53, 57, 59, 64, 67],
+    ]
+
+    lines = _format_trigger_event_lines(events, voicings)
+
+    assert "Step:1" in lines[0]
+    assert "0:C3 duration:2" in lines[0]
+    assert "1:E3 duration:2" in lines[0]
+    assert "Step:4" in lines[3]
+    assert "(hold)" in lines[3]

@@ -3,7 +3,9 @@ import pytest
 pytest.importorskip("streamlit")
 
 from harmony_cloud.ui_streamlit import (
+  _build_bassline_notes,
   _extract_bars_with_meta,
+  _extract_chord_root,
   _format_trigger_event_lines,
   _format_chord_voicing_lines,
   _parse_uploaded_yaml_payload,
@@ -88,3 +90,30 @@ def test_trigger_event_lines_merge_same_pitch_holds_per_voice():
     assert "1:E3 duration:2" in lines[0]
     assert "Step:4" in lines[3]
     assert "(hold)" in lines[3]
+
+
+def test_bass_uses_root_not_slash_bass_and_stays_c1_b1():
+    events = [
+      {"chord": "C/E", "duration_steps": 1},
+      {"chord": "C/E", "duration_steps": 1},
+    ]
+    bass = _build_bassline_notes(events, switch_every=99, switch_enabled=False)
+
+    assert _extract_chord_root("C/E") == "C"
+    assert bass == [28, 28]
+
+
+def test_bass_toggles_root_and_fifth_every_x_repeats():
+    events = [{"chord": "Cmaj7", "duration_steps": 1} for _ in range(6)]
+    bass = _build_bassline_notes(events, switch_every=3, switch_enabled=True)
+
+    # C1(24) repeats 2 times, then switch on the 3rd slot; same rule applies to fifth.
+    assert bass == [24, 24, 31, 31, 24, 24]
+
+
+def test_bass_slash_chord_uses_slash_only_first_then_root_fifth_cycle():
+    events = [{"chord": "Cmaj7/E", "duration_steps": 1} for _ in range(7)]
+    bass = _build_bassline_notes(events, switch_every=2, switch_enabled=True)
+
+    # First is slash bass E1, then C/G alternating by switch timing.
+    assert bass == [28, 24, 31, 24, 31, 24, 31]

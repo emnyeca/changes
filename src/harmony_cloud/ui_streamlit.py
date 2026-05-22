@@ -9,17 +9,18 @@ Features:
 
 from __future__ import annotations
 
+import re
 import time
 from datetime import datetime
 from math import lcm
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Sequence, Tuple
 
 import streamlit as st
 import yaml
 
 from harmony_cloud.midi_writer import write_midi_with_events
-from harmony_cloud.note import midi_to_note_name
+from harmony_cloud.note import midi_to_note_name, pitch_class_to_semitone
 from harmony_cloud.voicing import progression_to_voicings
 from harmony_cloud.voice_leading import generate_voice_leading
 
@@ -30,6 +31,7 @@ except Exception:  # pragma: no cover
 
 
 APP_DATA_DIR = Path.home() / "HarmonyCloud" / "progressions"
+_ROOT_RE = re.compile(r"^\s*(?P<root>[A-G](?:#|b)?)")
 
 
 def _ensure_app_data_dir() -> None:
@@ -355,14 +357,146 @@ def _format_basic_event_lines(
     return lines
 
 
-def _resolve_channel_map(raw_values: List[int]) -> List[int]:
-    """Clamp channel assignments into valid MIDI range 1..16."""
-    channels: List[int] = []
-    for value in raw_values[:6]:
-        channels.append(max(1, min(16, int(value))))
-    if len(channels) < 6:
-        channels.extend([1] * (6 - len(channels)))
+def _resolve_channel_map(raw_values: List[int | None]) -> List[int | None]:
+    """Clamp channel assignments into valid MIDI range 1..16 or disable with None."""
+    channels: List[int | None] = []
+    for value in raw_values:
+        if value is None:
+            channels.append(None)
+        else:
+            channels.append(max(1, min(16, int(value))))
     return channels
+
+
+def _channel_option_to_value(option: str) -> int | None:
+    if option == "送らない":
+        return None
+    return int(option)
+
+
+def _channel_value_to_option(channel: int | None) -> str:
+    return "送らない" if channel is None else str(int(channel))
+
+
+def _extract_chord_root(chord_symbol: str) -> str:
+    base = chord_symbol.split("/", 1)[0]
+    m = _ROOT_RE.match(base)
+    if not m:
+        raise ValueError(f"Unsupported chord symbol for bass root: {chord_symbol}")
+    return m.group("root")
+
+
+def _extract_slash_bass_root(chord_symbol: str) -> str | None:
+    if "/" not in chord_symbol:
+        return None
+    slash = chord_symbol.split("/", 1)[1].strip()
+    m = _ROOT_RE.match(slash)
+    if not m:
+        return None
+    return m.group("root")
+
+
+def _fit_bass_range_c1_b1(note: int) -> int:
+    while note < 24:
+        note += 12
+    while note > 35:
+        note -= 12
+    return note
+
+
+def _root_to_bass_note(chord_symbol: str) -> int:
+    root = _extract_chord_root(chord_symbol)
+    semitone = pitch_class_to_semitone(root)
+    return _fit_bass_range_c1_b1(24 + semitone)
+
+
+def _build_bassline_notes(
+    events: Sequence[Dict[str, int | str]],
+    switch_every: int,
+    switch_enabled: bool,
+) -> List[int]:
+    """Build bass notes with optional root/fifth switching.
+
+    - Default: chord root (or slash bass when provided).
+    - With switching enabled: root/fifth alternation after repeated same-note count.
+    - For slash chords with switching enabled: first note uses slash bass once,
+      then root/fifth alternation is based on chord root.
+    """
+    if switch_every < 1:
+        switch_every = 1
+
+    notes: List[int] = []
+    current_mode = "root"
+    same_note_count = 0
+    previous_output: int | None = None
+    previous_harmony_key: tuple[int, int | None] | None = None
+    slash_consumed = False
+
+    for event in events:
+        chord = str(event["chord"])
+        root_note = _root_to_bass_note(chord)
+        slash_root = _extract_slash_bass_root(chord)
+        slash_note = _fit_bass_range_c1_b1(24 + pitch_class_to_semitone(slash_root)) if slash_root else None
+        harmony_key = (root_note, slash_note)
+
+        if previous_harmony_key != harmony_key:
+            current_mode = "root"
+            same_note_count = 0
+            slash_consumed = False
+
+        if switch_enabled and slash_note is not None and not slash_consumed:
+            candidate = slash_note
+            slash_consumed = True
+        elif switch_enabled:
+            candidate = root_note if current_mode == "root" else _fit_bass_range_c1_b1(root_note + 7)
+        else:
+            candidate = slash_note if slash_note is not None else root_note
+
+        if switch_enabled:
+            if previous_output == candidate:
+                same_note_count += 1
+            else:
+                same_note_count = 1
+
+            if same_note_count >= switch_every:
+                current_mode = "fifth" if current_mode == "root" else "root"
+                candidate = root_note if current_mode == "root" else _fit_bass_range_c1_b1(root_note + 7)
+                same_note_count = 1
+
+        notes.append(candidate)
+        previous_output = candidate
+        previous_harmony_key = harmony_key
+
+    return notes
+
+
+def _append_bass_track(voicings: Sequence[Sequence[int]], bass_notes: Sequence[int]) -> List[List[int]]:
+    count = min(len(voicings), len(bass_notes))
+    combined: List[List[int]] = []
+    for idx in range(count):
+        combined.append([int(n) for n in voicings[idx]] + [int(bass_notes[idx])])
+    return combined
+
+
+def _transpose_output_voicings(
+    voicings: Sequence[Sequence[int]],
+    chord_octave_shift: int,
+    bass_octave_shift: int,
+) -> List[List[int]]:
+    """Transpose output notes per group: chord voices and bass voice."""
+    shifted: List[List[int]] = []
+    chord_delta = int(chord_octave_shift) * 12
+    bass_delta = int(bass_octave_shift) * 12
+
+    for chord in voicings:
+        out_notes: List[int] = []
+        for idx, note in enumerate(chord):
+            delta = chord_delta if idx < 6 else bass_delta
+            transposed = int(note) + delta
+            out_notes.append(max(0, min(127, transposed)))
+        shifted.append(out_notes)
+
+    return shifted
 
 
 def _format_chord_voicing_lines(
@@ -535,7 +669,8 @@ def _send_with_optional_debug(
     send_tempo: int,
     selected_port: str,
     hold_same_pitch: bool,
-    channel_map: List[int],
+    channel_map: List[int | None],
+    per_voice_hold: List[bool] | None = None,
 ) -> List[str]:
     """Send MIDI or simulate send in DEBUG mode; return send logs."""
     logs: List[str] = []
@@ -548,6 +683,9 @@ def _send_with_optional_debug(
 
     max_voices = max(len(v) for v in voicings[:count])
     channels = _resolve_channel_map(channel_map)
+    hold_per_voice = list(per_voice_hold) if per_voice_hold is not None else []
+    if len(hold_per_voice) < max_voices:
+        hold_per_voice.extend([hold_same_pitch] * (max_voices - len(hold_per_voice)))
 
     def _voice_note(chord: List[int], voice_idx: int) -> int | None:
         return int(chord[voice_idx]) if voice_idx < len(chord) else None
@@ -557,6 +695,7 @@ def _send_with_optional_debug(
     if selected_port == "DEBUG":
         debug_epoch = time.time()
         debug_elapsed = 0.0
+        logs.append("Transport:start")
         for idx in range(count):
             event = events[idx]
             chord_notes = voicings[idx]
@@ -565,9 +704,12 @@ def _send_with_optional_debug(
             for voice_idx in range(max_voices):
                 prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
                 cur_note = _voice_note(chord_notes, voice_idx)
-                ch = channels[voice_idx]
+                ch = channels[voice_idx] if voice_idx < len(channels) else 1
+                if ch is None:
+                    continue
+                voice_hold = bool(hold_per_voice[voice_idx])
 
-                if hold_same_pitch:
+                if voice_hold:
                     if cur_note is not None and cur_note != prev_note:
                         triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
                 else:
@@ -580,68 +722,87 @@ def _send_with_optional_debug(
             logs.append(f"Send:{ts} コード:{str(event['chord'])} {trigger_text} duration:{duration:.3f}s")
             debug_elapsed += duration
             previous_chord = chord_notes
+        logs.append("Transport:stop")
         return logs
 
     if mido is None:
         raise RuntimeError("mido が未導入です。DEBUG を使うか realtime 依存を導入してください。")
 
     with mido.open_output(selected_port) as outport:
-        for idx in range(count):
-            event = events[idx]
-            chord_notes = voicings[idx]
-            triggered: List[str] = []
+        outport.send(mido.Message("start"))
+        try:
+            for idx in range(count):
+                event = events[idx]
+                chord_notes = voicings[idx]
+                triggered: List[str] = []
 
-            started_at = time.time()
-            ts = datetime.fromtimestamp(started_at).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+                started_at = time.time()
+                ts = datetime.fromtimestamp(started_at).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-            for voice_idx in range(max_voices):
-                prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
-                cur_note = _voice_note(chord_notes, voice_idx)
-                ch = channels[voice_idx] - 1
-
-                if hold_same_pitch:
-                    if prev_note is not None and prev_note != cur_note:
-                        outport.send(mido.Message("note_off", note=int(prev_note), velocity=0, channel=ch))
-                    if cur_note is not None and prev_note != cur_note:
-                        outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
-                        triggered.append(f"v{voice_idx}:ch{ch + 1}:{midi_to_note_name(cur_note)}")
-                else:
-                    if cur_note is not None:
-                        outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
-                        triggered.append(f"v{voice_idx}:ch{ch + 1}:{midi_to_note_name(cur_note)}")
-
-            time.sleep(step_seconds * int(event["duration_steps"]))
-
-            duration_actual = time.time() - started_at
-            trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
-            logs.append(f"Send:{ts} コード:{str(event['chord'])} {trigger_text} duration:{duration_actual:.3f}s")
-            if not hold_same_pitch:
                 for voice_idx in range(max_voices):
+                    prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
                     cur_note = _voice_note(chord_notes, voice_idx)
-                    if cur_note is not None:
+                    ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
+                    if ch_val is None:
+                        continue
+                    ch = ch_val - 1
+                    voice_hold = bool(hold_per_voice[voice_idx])
+
+                    if voice_hold:
+                        if prev_note is not None and prev_note != cur_note:
+                            outport.send(mido.Message("note_off", note=int(prev_note), velocity=0, channel=ch))
+                        if cur_note is not None and prev_note != cur_note:
+                            outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
+                            triggered.append(f"v{voice_idx}:ch{ch_val}:{midi_to_note_name(cur_note)}")
+                    else:
+                        if cur_note is not None:
+                            outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
+                            triggered.append(f"v{voice_idx}:ch{ch_val}:{midi_to_note_name(cur_note)}")
+
+                time.sleep(step_seconds * int(event["duration_steps"]))
+
+                duration_actual = time.time() - started_at
+                trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
+                logs.append(f"Send:{ts} コード:{str(event['chord'])} {trigger_text} duration:{duration_actual:.3f}s")
+                if any(not bool(hold_per_voice[v]) for v in range(max_voices)):
+                    for voice_idx in range(max_voices):
+                        if bool(hold_per_voice[voice_idx]):
+                            continue
+                        cur_note = _voice_note(chord_notes, voice_idx)
+                        ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
+                        if ch_val is None:
+                            continue
+                        if cur_note is not None:
+                            outport.send(
+                                mido.Message(
+                                    "note_off",
+                                    note=int(cur_note),
+                                    velocity=0,
+                                    channel=ch_val - 1,
+                                )
+                            )
+
+                previous_chord = chord_notes
+
+            if previous_chord is not None:
+                for voice_idx in range(max_voices):
+                    if not bool(hold_per_voice[voice_idx]):
+                        continue
+                    note = _voice_note(previous_chord, voice_idx)
+                    ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
+                    if ch_val is None:
+                        continue
+                    if note is not None:
                         outport.send(
                             mido.Message(
                                 "note_off",
-                                note=int(cur_note),
+                                note=int(note),
                                 velocity=0,
-                                channel=channels[voice_idx] - 1,
+                                channel=ch_val - 1,
                             )
                         )
-
-            previous_chord = chord_notes
-
-        if hold_same_pitch and previous_chord is not None:
-            for voice_idx in range(max_voices):
-                note = _voice_note(previous_chord, voice_idx)
-                if note is not None:
-                    outport.send(
-                        mido.Message(
-                            "note_off",
-                            note=int(note),
-                            velocity=0,
-                            channel=channels[voice_idx] - 1,
-                        )
-                    )
+        finally:
+            outport.send(mido.Message("stop"))
 
     return logs
 
@@ -774,16 +935,62 @@ def main() -> None:
     )
     st.caption("ON: 同一トラックで同音は保持。OFF: 毎Stepで再トリガー。")
 
-    st.markdown("**トラック別 MIDI Channel (1-16)**")
+    channel_options = ["送らない"] + [str(i) for i in range(1, 17)]
+
+    st.markdown("**Chord 6トラック設定**")
     channel_cols_top = st.columns(3)
-    ch1 = channel_cols_top[0].number_input("Track 1", min_value=1, max_value=16, value=1, step=1)
-    ch2 = channel_cols_top[1].number_input("Track 2", min_value=1, max_value=16, value=2, step=1)
-    ch3 = channel_cols_top[2].number_input("Track 3", min_value=1, max_value=16, value=3, step=1)
+    ch1_opt = channel_cols_top[0].selectbox("Track 1", options=channel_options, index=1)
+    ch2_opt = channel_cols_top[1].selectbox("Track 2", options=channel_options, index=2)
+    ch3_opt = channel_cols_top[2].selectbox("Track 3", options=channel_options, index=3)
     channel_cols_bottom = st.columns(3)
-    ch4 = channel_cols_bottom[0].number_input("Track 4", min_value=1, max_value=16, value=4, step=1)
-    ch5 = channel_cols_bottom[1].number_input("Track 5", min_value=1, max_value=16, value=5, step=1)
-    ch6 = channel_cols_bottom[2].number_input("Track 6", min_value=1, max_value=16, value=6, step=1)
-    channel_map = _resolve_channel_map([int(ch1), int(ch2), int(ch3), int(ch4), int(ch5), int(ch6)])
+    ch4_opt = channel_cols_bottom[0].selectbox("Track 4", options=channel_options, index=4)
+    ch5_opt = channel_cols_bottom[1].selectbox("Track 5", options=channel_options, index=5)
+    ch6_opt = channel_cols_bottom[2].selectbox("Track 6", options=channel_options, index=6)
+    chord_octave_shift = st.number_input(
+        "Chord 6トラック Octave Shift",
+        min_value=-4,
+        max_value=4,
+        value=1,
+        step=1,
+    )
+
+    st.markdown("**Bassトラック設定**")
+    bass_channel_opt = st.selectbox("Bass Track Channel", options=channel_options, index=9)
+    bass_hold_same_pitch = st.checkbox(
+        "Bass: 同音連続を保持して再トリガーしない",
+        value=False,
+    )
+    bass_switch_enabled = st.checkbox(
+        "Bass: 同音連続で Root/Fifth を切り替える",
+        value=False,
+    )
+    bass_switch_every = st.number_input(
+        "Bass: 同音連続切替回数 x",
+        min_value=1,
+        max_value=64,
+        value=4,
+        step=1,
+        disabled=not bass_switch_enabled,
+    )
+    bass_octave_shift = st.number_input(
+        "Bass Octave Shift",
+        min_value=-4,
+        max_value=4,
+        value=2,
+        step=1,
+    )
+
+    channel_map = _resolve_channel_map(
+        [
+            _channel_option_to_value(ch1_opt),
+            _channel_option_to_value(ch2_opt),
+            _channel_option_to_value(ch3_opt),
+            _channel_option_to_value(ch4_opt),
+            _channel_option_to_value(ch5_opt),
+            _channel_option_to_value(ch6_opt),
+            _channel_option_to_value(bass_channel_opt),
+        ]
+    )
     st.caption(f"現在のChannel割り当て: {channel_map}")
 
     st.caption(f"YAML既定値: tempo={default_tempo}, 拍子={default_numerator}/{default_denominator}")
@@ -818,6 +1025,19 @@ def main() -> None:
         events=events,
     )
 
+    bass_notes = _build_bassline_notes(
+        scheduled_events,
+        switch_every=int(bass_switch_every),
+        switch_enabled=bool(bass_switch_enabled),
+    )
+    combined_voicings = _append_bass_track(voicings, bass_notes)
+    output_voicings = _transpose_output_voicings(
+        combined_voicings,
+        chord_octave_shift=int(chord_octave_shift),
+        bass_octave_shift=int(bass_octave_shift),
+    )
+    per_voice_hold = [bool(hold_same_pitch)] * 6 + [bool(bass_hold_same_pitch)]
+
     input_elapsed_seconds = _seconds_for_input_tempo(
         bars_count=len(chord_bars),
         meter_numerator=effective_numerator,
@@ -835,9 +1055,9 @@ def main() -> None:
 
     st.subheader("イベント割り当て")
     if hold_same_pitch:
-        event_lines = _format_trigger_event_lines(scheduled_events, voicings)
+        event_lines = _format_trigger_event_lines(scheduled_events, output_voicings)
     else:
-        event_lines = _format_basic_event_lines(scheduled_events, voicings)
+        event_lines = _format_basic_event_lines(scheduled_events, output_voicings)
     st.code("\n".join(event_lines), language="text")
 
     st.subheader("録音後にDigitoneで設定する値")
@@ -877,12 +1097,13 @@ def main() -> None:
         if st.button("生成 (MIDIファイル)", use_container_width=True):
             try:
                 write_midi_with_events(
-                    voicings,
+                    output_voicings,
                     scheduled_events,
                     output_path,
                     tempo=effective_tempo,
                     hold_same_pitch=hold_same_pitch,
                     channel_map=channel_map,
+                    per_voice_hold=per_voice_hold,
                 )
                 st.success(f"保存しました: {output_path}")
             except Exception as e:
@@ -896,12 +1117,13 @@ def main() -> None:
             if st.button("送信", use_container_width=True):
                 try:
                     send_logs = _send_with_optional_debug(
-                        voicings=voicings,
+                        voicings=output_voicings,
                         events=scheduled_events,
                         send_tempo=int(send_tempo),
                         selected_port=selected_port,
                         hold_same_pitch=hold_same_pitch,
                         channel_map=channel_map,
+                        per_voice_hold=per_voice_hold,
                     )
                     st.success("送信完了")
                     st.subheader("送信ログ")
@@ -959,14 +1181,27 @@ def main() -> None:
                 events=section_events,
             )
 
+            section_bass_notes = _build_bassline_notes(
+                section_scheduled_events,
+                switch_every=int(bass_switch_every),
+                switch_enabled=bool(bass_switch_enabled),
+            )
+            section_combined_voicings = _append_bass_track(section_voicings, section_bass_notes)
+            section_output_voicings = _transpose_output_voicings(
+                section_combined_voicings,
+                chord_octave_shift=int(chord_octave_shift),
+                bass_octave_shift=int(bass_octave_shift),
+            )
+            section_per_voice_hold = [bool(hold_same_pitch)] * 6 + [bool(bass_hold_same_pitch)]
+
             st.markdown(f"**{section_name}**")
             st.caption(
                 f"tempo:{section_digitone_tempo} Length:{section_digitone_length} Speed:1/8"
             )
             if hold_same_pitch:
-                section_event_lines = _format_trigger_event_lines(section_scheduled_events, section_voicings)
+                section_event_lines = _format_trigger_event_lines(section_scheduled_events, section_output_voicings)
             else:
-                section_event_lines = _format_basic_event_lines(section_scheduled_events, section_voicings)
+                section_event_lines = _format_basic_event_lines(section_scheduled_events, section_output_voicings)
             st.code("\n".join(section_event_lines), language="text")
 
             section_col1, section_col2 = st.columns(2)
@@ -975,12 +1210,13 @@ def main() -> None:
                     try:
                         section_output = _section_output_path(output_path, section_name)
                         write_midi_with_events(
-                            section_voicings,
+                            section_output_voicings,
                             section_scheduled_events,
                             section_output,
                             tempo=effective_tempo,
                             hold_same_pitch=hold_same_pitch,
                             channel_map=channel_map,
+                            per_voice_hold=section_per_voice_hold,
                         )
                         st.success(f"{section_name} を保存しました: {section_output}")
                     except Exception as e:
@@ -998,12 +1234,13 @@ def main() -> None:
                     if st.button(f"{section_name} を送信", key=f"send_section_{sec_idx}", use_container_width=True):
                         try:
                             section_send_logs = _send_with_optional_debug(
-                                voicings=section_voicings,
+                                voicings=section_output_voicings,
                                 events=section_scheduled_events,
                                 send_tempo=int(send_tempo),
                                 selected_port=selected_port,
                                 hold_same_pitch=hold_same_pitch,
                                 channel_map=channel_map,
+                                per_voice_hold=section_per_voice_hold,
                             )
                             st.success(f"{section_name} の送信完了")
                             st.code("\n".join(section_send_logs), language="text")

@@ -62,3 +62,23 @@ def test_write_midi_with_events_allows_retrigger_and_channel_map(tmp_path):
     note_on_events = [msg for msg in track0 if msg.type == "note_on" and msg.velocity > 0]
     assert len(note_on_events) == 2
     assert all(msg.channel == 2 for msg in note_on_events)
+
+
+def test_write_midi_with_events_skips_disabled_channel(tmp_path):
+    voicings = [[60, 64], [62, 65]]
+    events = [{"duration_steps": 1}, {"duration_steps": 1}]
+
+    midi_file = tmp_path / "test_output_disabled.mid"
+    write_midi_with_events(
+        voicings,
+        events,
+        midi_file.as_posix(),
+        channel_map=[None, 2],
+    )
+
+    mid = mido.MidiFile(midi_file.as_posix())
+    track0_messages = [msg for msg in mid.tracks[0] if msg.type in ("note_on", "note_off")]
+    track1_messages = [msg for msg in mid.tracks[1] if msg.type in ("note_on", "note_off")]
+
+    assert track0_messages == []
+    assert len(track1_messages) > 0

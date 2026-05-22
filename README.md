@@ -31,7 +31,8 @@ The UI supports:
 - Drag & drop YAML progression
 - Tempo / meter input
 - Hold Trigger ON/OFF switch (same-pitch retrigger policy)
-- Per-track MIDI channel assignment (6 tracks, each 1-16)
+- Per-track MIDI channel assignment (Track1-6 + Bass, each `send off` or 1-16)
+- Independent Bass track (C1-B1), with root/fifth auto-switch after configurable repeats
 - MIDI file generation
 - Realtime send to selected MIDI output port
 

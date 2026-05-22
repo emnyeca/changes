@@ -55,7 +55,8 @@ def write_midi_with_events(
     filename: str,
     tempo: int = 120,
     hold_same_pitch: bool = True,
-    channel_map: Sequence[int] | None = None,
+    channel_map: Sequence[int | None] | None = None,
+    per_voice_hold: Sequence[bool] | None = None,
 ) -> None:
     """Write MIDI from scheduled events while preserving held notes per voice.
 
@@ -75,22 +76,38 @@ def write_midi_with_events(
     if len(channels) < 6:
         channels.extend([1] * (6 - len(channels)))
 
-    def _voice_channel(voice_idx: int) -> int:
-        ch = int(channels[voice_idx]) if voice_idx < len(channels) else 1
-        return max(1, min(16, ch)) - 1
+    max_voices = max((len(v) for v in voicings[:count]), default=0)
+    if len(channels) < max_voices:
+        channels.extend([1] * (max_voices - len(channels)))
 
-    for voice_idx in range(6):
+    hold_per_voice = list(per_voice_hold) if per_voice_hold is not None else []
+    if len(hold_per_voice) < max_voices:
+        hold_per_voice.extend([hold_same_pitch] * (max_voices - len(hold_per_voice)))
+
+    def _voice_channel(voice_idx: int) -> int | None:
+        if voice_idx >= len(channels):
+            return 0
+        ch = channels[voice_idx]
+        if ch is None:
+            return None
+        return max(1, min(16, int(ch))) - 1
+
+    for voice_idx in range(max_voices):
+        channel = _voice_channel(voice_idx)
+        if channel is None:
+            continue
+
         absolute_tick = 0
         active_note: int | None = None
         voice_events: List[tuple[int, mido.Message]] = []
-        channel = _voice_channel(voice_idx)
+        voice_hold = bool(hold_per_voice[voice_idx])
 
         for idx in range(count):
             chord = voicings[idx]
             note = int(chord[voice_idx]) if voice_idx < len(chord) else None
             duration_steps = int(events[idx].get("duration_steps", 1))
 
-            if hold_same_pitch:
+            if voice_hold:
                 if note != active_note:
                     if active_note is not None:
                         voice_events.append(
@@ -150,7 +167,7 @@ def write_midi_with_events(
 
                 absolute_tick += duration_steps * ticks_per_step
 
-        if hold_same_pitch and active_note is not None:
+        if voice_hold and active_note is not None:
             voice_events.append(
                 (
                     absolute_tick,

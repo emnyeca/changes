@@ -1,4 +1,4 @@
-# Changes
+# EUB Changes
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
 

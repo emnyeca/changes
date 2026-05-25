@@ -1,4 +1,4 @@
-from harmony_cloud.note import midi_to_note_name, note_name_to_midi, root_to_midi
+from changes.note import midi_to_note_name, note_name_to_midi, root_to_midi
 
 
 def test_note_name_midi_roundtrip():

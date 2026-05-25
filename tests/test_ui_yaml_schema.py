@@ -2,7 +2,7 @@ import pytest
 
 pytest.importorskip("streamlit")
 
-from harmony_cloud.ui_streamlit import (
+from changes.ui_streamlit import (
   _build_bassline_notes,
   _extract_bars_with_meta,
   _extract_chord_root,

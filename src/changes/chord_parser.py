@@ -1,4 +1,4 @@
-"""Chord progression and chord symbol parser for Harmony Cloud."""
+"""Chord progression and chord symbol parser for Changes."""
 
 from __future__ import annotations
 

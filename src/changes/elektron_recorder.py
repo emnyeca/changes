@@ -1,4 +1,4 @@
-"""Elektron recorder module for Harmony Cloud.
+"""Elektron recorder module for Changes.
 
 This module handles sending MIDI note sequences to Elektron hardware (e.g. Digitone II)
 at high tempos for real-time recording. It uses mido to open an output port and plays

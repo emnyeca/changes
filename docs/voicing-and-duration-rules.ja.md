@@ -1,10 +1,10 @@
-# Harmony Cloud Voicing & Duration Rules
+# Changes Voicing & Duration Rules
 
-このドキュメントでは、Harmony Cloud が **ジャズコード進行を 6 声のハーモニー「雲」** に変換するための規則を詳細に定義します。これは実装の仕様書であり、コードとスケールの解釈、声部の割り当て、最小音程移動のボイスリーディング、Digitone II への録音タイミングの計算などの指針を示します。日常的なコード伴奏ではなく、マシンライブでリアルタイムにレイヤーを増減できるように設計されています。
+このドキュメントでは、Changes が **ジャズコード進行を 6 声のハーモニー「雲」** に変換するための規則を詳細に定義します。これは実装の仕様書であり、コードとスケールの解釈、声部の割り当て、最小音程移動のボイスリーディング、Digitone II への録音タイミングの計算などの指針を示します。日常的なコード伴奏ではなく、マシンライブでリアルタイムにレイヤーを増減できるように設計されています。
 
 ## 1. 用語の整理
 
-Harmony Cloud では以下の 4 層を明確に区別します。
+Changes では以下の 4 層を明確に区別します。
 
 | 層 | 説明 |
 |---|---|
@@ -63,7 +63,7 @@ C Db D Eb E F Gb G Ab A Bb B
 
 ## 2. 出力されるコードトーンセット
 
-Harmony Cloud は各コードイベントに対して常に **6 音** を出力します。
+Changes は各コードイベントに対して常に **6 音** を出力します。
 
 基本形は以下です。
 
@@ -132,7 +132,7 @@ Diminished 系は MVP のスケール候補に含める。
 
 ### 基本方針
 
-Harmony Cloud は、Digitone II へ録音するために、**小節単位で拍子に整合する最小ステップ数(Length)** を計算する。
+Changes は、Digitone II へ録音するために、**小節単位で拍子に整合する最小ステップ数(Length)** を計算する。
 
 実装上は、YAML の `sections[].progression`（または後方互換の `progression`）を「小節の配列」として扱い、各小節内のコードイベント数を用いて step grid を決める。
 
@@ -244,7 +244,7 @@ Step:17 コード:"Fmaj7" [3:A3 duration:2] ...
 1. Digitakt II から Digitone II に DIN MIDI clock を送ります。
 2. Digitone II はクロックに従います。
 3. PC またはスクリプトからは USB MIDI を用いて note 情報のみ送ります。
-4. Harmony Cloud で progression を解析し、各コードを最小移動ボイスで展開します。
+4. Changes で progression を解析し、各コードを最小移動ボイスで展開します。
 5. 必要ステップ数と Tempo / Length / Speed 設定を計算します。
 6. Digitone II を録音待機にします。
 7. 超高速 tempo で全コードを録音します。

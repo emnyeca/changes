@@ -2,7 +2,7 @@ import pytest
 
 pytest.importorskip("streamlit")
 
-from harmony_cloud.ui_streamlit import (
+from changes.ui_streamlit import (
     _apply_digitone_tempo_floor,
     _build_event_schedule,
     _compute_digitone_tempo_for_same_duration,

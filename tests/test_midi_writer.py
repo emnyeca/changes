@@ -1,6 +1,6 @@
 import mido
 
-from harmony_cloud.midi_writer import write_midi, write_midi_with_events
+from changes.midi_writer import write_midi, write_midi_with_events
 
 
 def test_write_midi(tmp_path):

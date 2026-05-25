@@ -1,6 +1,6 @@
 # Roadmap
 
-This roadmap outlines the planned development stages for Harmony Cloud. Dates are estimates and may shift depending on testing and feedback.
+This roadmap outlines the planned development stages for Changes. Dates are estimates and may shift depending on testing and feedback.
 
 ## Phase 1: Core Engine (Q2 2026)
 - Build a chord parser to read progressions from common formats (YAML, iRealPro exports).

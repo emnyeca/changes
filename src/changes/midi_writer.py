@@ -1,4 +1,4 @@
-"""Midi writer for Harmony Cloud.
+"""Midi writer for Changes.
 
 This module provides functions for converting a sequence of chords or six-note voicings
 into a MIDI file or for streaming to hardware. It uses mido to build a multi-track

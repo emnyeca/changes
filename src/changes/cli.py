@@ -1,5 +1,5 @@
 """
-Command-line interface for Harmony Cloud.
+Command-line interface for Changes.
 
 This module provides a simple CLI to generate six-voice chord clouds from a YAML
 progression file and write them to a MIDI file. This is a minimal example and
@@ -15,7 +15,7 @@ from .midi_writer import write_midi
 
 
 def main() -> None:
-    """Run the Harmony Cloud CLI."""
+    """Run the Changes CLI."""
     parser = argparse.ArgumentParser(
         description="Generate six-voice chord clouds and export to MIDI"
     )

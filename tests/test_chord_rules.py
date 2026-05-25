@@ -1,5 +1,5 @@
-from harmony_cloud.chord_parser import parse_chord_symbol
-from harmony_cloud.chord_rules import expand_chord_symbol, interpret_chord
+from changes.chord_parser import parse_chord_symbol
+from changes.chord_rules import expand_chord_symbol, interpret_chord
 
 
 def test_parse_core_ii_v_i_symbols():

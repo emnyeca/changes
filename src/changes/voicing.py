@@ -1,4 +1,4 @@
-"""Voicing generation for Harmony Cloud."""
+"""Voicing generation for Changes."""
 
 from __future__ import annotations
 

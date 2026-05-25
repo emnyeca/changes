@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Harmony Cloud project aims to generate six-voice chord clouds for jazz standards and progressions, focusing on live machine-jazz performance. It provides a real-time tool that transforms simple chord progressions into rich harmonic textures recorded into the Digitone II and manipulated in live settings.
+The Changes project aims to generate six-voice chord clouds for jazz standards and progressions, focusing on live machine-jazz performance. It provides a real-time tool that transforms simple chord progressions into rich harmonic textures recorded into the Digitone II and manipulated in live settings.
 
 ## Approach
 

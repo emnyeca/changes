@@ -1,4 +1,4 @@
-"""Chord expansion and interpretation rules for Harmony Cloud."""
+"""Chord expansion and interpretation rules for Changes."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ _TENSIONS = {
 
 
 def get_chord_tensions(chord: str) -> List[str]:
-    """Return selected tensions after applying Harmony Cloud expansion rules."""
+    """Return selected tensions after applying Changes expansion rules."""
     expanded = expand_chord_symbol(chord)
     parsed = parse_chord_symbol_for_expanded(expanded)
     return _TENSIONS[parsed["expanded_quality"]]

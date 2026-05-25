@@ -1,6 +1,6 @@
-from harmony_cloud.chord_parser import parse_progression
-from harmony_cloud.voicing import progression_to_voicings
-from harmony_cloud.voice_leading import generate_voice_leading
+from changes.chord_parser import parse_progression
+from changes.voicing import progression_to_voicings
+from changes.voice_leading import generate_voice_leading
 
 
 def _movement(a, b):

@@ -1,5 +1,5 @@
 [project]
-name = "harmony-cloud"
+name = "changes"
 version = "0.1.0"
 description = "A machine-jazz harmony engine for generating six-voice jazz chord clouds and recording them to Digitone II via MIDI."
 authors = [
@@ -24,7 +24,7 @@ ui = [
 ]
 
 [project.scripts]
-harmony-cloud = "harmony_cloud.cli:main"
+changes = "changes.cli:main"
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]

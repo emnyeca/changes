@@ -21,3 +21,6 @@ env/
 
 # Local vendor/reference documents
 docs/vendor/
+
+# Local Assets
+docs/assets/Logo.ai

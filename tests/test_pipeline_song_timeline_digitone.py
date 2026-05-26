@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fractions import Fraction
+from dataclasses import replace
 
 import pytest
 
@@ -15,6 +16,7 @@ from changes.importers.compact_progression import compact_progression_to_song_mo
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
+from changes.pipeline_digitone import compile_digitone_pipeline
 from changes.rendering.timeline_renderer import render_timeline
 
 
@@ -49,6 +51,48 @@ def test_rendered_timeline_hold_merges_contiguous_same_pitch():
     v1 = [e for e in timeline.events if e.voice_id == "chord_voice_1"]
     assert len(v1) == 1
     assert v1[0].duration_quarters == Fraction(4, 1)
+
+
+def test_rendered_timeline_emits_six_chord_voices_plus_bass_per_event_without_hold_merge():
+    payload = {
+        "name": "Blue Moon Head",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
+    }
+    song = compact_progression_to_song_model(payload)
+    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    timeline = render_timeline(song, rp)
+
+    assert len(timeline.events) == 4 * 7
+
+    chord_voices = {e.voice_id for e in timeline.events if e.role == "chord"}
+    assert chord_voices == {
+        "chord_voice_1",
+        "chord_voice_2",
+        "chord_voice_3",
+        "chord_voice_4",
+        "chord_voice_5",
+        "chord_voice_6",
+    }
+    assert any(e.role == "bass" and e.voice_id == "bass" for e in timeline.events)
+
+
+def test_rendered_timeline_am7_contains_f_not_f_sharp_in_c_major_context():
+    payload = {
+        "name": "Blue Moon Head",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
+    }
+    song = compact_progression_to_song_model(payload)
+    timeline = render_timeline(song, default_render_profile())
+
+    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "chord"]
+    pcs = {e.note_midi % 12 for e in am7_events}
+
+    assert 5 in pcs  # F
+    assert 6 not in pcs  # F#
 
 
 def test_timing_plan_falls_back_from_invalid_tempo_bounds():
@@ -189,3 +233,30 @@ def test_events_export_includes_unmodified_plan_title_as_name():
     out = digitone_compile_plan_to_events_yaml_payload(plan)
     assert out["name"] == plan.pattern_name
     assert out["name"] == "Blue Moon A"
+
+
+def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_collisions():
+    payload = {
+        "name": "Blue Moon Head",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
+    }
+
+    song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
+    assert song.title == "Blue Moon Head"
+
+    # Am7 must contain F and not F# in rendered harmony source.
+    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "chord"]
+    am7_pcs = {e.note_midi % 12 for e in am7_events}
+    assert 5 in am7_pcs
+    assert 6 not in am7_pcs
+
+    events = events_payload["events"]
+    pairs = {(ev["track"], ev["step"]) for ev in events}
+    assert len(pairs) == len(events)
+
+    tracks = {int(ev["track"]) for ev in events}
+    # chord voices 1..6 and bass track 7 are all used by default profile/mapping.
+    assert {1, 2, 3, 4, 5, 6}.issubset(tracks)
+    assert 7 in tracks

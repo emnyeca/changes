@@ -15,6 +15,13 @@ The core concept is to:
 
 This project prioritizes deterministic behavior, readable music‑theory logic, and performance‑safe MIDI output. It is intended to be used in Emnyeca/EMN Records machine‑jazz sessions and Embient events, but the code may be adapted for other live harmony generation setups.
 
+## Musical Output Change Notice
+
+- Older builds expanded each chord symbol independently with fixed mappings (for example m7 -> m6/9).
+- Current builds derive harmonic content from progression context (Local Pitch Collection -> Selected Scale Collection -> six output slots).
+- Therefore, regenerated MIDI and Digitone patterns can differ in note content from older artifacts.
+- Generic MIDI and Digitone Native SysEx exports now share the same context-aware harmonic content.
+
 ## Backend Policy
 
 - Primary Digitone path: Native SysEx backend (`digitone-syx-toolkit` dependency).

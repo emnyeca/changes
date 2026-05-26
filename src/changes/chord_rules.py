@@ -1,4 +1,8 @@
-"""Chord expansion and interpretation rules for Changes."""
+"""Legacy chord expansion helpers.
+
+These helpers are kept only for backward compatibility with historical callers.
+The main rendering path uses context-aware harmony in changes.harmonic_context.
+"""
 
 from __future__ import annotations
 
@@ -26,14 +30,14 @@ _TENSIONS = {
 
 
 def get_chord_tensions(chord: str) -> List[str]:
-    """Return selected tensions after applying Changes expansion rules."""
+    """Legacy helper: return tensions from fixed expansion mapping."""
     expanded = expand_chord_symbol(chord)
     parsed = parse_chord_symbol_for_expanded(expanded)
     return _TENSIONS[parsed["expanded_quality"]]
 
 
 def expand_chord_symbol(chord: str) -> str:
-    """Expand base chord symbols for ii-V-I cloud voicings.
+    """Legacy helper: expand base symbols using fixed ii-V-I mapping.
 
     Dm7 -> Dm6/9, G7 -> G9/13, Cmaj7 -> C6/9
     """
@@ -54,7 +58,7 @@ def parse_chord_symbol_for_expanded(chord: str) -> Dict[str, str]:
 
 
 def interpret_chord(chord: str) -> Dict[str, Any]:
-    """Parse and expand a chord symbol into voicing-ready data."""
+    """Legacy helper: parse and fixed-expand a chord symbol."""
     parsed = parse_chord_symbol(chord)
     expanded_symbol = expand_chord_symbol(chord)
     expanded = parse_chord_symbol_for_expanded(expanded_symbol)

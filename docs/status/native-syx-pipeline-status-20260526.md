@@ -18,6 +18,10 @@
 - Sequential send support in toolkit (ordered file list and concatenated bundle replay)
 - Initial BLUE MOON pattern-bundle fixture generated:
   - `examples/generated/pattern_bundle_blue_moon/`
+- Context-aware voicing migration completed:
+  - fixed per-chord expansion removed from main render path
+  - Local Pitch Collection + Selected Scale Collection + slot extraction (`1,3,5,6/13,7,9`)
+  - corrected C-major context output for `Am7` (`F`, not `F#`)
 
 ## Confirmed import behavior
 
@@ -48,6 +52,22 @@
 Execution note:
 
 - This session generated artifacts and checklist documents for hardware validation; runbook execution results should be appended in `docs/hardware-validation/pattern-name-native-sysex-send-2026-05-26.md`.
+
+## Intentionally Unimplemented Scope (Current)
+
+- Parser/harmony core currently targets only: `maj7`, `m7`, `7`.
+- Chord qualities intentionally deferred in this phase:
+  - altered
+  - sus
+  - diminished
+  - half-diminished
+  - full slash-chord harmonic rules
+- Scale-collection families intentionally deferred in this phase:
+  - harmonic minor collections (priority implementation)
+  - melodic minor / lydian dominant collections (priority implementation)
+  - whole-tone collections (priority implementation)
+  - half-whole / whole-half diminished collections (priority implementation)
+- These are deferred intentionally to keep the current context-aware migration deterministic and stable for the verified `maj7` / `m7` / `7` path.
 
 ## Next major target
 

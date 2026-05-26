@@ -2,6 +2,9 @@
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
 
+**Your little guide for jazz changes.
+Turn chord progressions into voice-led harmonic layers for Digitone II — ready to mute, hold, reshape, and play.**
+
 This repository contains a **machine‑jazz harmony engine** for generating six‑voice jazz chord clouds.
 It provides generic MIDI output and prepares Digitone II output through a Native SysEx backend.
 

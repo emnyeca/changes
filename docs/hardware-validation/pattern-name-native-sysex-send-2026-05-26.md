@@ -48,13 +48,23 @@ Validate that generated Pattern SysEx from `changes` + `digitone-syx-toolkit` wr
 
 ## Checklist
 
-- [ ] INTRO displays exactly.
-- [ ] THEME A displays exactly.
-- [ ] BLUE MOON A displays exactly.
-- [ ] ÅNGSTRÖM displays exactly.
+- [x] INTRO displays exactly.
+- [x] THEME A displays exactly.
+- [x] BLUE MOON A displays exactly.
+- [x] ÅNGSTRÖM displays exactly.
 - [ ] Name survives power-cycle.
 - [ ] Re-send updates only target pattern as intended.
 - [ ] No unexpected tempo/speed/step changes after name-only update.
+
+## Result (User-confirmed scope)
+
+- Pattern Name validation import on hardware: PASS.
+- Confirmed expected display names:
+  - INTRO
+  - THEME A
+  - BLUE MOON A
+  - ÅNGSTRÖM
+- Items not explicitly reported in this cycle remain unchecked (power-cycle persistence, overwrite-side effects, name-only side-effect check).
 
 ## Notes Template
 

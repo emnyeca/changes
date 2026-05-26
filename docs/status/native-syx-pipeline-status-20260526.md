@@ -6,7 +6,7 @@
   - trigger / track / step / pitch / velocity / full length / tempo / speed / total steps / pattern name
 - Simple ii-V-I end-to-end hardware validation
 - Blue Moon end-to-end hardware validation
-- Pattern Name hardware validation workflow and artifacts prepared
+- Pattern Name hardware validation completed and passed
 
 ## Confirmed import behavior
 
@@ -18,7 +18,7 @@
 ## Current boundary policy
 
 - `changes` exports `DigitoneCompilePlan.title` to toolkit events YAML `name` as-is.
-- toolkit validates/normalizes/encodes Pattern Name and rejects over-16-char names without silent truncation.
+- toolkit validates/normalizes/encodes Pattern Name, rejects unsupported characters, and truncates over-16-char names to the first 16 characters.
 - Generic MIDI export path is unaffected by Digitone Pattern Name restrictions.
 
 ## Pattern Name validation artifacts

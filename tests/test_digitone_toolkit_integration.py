@@ -177,10 +177,9 @@ def test_e2e_simple_ii_v_i_to_syx_and_round_trip(tmp_path: Path):
     assert out["syx"].stat().st_size > 0
 
 
-def test_toolkit_rejects_over_16_char_pattern_name_from_pipeline(tmp_path: Path):
+def test_toolkit_truncates_over_16_char_pattern_name_from_pipeline(tmp_path: Path):
     _ensure_toolkit_or_skip()
     from digitone_syx_toolkit.events_yaml import load_event_assignment_yaml
-    from digitone_syx_toolkit.errors import SyxFileError
 
     payload = {
         "name": "BLUE MOON SOLO FORM",
@@ -197,5 +196,5 @@ def test_toolkit_rejects_over_16_char_pattern_name_from_pipeline(tmp_path: Path)
     song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
     out = save_digitone_pipeline_artifacts(tmp_path, song, timeline, plan, events_payload, write_syx=False)
 
-    with pytest.raises(SyxFileError, match="exceeds 16"):
-        load_event_assignment_yaml(out["events_yaml"])
+    assignment = load_event_assignment_yaml(out["events_yaml"])
+    assert assignment.name == "BLUE MOON SOLO F"

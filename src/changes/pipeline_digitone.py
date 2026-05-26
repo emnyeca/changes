@@ -7,9 +7,9 @@ from pathlib import Path
 
 import yaml
 
+from changes.digitone_backend import build_digitone_syx_from_events_yaml
 from changes.digitone.planner import compile_timeline_to_digitone_plan
 from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
-from changes.exporters.digitone_syx import compile_plan_to_syx_bytes
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_compile_plan import DigitoneCompilePlan, digitone_compile_plan_to_dict
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
@@ -75,8 +75,7 @@ def save_digitone_pipeline_artifacts(
 
     if write_syx:
         syx_path = out / syx_filename
-        syx_bytes = compile_plan_to_syx_bytes(plan)
-        syx_path.write_bytes(syx_bytes)
+        build_digitone_syx_from_events_yaml(events_yaml, syx_path)
         artifacts["syx"] = syx_path
 
     return artifacts

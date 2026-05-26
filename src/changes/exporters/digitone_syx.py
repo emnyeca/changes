@@ -1,22 +1,21 @@
-"""Compile plan to SYX bytes via optional digitone_syx_toolkit dependency."""
+"""Deprecated path-based wrappers for Digitone SYX generation."""
 
 from __future__ import annotations
 
-from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
-from changes.models.digitone_compile_plan import DigitoneCompilePlan
+from pathlib import Path
+
+from changes.digitone_backend import build_digitone_syx_from_events_yaml
 
 
 class DigitoneToolkitMissingError(RuntimeError):
     pass
 
 
-def compile_plan_to_syx_bytes(plan: DigitoneCompilePlan) -> bytes:
+def compile_plan_to_syx_file(*, events_yaml: str | Path, output_syx: str | Path):
+    """Deprecated wrapper: use changes.digitone_backend directly in new code."""
     try:
-        from digitone_syx_toolkit import build_syx_from_events
+        return build_digitone_syx_from_events_yaml(events_yaml, output_syx)
     except Exception as exc:  # pragma: no cover
         raise DigitoneToolkitMissingError(
             "digitone_syx_toolkit is not installed. Install with: pip install -e ../digitone-syx-toolkit"
         ) from exc
-
-    payload = digitone_compile_plan_to_events_yaml_payload(plan)
-    return build_syx_from_events(payload)

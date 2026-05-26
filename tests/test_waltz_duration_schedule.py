@@ -3,10 +3,12 @@ import pytest
 pytest.importorskip("streamlit")
 
 from changes.ui_streamlit import (
-    _apply_digitone_tempo_floor,
     _build_event_schedule,
-    _compute_digitone_tempo_for_same_duration,
     _parse_uploaded_yaml_bars,
+)
+from changes.legacy.digitone_tempo_helpers import (
+    apply_digitone_tempo_floor,
+    compute_digitone_tempo_for_same_duration,
 )
 
 
@@ -30,8 +32,8 @@ def test_waltz_120_3_4_schedule():
     assert steps_per_bar == 6
     assert length == 18
 
-    tempo = _compute_digitone_tempo_for_same_duration(120, 3, 4, steps_per_bar)
-    tempo, length, events = _apply_digitone_tempo_floor(tempo, length, events)
+    tempo = compute_digitone_tempo_for_same_duration(120, 3, 4, steps_per_bar)
+    tempo, length, events = apply_digitone_tempo_floor(tempo, length, events)
 
     assert tempo == 120
     assert length == 18
@@ -52,8 +54,8 @@ def test_waltz_120_4_4_schedule():
     assert steps_per_bar == 6
     assert length == 18
 
-    tempo = _compute_digitone_tempo_for_same_duration(120, 4, 4, steps_per_bar)
-    tempo, length, events = _apply_digitone_tempo_floor(tempo, length, events)
+    tempo = compute_digitone_tempo_for_same_duration(120, 4, 4, steps_per_bar)
+    tempo, length, events = apply_digitone_tempo_floor(tempo, length, events)
 
     assert tempo == 90
     assert length == 18

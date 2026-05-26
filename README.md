@@ -52,6 +52,12 @@ The UI supports:
 	- `digitone.events.yaml`
 	- optional `digitone_pattern.syx`
 
+Artifact format policy:
+
+- `*.json`: audit-friendly intermediate models (Fraction values serialized as strings)
+- `digitone.events.yaml`: toolkit validation schema (`version`, `device`, `name`, `pattern`, `events`)
+- `digitone_pattern.syx`: generated through path-based toolkit API using saved `digitone.events.yaml`
+
 ## CLI Usage
 
 Generic MIDI (existing flow):

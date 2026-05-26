@@ -40,6 +40,14 @@ Validation in current scope:
 - Streamlit and CLI expose pipeline artifact export.
 - Generic MIDI file export and Generic realtime MIDI send remain available.
 
+Current artifact outputs:
+
+- `song_model.json` (Song Model, Fraction-as-string)
+- `rendered_timeline.json` (Rendered Timeline, Fraction-as-string)
+- `digitone_compile_plan.json` (Compile Plan, includes speed/q_step/device_tempo)
+- `digitone.events.yaml` (toolkit schema: version/device/name/pattern/events)
+- `digitone_pattern.syx` (optional, generated from saved `digitone.events.yaml`)
+
 ## Open Questions (Not Implemented Here)
 
 - Multi-pattern partition strategy (section-level split vs single-pattern packing).

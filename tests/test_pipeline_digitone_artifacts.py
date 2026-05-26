@@ -32,4 +32,6 @@ def test_pipeline_artifacts_written(tmp_path: Path):
 
     loaded = yaml.safe_load(out["events_yaml"].read_text(encoding="utf-8"))
     assert loaded["events"]
-    assert loaded["speed"] == plan.speed
+    assert loaded["version"] == 1
+    assert loaded["device"] == "digitone2"
+    assert loaded["pattern"]["speed"] == plan.speed

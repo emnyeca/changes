@@ -7,7 +7,7 @@ from changes.models.digitone_compile_plan import DigitoneCompilePlan
 
 def digitone_compile_plan_to_events_yaml_payload(plan: DigitoneCompilePlan) -> dict:
     events = []
-    for e in sorted(plan.events, key=lambda x: (x.step, x.track, x.source_event_id)):
+    for e in sorted(plan.events, key=lambda x: (x.track, x.step, x.source_event_id)):
         events.append(
             {
                 "step": int(e.step),
@@ -19,8 +19,14 @@ def digitone_compile_plan_to_events_yaml_payload(plan: DigitoneCompilePlan) -> d
         )
 
     return {
-        "version": "0.1",
-        "tempo": float(plan.device_tempo),
-        "speed": plan.speed,
+        "version": 1,
+        "device": "digitone2",
+        "name": plan.title,
+        "pattern": {
+            "mode": "pattern-wide",
+            "tempo": float(plan.device_tempo),
+            "speed": plan.speed,
+            "total_steps": plan.total_steps,
+        },
         "events": events,
     }

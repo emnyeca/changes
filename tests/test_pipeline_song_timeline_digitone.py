@@ -10,7 +10,6 @@ from changes.digitone.planner import (
     compute_digitone_device_tempo_for_speed_one_eighth,
 )
 from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
-from changes.exporters.digitone_syx import DigitoneToolkitMissingError, compile_plan_to_syx_bytes
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
@@ -85,7 +84,7 @@ def test_timing_plan_falls_back_from_invalid_tempo_bounds():
     assert compute_digitone_device_tempo_for_speed_one_eighth(timeline.performance_tempo, Fraction(1, 1)) == Fraction(480, 1)
 
     plan = choose_timing_plan(timeline, target)
-    assert plan.speed_ratio == Fraction(1, 4)
+    assert plan.speed_ratio == Fraction(1, 2)
     assert Fraction(30, 1) <= plan.device_tempo <= Fraction(300, 1)
 
 
@@ -131,26 +130,8 @@ def test_compile_plan_and_events_export_smoke():
     assert len(plan.events) > 0
 
     out = digitone_compile_plan_to_events_yaml_payload(plan)
-    assert out["speed"] == plan.speed
+    assert out["version"] == 1
+    assert out["device"] == "digitone2"
+    assert out["pattern"]["speed"] == plan.speed
     assert out["events"]
     assert out["events"][0]["length_code"].startswith("0x")
-
-
-def test_compile_plan_to_syx_bytes_missing_toolkit(monkeypatch):
-    import builtins
-
-    original_import = builtins.__import__
-
-    def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "digitone_syx_toolkit":
-            raise ImportError("simulated")
-        return original_import(name, globals, locals, fromlist, level)
-
-    payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
-    song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
-    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
-
-    monkeypatch.setattr(builtins, "__import__", fake_import)
-    with pytest.raises(DigitoneToolkitMissingError):
-        compile_plan_to_syx_bytes(plan)

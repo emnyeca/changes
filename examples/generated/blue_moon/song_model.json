@@ -1,0 +1,155 @@
+{
+  "title": "Blue Moon",
+  "working_key": "C",
+  "performance_tempo": "124",
+  "measures": [
+    {
+      "number": 1,
+      "section_id": "A",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "0",
+      "harmony": [
+        {
+          "id": "m1_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 1,
+          "offset_quarters": "0",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m1_h2",
+          "symbol": "Am7",
+          "measure_number": 1,
+          "offset_quarters": "1",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m1_h3",
+          "symbol": "Dm7",
+          "measure_number": 1,
+          "offset_quarters": "2",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m1_h4",
+          "symbol": "G7",
+          "measure_number": 1,
+          "offset_quarters": "3",
+          "duration_quarters": "1"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section_id": "A",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "4",
+      "harmony": [
+        {
+          "id": "m2_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 2,
+          "offset_quarters": "0",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m2_h2",
+          "symbol": "Am7",
+          "measure_number": 2,
+          "offset_quarters": "1",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m2_h3",
+          "symbol": "Dm7",
+          "measure_number": 2,
+          "offset_quarters": "2",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m2_h4",
+          "symbol": "G7",
+          "measure_number": 2,
+          "offset_quarters": "3",
+          "duration_quarters": "1"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "section_id": "B",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "8",
+      "harmony": [
+        {
+          "id": "m3_h1",
+          "symbol": "Fmaj7",
+          "measure_number": 3,
+          "offset_quarters": "0",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m3_h2",
+          "symbol": "Fm7",
+          "measure_number": 3,
+          "offset_quarters": "1",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m3_h3",
+          "symbol": "Cmaj7",
+          "measure_number": 3,
+          "offset_quarters": "2",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m3_h4",
+          "symbol": "A7",
+          "measure_number": 3,
+          "offset_quarters": "3",
+          "duration_quarters": "1"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "section_id": "B",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "12",
+      "harmony": [
+        {
+          "id": "m4_h1",
+          "symbol": "Dm7",
+          "measure_number": 4,
+          "offset_quarters": "0",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m4_h2",
+          "symbol": "G7",
+          "measure_number": 4,
+          "offset_quarters": "1",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m4_h3",
+          "symbol": "Cmaj7",
+          "measure_number": 4,
+          "offset_quarters": "2",
+          "duration_quarters": "1"
+        },
+        {
+          "id": "m4_h4",
+          "symbol": "Cmaj7",
+          "measure_number": 4,
+          "offset_quarters": "3",
+          "duration_quarters": "1"
+        }
+      ]
+    }
+  ]
+}

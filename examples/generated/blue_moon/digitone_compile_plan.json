@@ -1,0 +1,436 @@
+{
+  "title": "Blue Moon",
+  "performance_tempo": "124",
+  "speed": "1/8",
+  "speed_ratio": "1/8",
+  "q_step": "1",
+  "device_tempo": "248",
+  "total_steps": 16,
+  "warnings": [],
+  "events": [
+    {
+      "source_event_id": "ev1_bass",
+      "track": 7,
+      "step": 1,
+      "note": "C3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev1_v1",
+      "track": 1,
+      "step": 1,
+      "note": "C4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v2",
+      "track": 2,
+      "step": 1,
+      "note": "E4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v3",
+      "track": 3,
+      "step": 1,
+      "note": "G4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev1_v4",
+      "track": 4,
+      "step": 1,
+      "note": "A4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev1_v5",
+      "track": 5,
+      "step": 1,
+      "note": "D5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v6",
+      "track": 6,
+      "step": 1,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev2_bass",
+      "track": 7,
+      "step": 2,
+      "note": "A3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev2_v3",
+      "track": 3,
+      "step": 2,
+      "note": "A4",
+      "velocity": "inherit",
+      "length_code": "0x6E"
+    },
+    {
+      "source_event_id": "ev2_v4",
+      "track": 4,
+      "step": 2,
+      "note": "B4",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev2_v6",
+      "track": 6,
+      "step": 2,
+      "note": "F#5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev3_bass",
+      "track": 7,
+      "step": 3,
+      "note": "D3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev3_v1",
+      "track": 1,
+      "step": 3,
+      "note": "D4",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev3_v2",
+      "track": 2,
+      "step": 3,
+      "note": "F4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev3_v5",
+      "track": 5,
+      "step": 3,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev3_v6",
+      "track": 6,
+      "step": 3,
+      "note": "G5",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev4_bass",
+      "track": 7,
+      "step": 4,
+      "note": "G3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev5_bass",
+      "track": 7,
+      "step": 5,
+      "note": "C3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev5_v2",
+      "track": 2,
+      "step": 5,
+      "note": "E4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev5_v4",
+      "track": 4,
+      "step": 5,
+      "note": "C5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev6_bass",
+      "track": 7,
+      "step": 6,
+      "note": "A3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev6_v1",
+      "track": 1,
+      "step": 6,
+      "note": "C4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev6_v4",
+      "track": 4,
+      "step": 6,
+      "note": "B4",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev6_v5",
+      "track": 5,
+      "step": 6,
+      "note": "D5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev6_v6",
+      "track": 6,
+      "step": 6,
+      "note": "F#5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev7_bass",
+      "track": 7,
+      "step": 7,
+      "note": "D3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev7_v1",
+      "track": 1,
+      "step": 7,
+      "note": "D4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev7_v2",
+      "track": 2,
+      "step": 7,
+      "note": "F4",
+      "velocity": "inherit",
+      "length_code": "0x5E"
+    },
+    {
+      "source_event_id": "ev7_v5",
+      "track": 5,
+      "step": 7,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev7_v6",
+      "track": 6,
+      "step": 7,
+      "note": "G5",
+      "velocity": "inherit",
+      "length_code": "0x5E"
+    },
+    {
+      "source_event_id": "ev8_bass",
+      "track": 7,
+      "step": 8,
+      "note": "G3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev9_bass",
+      "track": 7,
+      "step": 9,
+      "note": "F3",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev9_v1",
+      "track": 1,
+      "step": 9,
+      "note": "C4",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev9_v4",
+      "track": 4,
+      "step": 9,
+      "note": "A4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev9_v5",
+      "track": 5,
+      "step": 9,
+      "note": "D5",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev10_v3",
+      "track": 3,
+      "step": 10,
+      "note": "G#4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev10_v4",
+      "track": 4,
+      "step": 10,
+      "note": "A#4",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev11_bass",
+      "track": 7,
+      "step": 11,
+      "note": "C3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev11_v2",
+      "track": 2,
+      "step": 11,
+      "note": "E4",
+      "velocity": "inherit",
+      "length_code": "0x66"
+    },
+    {
+      "source_event_id": "ev11_v3",
+      "track": 3,
+      "step": 11,
+      "note": "G4",
+      "velocity": "inherit",
+      "length_code": "0x66"
+    },
+    {
+      "source_event_id": "ev11_v4",
+      "track": 4,
+      "step": 11,
+      "note": "A4",
+      "velocity": "inherit",
+      "length_code": "0x66"
+    },
+    {
+      "source_event_id": "ev11_v6",
+      "track": 6,
+      "step": 11,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev12_bass",
+      "track": 7,
+      "step": 12,
+      "note": "A3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev12_v1",
+      "track": 1,
+      "step": 12,
+      "note": "B3",
+      "velocity": "inherit",
+      "length_code": "0x56"
+    },
+    {
+      "source_event_id": "ev12_v5",
+      "track": 5,
+      "step": 12,
+      "note": "C#5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev12_v6",
+      "track": 6,
+      "step": 12,
+      "note": "F#5",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev13_bass",
+      "track": 7,
+      "step": 13,
+      "note": "D3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev13_v5",
+      "track": 5,
+      "step": 13,
+      "note": "D5",
+      "velocity": "inherit",
+      "length_code": "0x5E"
+    },
+    {
+      "source_event_id": "ev13_v6",
+      "track": 6,
+      "step": 13,
+      "note": "F5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev14_bass",
+      "track": 7,
+      "step": 14,
+      "note": "G3",
+      "velocity": "inherit",
+      "length_code": "0x3E"
+    },
+    {
+      "source_event_id": "ev15_bass",
+      "track": 7,
+      "step": 15,
+      "note": "C3",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev15_v1",
+      "track": 1,
+      "step": 15,
+      "note": "C4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev15_v6",
+      "track": 6,
+      "step": 15,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    }
+  ]
+}

@@ -22,6 +22,16 @@
   - fixed per-chord expansion removed from main render path
   - Local Pitch Collection + Selected Scale Collection + slot extraction (`1,3,5,6/13,7,9`)
   - corrected C-major context output for `Am7` (`F`, not `F#`)
+- Bundle robustness hardening completed:
+  - section occurrence-aware split planning (`A`, `B`, `A` handled as independent occurrences)
+  - boundary carryover reconstruction for section/capacity splits (held notes retriggered at pattern step 1)
+  - deterministic short-section merge policy for Digitone minimum length (`2..128` enforced)
+  - shared Pattern Name policy for single and bundle outputs (auto/explicit consistent validation)
+  - `digitone-bundle` CLI backend integrated with artifact and optional SYX output
+  - manifest enriched with `pattern_count`, occurrence/global-order metadata, and path aliases
+- Regression validation completed:
+  - `changes`: `63 passed, 2 skipped`
+  - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior
 

@@ -36,10 +36,10 @@ def test_bundle_named_multi_pattern_uses_section_prefix_first_names():
         "tempo": 120,
         "time_signature": "4/4",
         "sections": [
-            {"name": "Intro", "progression": [["Cmaj7"]]},
-            {"name": "A", "progression": [["Dm7"]]},
-            {"name": "Solo", "progression": [["G7"]]},
-            {"name": "Outro", "progression": [["Cmaj7"]]},
+            {"name": "Intro", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "A", "progression": [["Dm7"] for _ in range(16)]},
+            {"name": "Solo", "progression": [["G7"] for _ in range(16)]},
+            {"name": "Outro", "progression": [["Cmaj7"] for _ in range(16)]},
         ],
     }
 
@@ -109,8 +109,8 @@ def test_bundle_long_title_truncation_keeps_prefix_and_length_16():
         "tempo": 120,
         "time_signature": "4/4",
         "sections": [
-            {"name": "Solo", "progression": [["Cmaj7"]]},
-            {"name": "Outro", "progression": [["Cmaj7"]]},
+            {"name": "Solo", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "Outro", "progression": [["Cmaj7"] for _ in range(16)]},
         ],
     }
 
@@ -128,8 +128,8 @@ def test_bundle_explicit_override_disables_auto_prefix_and_uses_explicit_source(
         "tempo": 120,
         "time_signature": "4/4",
         "sections": [
-            {"name": "Intro", "progression": [["Cmaj7"]]},
-            {"name": "Solo", "progression": [["G7"]]},
+            {"name": "Intro", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "Solo", "progression": [["G7"] for _ in range(16)]},
         ],
         "digitone_pattern_name_overrides": {
             "1": "scene one",
@@ -171,5 +171,141 @@ def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_posit
         "digitone_pattern_name_overrides": ["BLUE MOON SOLO LO😺"],
     }
 
-    with pytest.raises(ValueError, match="Unsupported pattern name character"):
+    with pytest.raises(ValueError, match="Unsupported character"):
         compile_digitone_bundle_pipeline(payload)
+
+
+def test_repeated_non_contiguous_section_labels_are_separate_occurrences():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "B", "progression": [["Dm7"] for _ in range(16)]},
+            {"name": "A", "progression": [["G7"] for _ in range(16)]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+
+    assert [p.section_label for p in bundle.patterns] == ["A", "B", "A"]
+    assert [p.section_global_order_index for p in bundle.patterns] == [1, 2, 3]
+    assert [p.pattern_name for p in bundle.patterns] == ["A1 BLUE MOON", "B BLUE MOON", "A2 BLUE MOON"]
+
+
+def test_aaba_form_preserves_order_and_unique_auto_names():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "A", "progression": [["Dm7"] for _ in range(16)]},
+            {"name": "B", "progression": [["G7"] for _ in range(16)]},
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(16)]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    names = [p.pattern_name for p in bundle.patterns]
+
+    assert names == ["A1 BLUE MOON", "A2 BLUE MOON", "B BLUE MOON", "A3 BLUE MOON"]
+    assert len(set(names)) == len(names)
+
+
+def test_repeated_section_occurrence_with_overflow_has_unique_deterministic_names():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(130)]},
+            {"name": "B", "progression": [["Dm7"], ["Dm7"]]},
+            {"name": "A", "progression": [["G7"], ["G7"]]},
+        ],
+    }
+
+    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+    names = [p.pattern_name for p in bundle.patterns]
+
+    assert names[:2] == ["A1S1 BLUE MOON", "A1S2 BLUE MOON"]
+    assert names[-1] == "A2 BLUE MOON"
+    assert len(set(names)) == len(names)
+
+
+def test_boundary_crossing_held_notes_are_retriggered_at_next_pattern_step_one():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(300)]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    assert len(bundle.patterns) == 2
+
+    p2_steps = {(e.track, e.step) for e in bundle.patterns[1].events}
+    assert (1, 1) in p2_steps
+    assert (7, 1) in p2_steps
+
+
+def test_section_boundary_crossing_held_notes_exist_in_each_standalone_pattern():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(16)]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    assert len(bundle.patterns) == 2
+
+    p1_steps = {(e.track, e.step) for e in bundle.patterns[0].events}
+    p2_steps = {(e.track, e.step) for e in bundle.patterns[1].events}
+    assert (1, 1) in p1_steps
+    assert (1, 1) in p2_steps
+    assert (7, 1) in p2_steps
+
+
+def test_every_emitted_bundle_pattern_satisfies_total_steps_2_to_128():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"]]},
+            {"name": "A", "progression": [["Dm7"]]},
+            {"name": "Solo", "progression": [["G7"]]},
+            {"name": "Outro", "progression": [["Cmaj7"]]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    assert all(2 <= p.total_steps <= 128 for p in bundle.patterns)
+
+
+def test_short_section_resolution_is_deterministic_and_reported():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"]]},
+            {"name": "A", "progression": [["Dm7"]]},
+            {"name": "B", "progression": [["G7"]]},
+            {"name": "Outro", "progression": [["Cmaj7"]]},
+        ],
+    }
+
+    _song, _timeline, bundle1 = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle2 = compile_digitone_bundle_pipeline(payload)
+
+    assert [p.global_step_start for p in bundle1.patterns] == [p.global_step_start for p in bundle2.patterns]
+    assert any("short section merged due to Digitone minimum pattern length" in w for w in bundle1.warnings)

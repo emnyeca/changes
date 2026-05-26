@@ -133,7 +133,7 @@ def test_timing_plan_falls_back_from_invalid_tempo_bounds():
     assert Fraction(30, 1) <= plan.device_tempo <= Fraction(300, 1)
 
 
-def test_compile_plan_rejects_non_exact_length_code_mapping():
+def test_compile_plan_splits_long_durations_into_exact_length_code_chunks():
     timeline = RenderedTimeline(
         title="len-error",
         performance_tempo=Fraction(120, 1),
@@ -161,8 +161,8 @@ def test_compile_plan_rejects_non_exact_length_code_mapping():
         ),
     )
 
-    with pytest.raises(ValueError, match="No exact length code"):
-        compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    assert len(plan.events) >= 2
 
 
 def test_choose_shared_timing_plan_allows_total_steps_over_128_for_song_level_planning():
@@ -211,7 +211,7 @@ def test_compile_plan_and_events_export_smoke():
 
     assert plan.total_steps <= 128
     assert plan.source_title == timeline.title
-    assert plan.pattern_name == timeline.title
+    assert plan.pattern_name == "TEST"
     assert plan.pattern_name_source == "auto"
     assert len(plan.events) > 0
 
@@ -223,7 +223,7 @@ def test_compile_plan_and_events_export_smoke():
     assert out["events"][0]["length_code"].startswith("0x")
 
 
-def test_events_export_includes_unmodified_plan_title_as_name():
+def test_single_pattern_plan_pattern_name_is_final_device_name():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     payload["name"] = "Blue Moon A"
     song = compact_progression_to_song_model(payload)
@@ -232,7 +232,72 @@ def test_events_export_includes_unmodified_plan_title_as_name():
 
     out = digitone_compile_plan_to_events_yaml_payload(plan)
     assert out["name"] == plan.pattern_name
-    assert out["name"] == "Blue Moon A"
+    assert out["name"] == "BLUE MOON A"
+
+
+def test_single_pattern_long_title_is_truncated_in_plan_with_warning():
+    timeline = RenderedTimeline(
+        title="BLUE MOON SOLO LONG",
+        performance_tempo=Fraction(120, 1),
+        events=(
+            RenderedNoteEvent(
+                id="e1",
+                voice_id="chord_voice_1",
+                role="chord",
+                note_midi=60,
+                onset_quarters=Fraction(0, 1),
+                duration_quarters=Fraction(2, 1),
+                source_harmony_id="h1",
+                retrigger=True,
+            ),
+            RenderedNoteEvent(
+                id="e2",
+                voice_id="chord_voice_2",
+                role="chord",
+                note_midi=64,
+                onset_quarters=Fraction(2, 1),
+                duration_quarters=Fraction(2, 1),
+                source_harmony_id="h2",
+                retrigger=True,
+            ),
+        ),
+    )
+
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    assert plan.pattern_name == "BLUE MOON SOLO L"
+    assert any("truncated to 16" in w for w in plan.warnings)
+
+
+def test_single_pattern_unsupported_auto_name_character_fails_before_build():
+    timeline = RenderedTimeline(
+        title="BLUE MOON 😺",
+        performance_tempo=Fraction(120, 1),
+        events=(
+            RenderedNoteEvent(
+                id="e1",
+                voice_id="chord_voice_1",
+                role="chord",
+                note_midi=60,
+                onset_quarters=Fraction(0, 1),
+                duration_quarters=Fraction(2, 1),
+                source_harmony_id="h1",
+                retrigger=True,
+            ),
+            RenderedNoteEvent(
+                id="e2",
+                voice_id="chord_voice_2",
+                role="chord",
+                note_midi=64,
+                onset_quarters=Fraction(2, 1),
+                duration_quarters=Fraction(2, 1),
+                source_harmony_id="h2",
+                retrigger=True,
+            ),
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Unsupported character in auto Pattern Name source title"):
+        compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
 
 def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_collisions():

@@ -7,6 +7,7 @@ from fractions import Fraction
 from functools import reduce
 from math import gcd
 
+from changes.digitone.pattern_name_policy import finalize_single_pattern_auto_name
 from changes.digitone.note_encoding import midi_to_digitone_display_note_name
 from changes.models.digitone_compile_plan import CompiledDigitoneEvent, DigitoneCompilePlan
 from changes.models.digitone_target_profile import DigitoneTargetProfile, speed_fraction_to_label
@@ -120,6 +121,60 @@ def _find_exact_length_code_for_units(units: Fraction) -> int | None:
     return find_exact_length_code_for_sixteenth_units(Fraction(units))
 
 
+def _length_step_candidates_for_speed(speed_ratio: Fraction) -> list[tuple[int, int]]:
+    try:
+        from digitone_syx_toolkit.digitone2.length_codes import explicit_length_code_to_sixteenth_units
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError(
+            "digitone-syx-toolkit is required for Digitone compilation. "
+            "Install with: pip install -e ../digitone-syx-toolkit"
+        ) from exc
+
+    candidates: dict[int, int] = {}
+    for code in range(0x00, 0x7F):
+        try:
+            units = explicit_length_code_to_sixteenth_units(code)
+        except ValueError:
+            continue
+        steps = units * speed_ratio
+        if steps.denominator != 1:
+            continue
+        step_count = int(steps)
+        if step_count <= 0:
+            continue
+        candidates[step_count] = code
+
+    return sorted(((steps, code) for steps, code in candidates.items()), key=lambda x: x[0], reverse=True)
+
+
+def _split_duration_steps_into_exact_codes(duration_steps: int, speed_ratio: Fraction) -> list[tuple[int, int]]:
+    if duration_steps <= 0:
+        raise ValueError(f"duration_steps must be > 0, got {duration_steps}")
+
+    candidates = _length_step_candidates_for_speed(speed_ratio)
+    if not candidates:
+        raise ValueError(f"No exact length candidates for speed_ratio={speed_ratio}")
+
+    remaining = duration_steps
+    out: list[tuple[int, int]] = []
+    while remaining > 0:
+        picked: tuple[int, int] | None = None
+        for steps, code in candidates:
+            if steps <= remaining:
+                picked = (steps, code)
+                break
+
+        if picked is None:
+            raise ValueError(
+                f"No exact length-code decomposition for duration_steps={duration_steps} at speed_ratio={speed_ratio}"
+            )
+
+        out.append(picked)
+        remaining -= picked[0]
+
+    return out
+
+
 def compile_timeline_events_with_timing(
     timeline: RenderedTimeline,
     target: DigitoneTargetProfile,
@@ -127,6 +182,7 @@ def compile_timeline_events_with_timing(
     *,
     step_start: int = 1,
     step_end: int | None = None,
+    include_boundary_carryover: bool = False,
 ) -> tuple[CompiledDigitoneEvent, ...]:
     """Compile timeline events using a preselected timing plan.
 
@@ -146,41 +202,57 @@ def compile_timeline_events_with_timing(
             continue
 
         track = target.voice_to_track[event.voice_id]
-        global_step_fraction = event.onset_quarters / timing.q_step
-        if global_step_fraction.denominator != 1:
+        global_start_fraction = event.onset_quarters / timing.q_step
+        if global_start_fraction.denominator != 1:
             raise ValueError(f"event onset is not on planner step grid: {event.id}")
-        global_step = int(global_step_fraction) + 1
+        global_start_step = int(global_start_fraction) + 1
 
-        if global_step < step_start:
+        global_end_fraction = (event.onset_quarters + event.duration_quarters) / timing.q_step
+        if global_end_fraction.denominator != 1:
+            raise ValueError(f"event end is not on planner step grid: {event.id}")
+        global_end_step = int(global_end_fraction)
+
+        if global_end_step < global_start_step:
+            raise ValueError(f"event has invalid step span: {event.id}")
+
+        intersects_window = not (global_end_step < step_start or (step_end is not None and global_start_step > step_end))
+        if not intersects_window:
             continue
-        if step_end is not None and global_step > step_end:
+
+        if global_start_step < step_start and not include_boundary_carryover:
             continue
 
-        local_step = global_step - step_start + 1
-        pair = (track, local_step)
-        if pair in seen_pairs:
-            raise ValueError(
-                f"Compile conflict: duplicate track/step detected for track={track}, local_step={local_step}"
-            )
-        seen_pairs.add(pair)
+        emit_start = max(global_start_step, step_start)
+        emit_end = global_end_step if step_end is None else min(global_end_step, step_end)
+        if emit_end < emit_start:
+            continue
 
-        length_units = event.duration_quarters / (timing.speed_ratio * timing.q_step)
-        code = _find_exact_length_code_for_units(length_units)
-        if code is None:
-            raise ValueError(
-                f"No exact length code for duration units={length_units} (event={event.id}); approximation is disabled"
-            )
+        local_step = emit_start - step_start + 1
+        duration_steps = Fraction(emit_end - emit_start + 1, 1)
+        chunks = _split_duration_steps_into_exact_codes(int(duration_steps), timing.speed_ratio)
 
-        events.append(
-            CompiledDigitoneEvent(
-                source_event_id=event.id,
-                track=track,
-                step=local_step,
-                note=_midi_to_digitone_note_name(event.note_midi),
-                velocity=target.default_velocity,
-                length_code=code,
+        offset = 0
+        for chunk_index, (chunk_steps, code) in enumerate(chunks, start=1):
+            chunk_local_step = local_step + offset
+            pair = (track, chunk_local_step)
+            if pair in seen_pairs:
+                raise ValueError(
+                    f"Compile conflict: duplicate track/step detected for track={track}, local_step={chunk_local_step}"
+                )
+            seen_pairs.add(pair)
+
+            source_event_id = event.id if len(chunks) == 1 else f"{event.id}#chunk{chunk_index}"
+            events.append(
+                CompiledDigitoneEvent(
+                    source_event_id=source_event_id,
+                    track=track,
+                    step=chunk_local_step,
+                    note=_midi_to_digitone_note_name(event.note_midi),
+                    velocity=target.default_velocity,
+                    length_code=code,
+                )
             )
-        )
+            offset += chunk_steps
 
     return tuple(events)
 
@@ -188,10 +260,11 @@ def compile_timeline_events_with_timing(
 def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> DigitoneCompilePlan:
     timing = choose_timing_plan(timeline, target)
     events = compile_timeline_events_with_timing(timeline, target, timing)
+    pattern_name, warnings = finalize_single_pattern_auto_name(timeline.title)
 
     return DigitoneCompilePlan(
         source_title=timeline.title,
-        pattern_name=timeline.title,
+        pattern_name=pattern_name,
         pattern_name_source="auto",
         performance_tempo=timeline.performance_tempo,
         speed=speed_fraction_to_label(timing.speed_ratio),
@@ -200,5 +273,5 @@ def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: Digito
         device_tempo=timing.device_tempo,
         total_steps=timing.total_steps,
         events=tuple(events),
-        warnings=tuple(),
+        warnings=warnings,
     )

@@ -67,6 +67,7 @@ def test_bundle_artifacts_written_with_manifest_and_order(tmp_path: Path):
     assert "bundle_syx" not in out
 
     manifest = json.loads(out["bundle_manifest_json"].read_text(encoding="utf-8"))
+    assert manifest["pattern_count"] == len(bundle_plan.patterns)
     manifest_patterns = manifest["patterns"]
     assert len(manifest_patterns) == len(bundle_plan.patterns)
 
@@ -76,6 +77,8 @@ def test_bundle_artifacts_written_with_manifest_and_order(tmp_path: Path):
     expected_paths = [f"patterns/{i:02d}_" for i in range(1, len(manifest_patterns) + 1)]
     for expected_prefix, entry in zip(expected_paths, manifest_patterns, strict=True):
         assert entry["events_yaml"].startswith(expected_prefix)
+        assert entry["events_yaml_path"] == entry["events_yaml"]
+        assert 2 <= int(entry["total_steps"]) <= 128
         events_path = tmp_path / entry["events_yaml"]
         assert events_path.exists()
 
@@ -110,10 +113,12 @@ def test_bundle_artifacts_write_syx_and_concat_in_manifest_order(tmp_path: Path,
     assert out["bundle_syx"].exists()
     manifest = json.loads(out["bundle_manifest_json"].read_text(encoding="utf-8"))
     assert "bundle_syx" in manifest
+    assert manifest["pattern_count"] == len(manifest["patterns"])
 
     concatenated_expected = b""
     for entry in manifest["patterns"]:
         assert entry["syx"].startswith("patterns/")
+        assert entry["syx_path"] == entry["syx"]
         syx_path = tmp_path / entry["syx"]
         assert syx_path.exists()
         concatenated_expected += syx_path.read_bytes()

@@ -38,11 +38,15 @@ def compact_progression_to_song_model(payload: dict) -> SongModel:
     measures: list[Measure] = []
     absolute_start = Fraction(0, 1)
     measure_number = 0
+    section_occurrence_counter: dict[str, int] = {}
 
     for section in sections:
         if not isinstance(section, dict):
             continue
         section_name = str(section.get("name") or "A")
+        section_occurrence_counter[section_name] = section_occurrence_counter.get(section_name, 0) + 1
+        section_occurrence_index = section_occurrence_counter[section_name]
+        section_id = f"{section_name}__OCC{section_occurrence_index}"
         progression = section.get("progression")
         if not isinstance(progression, list):
             continue
@@ -76,7 +80,7 @@ def compact_progression_to_song_model(payload: dict) -> SongModel:
             measures.append(
                 Measure(
                     number=measure_number,
-                    section_id=section_name,
+                    section_id=section_id,
                     meter_numerator=meter_numerator,
                     meter_denominator=meter_denominator,
                     absolute_start_quarters=absolute_start,

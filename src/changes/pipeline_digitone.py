@@ -208,11 +208,16 @@ def save_digitone_bundle_artifacts(
             "section_id": pattern.section_id,
             "section_label": pattern.section_label,
             "section_token": pattern.section_token,
+            "section_occurrence_index": pattern.section_occurrence_index,
+            "section_global_order_index": pattern.section_global_order_index,
             "section_split_index": pattern.section_split_index,
             "section_split_count": pattern.section_split_count,
+            "global_step_start": pattern.global_step_start,
+            "global_step_end": pattern.global_step_end,
             "total_steps": pattern.total_steps,
             "warnings": list(pattern.warnings),
             "events_yaml": str(events_file.relative_to(out).as_posix()),
+            "events_yaml_path": str(events_file.relative_to(out).as_posix()),
         }
 
         if write_syx:
@@ -220,6 +225,7 @@ def save_digitone_bundle_artifacts(
             build_digitone_syx_from_events_yaml(events_file, syx_file)
             syx_paths.append(syx_file)
             entry["syx"] = str(syx_file.relative_to(out).as_posix())
+            entry["syx_path"] = str(syx_file.relative_to(out).as_posix())
 
         pattern_entries.append(entry)
 
@@ -232,6 +238,7 @@ def save_digitone_bundle_artifacts(
 
     bundle_manifest = {
         "source_title": bundle_plan.source_title,
+        "pattern_count": len(pattern_entries),
         "timing": {
             "performance_tempo": str(bundle_plan.timing.performance_tempo),
             "speed": bundle_plan.timing.speed,

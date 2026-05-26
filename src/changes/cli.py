@@ -6,7 +6,12 @@ from pathlib import Path
 import yaml
 
 from .chord_parser import parse_progression
-from .pipeline_digitone import compile_digitone_pipeline, save_digitone_pipeline_artifacts
+from .pipeline_digitone import (
+    compile_digitone_bundle_pipeline,
+    compile_digitone_pipeline,
+    save_digitone_bundle_artifacts,
+    save_digitone_pipeline_artifacts,
+)
 from .voicing import progression_to_voicings
 from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
@@ -34,7 +39,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--backend",
-        choices=["generic-midi", "digitone-compile"],
+        choices=["generic-midi", "digitone-compile", "digitone-bundle"],
         default="generic-midi",
         help="Output backend mode",
     )
@@ -46,7 +51,7 @@ def main() -> None:
     parser.add_argument(
         "--write-syx",
         action="store_true",
-        help="When backend=digitone-compile, also emit SYX via digitone-syx-toolkit",
+        help="When backend is digitone-compile or digitone-bundle, also emit SYX via digitone-syx-toolkit",
     )
     args = parser.parse_args()
 
@@ -62,21 +67,52 @@ def main() -> None:
     if not isinstance(payload, dict):
         raise ValueError("digitone-compile backend requires mapping YAML input")
 
-    song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
-    artifacts = save_digitone_pipeline_artifacts(
+    if args.backend == "digitone-compile":
+        song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
+        artifacts = save_digitone_pipeline_artifacts(
+            output_dir=args.artifact_dir,
+            song=song,
+            timeline=timeline,
+            plan=plan,
+            events_payload=events_payload,
+            write_syx=bool(args.write_syx),
+        )
+
+        print(f"Wrote artifacts to: {args.artifact_dir}")
+        print(f"  source_title={plan.source_title}")
+        print(f"  pattern_name={plan.pattern_name}")
+        print(
+            "  speed="
+            f"{plan.speed} q_step={plan.q_step} device_tempo={float(plan.device_tempo):.3f} total_steps={plan.total_steps}"
+        )
+        for key, path in artifacts.items():
+            print(f"  {key}: {path}")
+        return
+
+    song, timeline, bundle_plan = compile_digitone_bundle_pipeline(payload)
+    artifacts = save_digitone_bundle_artifacts(
         output_dir=args.artifact_dir,
         song=song,
         timeline=timeline,
-        plan=plan,
-        events_payload=events_payload,
+        bundle_plan=bundle_plan,
         write_syx=bool(args.write_syx),
     )
 
-    print(f"Wrote artifacts to: {args.artifact_dir}")
-    print(f"  pattern_name={plan.pattern_name}")
-    print(f"  speed={plan.speed} q_step={plan.q_step} device_tempo={float(plan.device_tempo):.3f} total_steps={plan.total_steps}")
+    print(f"Wrote bundle artifacts to: {args.artifact_dir}")
+    print(f"  source_title={bundle_plan.source_title}")
+    print(f"  pattern_count={len(bundle_plan.patterns)}")
+    print(
+        "  shared_timing="
+        f"speed={bundle_plan.timing.speed} q_step={bundle_plan.timing.q_step} device_tempo={float(bundle_plan.timing.device_tempo):.3f}"
+    )
+    for pattern in bundle_plan.patterns:
+        print(f"  [{pattern.segment_index:02d}] {pattern.pattern_name}")
+    print(f"  manifest: {artifacts['bundle_manifest_json']}")
+    if "bundle_syx" in artifacts:
+        print(f"  bundle_syx: {artifacts['bundle_syx']}")
     for key, path in artifacts.items():
-        print(f"  {key}: {path}")
+        if key not in {"bundle_manifest_json", "bundle_syx"}:
+            print(f"  {key}: {path}")
 
 
 if __name__ == "__main__":

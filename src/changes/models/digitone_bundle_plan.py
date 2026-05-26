@@ -29,9 +29,13 @@ class DigitonePatternSegment:
     section_id: str | None
     section_label: str | None
     section_token: str | None
+    section_occurrence_index: int | None
+    section_global_order_index: int | None
     segment_index: int
     section_split_index: int
     section_split_count: int
+    global_step_start: int
+    global_step_end: int
     total_steps: int
     events: tuple[CompiledDigitoneEvent, ...]
     warnings: tuple[str, ...]
@@ -68,9 +72,13 @@ def digitone_pattern_bundle_plan_to_dict(plan: DigitonePatternBundlePlan) -> dic
                 "section_id": p.section_id,
                 "section_label": p.section_label,
                 "section_token": p.section_token,
+                "section_occurrence_index": p.section_occurrence_index,
+                "section_global_order_index": p.section_global_order_index,
                 "segment_index": p.segment_index,
                 "section_split_index": p.section_split_index,
                 "section_split_count": p.section_split_count,
+                "global_step_start": p.global_step_start,
+                "global_step_end": p.global_step_end,
                 "total_steps": p.total_steps,
                 "warnings": list(p.warnings),
                 "events": [

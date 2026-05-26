@@ -32,14 +32,17 @@ Validation in current scope:
 
 ## Current Implementation Scope
 
-- Add pure tempo utility and tests.
-- Add thin wrapper that accepts toolkit-compatible `.events.yaml` and emits `.syx`.
-- Keep Generic MIDI file export and Generic realtime MIDI send available.
+- Song Model -> Rendered Timeline -> Digitone Compile Plan pipeline is implemented.
+- Compact progression importer is implemented.
+- Render Profile / Digitone Target Profile defaults are implemented.
+- Compile plan to toolkit-compatible `.events.yaml` exporter is implemented.
+- Optional `.syx` generation via toolkit wrapper is implemented.
+- Streamlit and CLI expose pipeline artifact export.
+- Generic MIDI file export and Generic realtime MIDI send remain available.
 
 ## Open Questions (Not Implemented Here)
 
-- Formal common intermediate song model.
-- Formal Rendered Timeline format and ownership.
-- CueMap / adapter responsibilities split.
-- Meter changes and section-level Pattern partitioning.
-- Auto conversion from current voicing outputs to toolkit events YAML.
+- Multi-pattern partition strategy (section-level split vs single-pattern packing).
+- Approximation policy when exact length code mapping fails.
+- Profile customization UX (current implementation uses defaults).
+- Meter changes in one song and cross-pattern continuity behavior.

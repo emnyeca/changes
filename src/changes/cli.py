@@ -1,8 +1,12 @@
 """Command-line interface for Changes generic MIDI export."""
 
 import argparse
+from pathlib import Path
+
+import yaml
 
 from .chord_parser import parse_progression
+from .pipeline_digitone import compile_digitone_pipeline, save_digitone_pipeline_artifacts
 from .voicing import progression_to_voicings
 from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
@@ -28,12 +32,50 @@ def main() -> None:
         default=120,
         help="BPM for generic MIDI export",
     )
+    parser.add_argument(
+        "--backend",
+        choices=["generic-midi", "digitone-compile"],
+        default="generic-midi",
+        help="Output backend mode",
+    )
+    parser.add_argument(
+        "--artifact-dir",
+        default="out_digitone",
+        help="Output directory for digitone-compile artifacts",
+    )
+    parser.add_argument(
+        "--write-syx",
+        action="store_true",
+        help="When backend=digitone-compile, also emit SYX via digitone-syx-toolkit",
+    )
     args = parser.parse_args()
 
-    progression = parse_progression(args.input)
-    voicings = progression_to_voicings(progression)
-    voices_led = generate_voice_leading(voicings)
-    write_midi(voices_led, args.output, tempo=args.tempo)
+    if args.backend == "generic-midi":
+        progression = parse_progression(args.input)
+        voicings = progression_to_voicings(progression)
+        voices_led = generate_voice_leading(voicings)
+        write_midi(voices_led, args.output, tempo=args.tempo)
+        print(f"Wrote generic MIDI: {args.output}")
+        return
+
+    payload = yaml.safe_load(Path(args.input).read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("digitone-compile backend requires mapping YAML input")
+
+    song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
+    artifacts = save_digitone_pipeline_artifacts(
+        output_dir=args.artifact_dir,
+        song=song,
+        timeline=timeline,
+        plan=plan,
+        events_payload=events_payload,
+        write_syx=bool(args.write_syx),
+    )
+
+    print(f"Wrote artifacts to: {args.artifact_dir}")
+    print(f"  speed={plan.speed} q_step={plan.q_step} device_tempo={float(plan.device_tempo):.3f} total_steps={plan.total_steps}")
+    for key, path in artifacts.items():
+        print(f"  {key}: {path}")
 
 
 if __name__ == "__main__":

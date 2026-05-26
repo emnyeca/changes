@@ -16,9 +16,6 @@ dependencies = [
 test = [
     "pytest>=8.0",
 ]
-digitone = [
-    "digitone-syx-toolkit>=0.1.0",
-]
 realtime = [
     "python-rtmidi>=1.4.9",
 ]

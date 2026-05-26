@@ -1,26 +1,24 @@
-"""Minimal Streamlit UI for Changes.
-
-Features:
-- Drag-and-drop YAML progression file
-- Tempo input
-- Generate MIDI file
-- Send voicings to a selected MIDI output port
-"""
+﻿"""Streamlit UI for generic MIDI workflow in Changes."""
 
 from __future__ import annotations
 
-import re
-import time
 from datetime import datetime
+import json
 from math import lcm
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
+import re
+import time
 
 import streamlit as st
 import yaml
 
 from changes.midi_writer import write_midi_with_events
+from changes.models.digitone_compile_plan import digitone_compile_plan_to_dict
+from changes.models.rendered_timeline import rendered_timeline_to_dict
+from changes.models.song_model import song_model_to_dict
 from changes.note import midi_to_note_name, pitch_class_to_semitone
+from changes.pipeline_digitone import compile_digitone_pipeline, save_digitone_pipeline_artifacts
 from changes.voicing import progression_to_voicings
 from changes.voice_leading import generate_voice_leading
 
@@ -30,7 +28,7 @@ except Exception:  # pragma: no cover
     mido = None
 
 
-APP_DATA_DIR = Path.home() / "HarmonyCloud" / "progressions"
+APP_DATA_DIR = Path.home() / "EUBChanges" / "progressions"
 _ROOT_RE = re.compile(r"^\s*(?P<root>[A-G](?:#|b)?)")
 
 
@@ -43,7 +41,6 @@ def _section_output_path(base_output_path: str, section_name: str) -> str:
     safe_section = "".join(ch if (ch.isalnum() or ch in ("-", "_")) else "_" for ch in section_name)
     if not safe_section:
         safe_section = "section"
-
     stem = target.stem or "changes_output"
     suffix = target.suffix or ".mid"
     return str(target.with_name(f"{stem}_{safe_section}{suffix}"))
@@ -78,21 +75,20 @@ def _rename_saved_yaml(old_name: str, new_name: str) -> Path:
 
     candidate = Path(new_name.strip()).name
     if not candidate:
-        raise ValueError("新しいファイル名が空です、E)
+        raise ValueError("new file name is empty")
 
     if not (candidate.endswith(".yaml") or candidate.endswith(".yml")):
         candidate = f"{candidate}.yaml"
 
     destination = APP_DATA_DIR / candidate
     if destination.exists() and destination != source:
-        raise FileExistsError(f"同名ファイルが既に存在しまぁE {destination.name}")
+        raise FileExistsError(f"File already exists: {destination.name}")
 
     source.rename(destination)
     return destination
 
 
 def _normalize_section_names(raw_names: List[str]) -> List[str]:
-    """Normalize repeated rehearsal marks by appending count (A, A2, A3...)."""
     seen: Dict[str, int] = {}
     normalized: List[str] = []
     for raw in raw_names:
@@ -120,11 +116,10 @@ def _parse_time_signature(ts: str | None) -> Tuple[int | None, int | None]:
 
 
 def _parse_uploaded_yaml_payload(uploaded_bytes: bytes) -> Dict[str, object]:
-    """Parse both legacy and section-aware YAML formats."""
     data = yaml.safe_load(uploaded_bytes)
 
     if data is None:
-        raise ValueError("YAML is empty.")
+        raise ValueError("YAML is empty")
 
     if isinstance(data, list):
         bars = [[str(x).strip()] for x in data if str(x).strip()]
@@ -148,7 +143,6 @@ def _parse_uploaded_yaml_payload(uploaded_bytes: bytes) -> Dict[str, object]:
         if isinstance(sections, list):
             raw_names: List[str] = []
             raw_progressions: List[List[List[str]]] = []
-
             for sec in sections:
                 if not isinstance(sec, dict):
                     continue
@@ -156,7 +150,6 @@ def _parse_uploaded_yaml_payload(uploaded_bytes: bytes) -> Dict[str, object]:
                 progression = sec.get("progression")
                 if not isinstance(progression, list):
                     continue
-
                 bars: List[List[str]] = []
                 for item in progression:
                     if isinstance(item, list):
@@ -167,7 +160,6 @@ def _parse_uploaded_yaml_payload(uploaded_bytes: bytes) -> Dict[str, object]:
                         s = str(item).strip()
                         if s:
                             bars.append([s])
-
                 if bars:
                     raw_names.append(sec_name)
                     raw_progressions.append(bars)
@@ -207,7 +199,56 @@ def _parse_uploaded_yaml_payload(uploaded_bytes: bytes) -> Dict[str, object]:
                     "sections": [{"name": "A", "progression": bars}],
                 }
 
-    raise ValueError("YAML must contain progression or sections/progression.")
+    raise ValueError("YAML must contain progression or sections/progression")
+
+
+def _parse_uploaded_yaml_bars(uploaded_bytes: bytes) -> List[List[str]]:
+    payload = _parse_uploaded_yaml_payload(uploaded_bytes)
+    bars, _ = _extract_bars_with_meta(payload)
+    if not bars:
+        raise ValueError("progression is empty")
+    return bars
+
+
+def _compute_digitone_tempo_for_same_duration(
+    performance_tempo: int | float,
+    meter_numerator: int,
+    meter_denominator: int,
+    steps_per_bar: int,
+) -> int:
+    if meter_numerator <= 0 or meter_denominator <= 0 or steps_per_bar <= 0:
+        raise ValueError("meter and steps_per_bar must be positive")
+
+    # SPEED=1/8 timing: one Digitone step is an eighth note.
+    # Keep bar duration equivalent between performance timeline and step schedule.
+    quarters_per_bar = (4.0 * float(meter_numerator)) / float(meter_denominator)
+    quarters_per_step = quarters_per_bar / float(steps_per_bar)
+    device_tempo = float(performance_tempo) / (2.0 * quarters_per_step)
+    return int(round(device_tempo))
+
+
+def _apply_digitone_tempo_floor(
+    digitone_tempo: int,
+    total_length_steps: int,
+    events: List[Dict[str, int | str]],
+) -> Tuple[int, int, List[Dict[str, int | str]]]:
+    tempo = int(digitone_tempo)
+    length = int(total_length_steps)
+    scaled_events = [dict(e) for e in events]
+
+    while tempo < 30:
+        if length % 2 != 0:
+            break
+        if any((int(e["step"]) - 1) % 2 != 0 or int(e["duration_steps"]) % 2 != 0 for e in scaled_events):
+            break
+
+        tempo *= 2
+        length //= 2
+        for e in scaled_events:
+            e["step"] = ((int(e["step"]) - 1) // 2) + 1
+            e["duration_steps"] = int(e["duration_steps"]) // 2
+
+    return tempo, length, scaled_events
 
 
 def _extract_bars_with_meta(payload: Dict[str, object]) -> Tuple[List[List[str]], List[Dict[str, object]]]:
@@ -236,28 +277,12 @@ def _extract_bars_with_meta(payload: Dict[str, object]) -> Tuple[List[List[str]]
     return bars, meta
 
 
-def _parse_uploaded_yaml_bars(uploaded_bytes: bytes) -> List[List[str]]:
-    """Compatibility helper for existing tests."""
-    payload = _parse_uploaded_yaml_payload(uploaded_bytes)
-    bars, _ = _extract_bars_with_meta(payload)
-    if not bars:
-        raise ValueError("YAML must contain a progression list (e.g. progression: [[Dm7, G7, Cmaj7]]).")
-    return bars
-
-
 def _build_voicings_from_bars(chord_bars: List[List[str]]) -> List[List[int]]:
     raw_voicings = progression_to_voicings(chord_bars)
     return generate_voice_leading(raw_voicings)
 
 
-def _build_note_triggers(
-    events: List[Dict[str, int | str]],
-    voicings: List[List[int]],
-) -> List[List[Dict[str, int]]]:
-    """Build per-event trigger list with hold duration for each voice.
-
-    A trigger is emitted only when a voice pitch changes from the previous event.
-    """
+def _build_note_triggers(events: List[Dict[str, int | str]], voicings: List[List[int]]) -> List[List[Dict[str, int]]]:
     count = min(len(events), len(voicings))
     if count == 0:
         return []
@@ -292,23 +317,13 @@ def _build_note_triggers(
                 hold_steps += int(events[j]["duration_steps"])
                 j += 1
 
-            triggers[idx].append(
-                {
-                    "voice": voice_idx,
-                    "note": note,
-                    "duration_steps": hold_steps,
-                }
-            )
+            triggers[idx].append({"voice": voice_idx, "note": note, "duration_steps": hold_steps})
             idx += 1
 
     return triggers
 
 
-def _format_trigger_event_lines(
-    events: List[Dict[str, int | str]],
-    voicings: List[List[int]],
-) -> List[str]:
-    """Format trigger events in a hold-aware human-readable style."""
+def _format_trigger_event_lines(events: List[Dict[str, int | str]], voicings: List[List[int]]) -> List[str]:
     count = min(len(events), len(voicings))
     triggers = _build_note_triggers(events, voicings)
     lines: List[str] = []
@@ -321,25 +336,17 @@ def _format_trigger_event_lines(
             parts = []
             for item in event_triggers:
                 note_name = midi_to_note_name(int(item["note"]))
-                parts.append(
-                    f"[{int(item['voice'])}:{note_name} duration:{int(item['duration_steps'])}]"
-                )
+                parts.append(f"[{int(item['voice'])}:{note_name} duration:{int(item['duration_steps'])}]")
             note_text = " ".join(parts)
         else:
             note_text = "(hold)"
 
-        lines.append(
-            f"Step:{int(event['step'])} コーチE\"{str(event['chord'])}\" {note_text}"
-        )
+        lines.append(f"Step:{int(event['step'])} chord:\"{str(event['chord'])}\" {note_text}")
 
     return lines
 
 
-def _format_basic_event_lines(
-    events: List[Dict[str, int | str]],
-    voicings: List[List[int]],
-) -> List[str]:
-    """Format events without hold merge (all voices are triggered each step)."""
+def _format_basic_event_lines(events: List[Dict[str, int | str]], voicings: List[List[int]]) -> List[str]:
     count = min(len(events), len(voicings))
     lines: List[str] = []
 
@@ -347,18 +354,14 @@ def _format_basic_event_lines(
         event = events[idx]
         notes = voicings[idx]
         duration = int(event["duration_steps"])
-        parts = [
-            f"[{voice_idx}:{midi_to_note_name(int(note))} duration:{duration}]"
-            for voice_idx, note in enumerate(notes)
-        ]
+        parts = [f"[{voice_idx}:{midi_to_note_name(int(note))} duration:{duration}]" for voice_idx, note in enumerate(notes)]
         note_text = " ".join(parts) if parts else "(rest)"
-        lines.append(f'Step:{int(event["step"])} コーチE"{str(event["chord"])}" {note_text}')
+        lines.append(f"Step:{int(event['step'])} chord:\"{str(event['chord'])}\" {note_text}")
 
     return lines
 
 
 def _resolve_channel_map(raw_values: List[int | None]) -> List[int | None]:
-    """Clamp channel assignments into valid MIDI range 1..16 or disable with None."""
     channels: List[int | None] = []
     for value in raw_values:
         if value is None:
@@ -369,13 +372,7 @@ def _resolve_channel_map(raw_values: List[int | None]) -> List[int | None]:
 
 
 def _channel_option_to_value(option: str) -> int | None:
-    if option == "送らなぁE:
-        return None
-    return int(option)
-
-
-def _channel_value_to_option(channel: int | None) -> str:
-    return "送らなぁE if channel is None else str(int(channel))
+    return None if option == "off" else int(option)
 
 
 def _extract_chord_root(chord_symbol: str) -> str:
@@ -410,18 +407,7 @@ def _root_to_bass_note(chord_symbol: str) -> int:
     return _fit_bass_range_c1_b1(24 + semitone)
 
 
-def _build_bassline_notes(
-    events: Sequence[Dict[str, int | str]],
-    switch_every: int,
-    switch_enabled: bool,
-) -> List[int]:
-    """Build bass notes with optional root/fifth switching.
-
-    - Default: chord root (or slash bass when provided).
-    - With switching enabled: root/fifth alternation after repeated same-note count.
-    - For slash chords with switching enabled: first note uses slash bass once,
-      then root/fifth alternation is based on chord root.
-    """
+def _build_bassline_notes(events: Sequence[Dict[str, int | str]], switch_every: int, switch_enabled: bool) -> List[int]:
     if switch_every < 1:
         switch_every = 1
 
@@ -478,12 +464,7 @@ def _append_bass_track(voicings: Sequence[Sequence[int]], bass_notes: Sequence[i
     return combined
 
 
-def _transpose_output_voicings(
-    voicings: Sequence[Sequence[int]],
-    chord_octave_shift: int,
-    bass_octave_shift: int,
-) -> List[List[int]]:
-    """Transpose output notes per group: chord voices and bass voice."""
+def _transpose_output_voicings(voicings: Sequence[Sequence[int]], chord_octave_shift: int, bass_octave_shift: int) -> List[List[int]]:
     shifted: List[List[int]] = []
     chord_delta = int(chord_octave_shift) * 12
     bass_delta = int(bass_octave_shift) * 12
@@ -499,11 +480,7 @@ def _transpose_output_voicings(
     return shifted
 
 
-def _format_chord_voicing_lines(
-    events: List[Dict[str, int | str]],
-    voicings: List[List[int]],
-) -> List[str]:
-    """Format each chord + 6-voice voicing grouped by section/bar."""
+def _format_chord_voicing_lines(events: List[Dict[str, int | str]], voicings: List[List[int]]) -> List[str]:
     lines: List[str] = []
     count = min(len(events), len(voicings))
 
@@ -517,14 +494,11 @@ def _format_chord_voicing_lines(
         bar_in_section = int(event.get("bar_in_section") or 1)
         chord = str(event["chord"])
         notes = voicings[idx]
-        formatted_notes = ",".join(
-            f"{voice_idx}:{midi_to_note_name(int(note))}"
-            for voice_idx, note in enumerate(notes)
-        )
+        formatted_notes = ",".join(f"{voice_idx}:{midi_to_note_name(int(note))}" for voice_idx, note in enumerate(notes))
 
         bar_key = (section, bar_in_section)
         chord_in_bar = int(event.get("chord_in_bar") or 0)
-        row = f'[{chord_in_bar}: "{chord}" [{formatted_notes}]]'
+        row = f"[{chord_in_bar}: \"{chord}\" [{formatted_notes}]]"
 
         if bar_key != current_bar_key:
             if section != last_section:
@@ -541,17 +515,7 @@ def _format_chord_voicing_lines(
     return lines
 
 
-def _build_event_schedule(
-    chord_bars: List[List[str]],
-    meter_numerator: int,
-    meter_denominator: int,
-    bar_meta: List[Dict[str, object]] | None = None,
-) -> Tuple[int, int, List[Dict[str, int | str]]]:
-    """Build bar-aware schedule using minimal common bar subdivision.
-
-    For mixed events-per-bar, use minimal steps-per-bar that can represent all bars:
-    - steps_per_bar = lcm(event_count_each_bar...)
-    """
+def _build_event_schedule(chord_bars: List[List[str]], meter_numerator: int, meter_denominator: int, bar_meta: List[Dict[str, object]] | None = None) -> Tuple[int, int, List[Dict[str, int | str]]]:
     if not chord_bars:
         return 0, 0, []
 
@@ -596,73 +560,6 @@ def _build_event_schedule(
     return steps_per_bar, total_length, events
 
 
-def _compute_digitone_tempo_for_same_duration(
-    input_tempo: int,
-    meter_numerator: int,
-    meter_denominator: int,
-    steps_per_bar: int,
-) -> int:
-    """Compute Digitone tempo (Speed=1/8) that matches input musical duration.
-
-    tempo_out = tempo_in * (steps_per_bar / eighths_per_bar)
-    where eighths_per_bar = numerator * (8 / denominator)
-    """
-    eighths_per_bar = meter_numerator * (8.0 / meter_denominator)
-    if eighths_per_bar <= 0:
-        return max(1, int(input_tempo))
-    tempo_out = float(input_tempo) * (float(steps_per_bar) / eighths_per_bar)
-    return max(1, int(round(tempo_out)))
-
-
-def _seconds_for_input_tempo(
-    bars_count: int,
-    meter_numerator: int,
-    meter_denominator: int,
-    input_tempo: int,
-) -> float:
-    """Total musical time for all bars at the input tempo."""
-    beats_per_bar_quarter = float(meter_numerator) * (4.0 / float(meter_denominator))
-    total_quarter_beats = float(bars_count) * beats_per_bar_quarter
-    return total_quarter_beats * (60.0 / float(input_tempo))
-
-
-def _seconds_for_send_tempo(
-    length_steps: int,
-    send_tempo: int,
-) -> float:
-    """Total send time at Speed=1/8 for given sequence length."""
-    step_seconds = 30.0 / float(send_tempo)
-    return float(length_steps) * step_seconds
-
-
-def _apply_digitone_tempo_floor(
-    tempo: int,
-    length: int,
-    events: List[Dict[str, int | str]],
-) -> Tuple[int, int, List[Dict[str, int | str]]]:
-    """Keep Digitone tempo >= 30 by doubling tempo/Length/step durations."""
-    adjusted_tempo = int(tempo)
-    scale = 1
-    while adjusted_tempo < 30:
-        adjusted_tempo *= 2
-        scale *= 2
-
-    if scale == 1:
-        return adjusted_tempo, int(length), events
-
-    scaled_events: List[Dict[str, int | str]] = []
-    for event in events:
-        scaled_events.append(
-            {
-                **event,
-                "step": int(event["step"]) * scale,
-                "duration_steps": int(event["duration_steps"]) * scale,
-            }
-        )
-
-    return adjusted_tempo, int(length) * scale, scaled_events
-
-
 def _send_with_optional_debug(
     voicings: List[List[int]],
     events: List[Dict[str, int | str]],
@@ -672,11 +569,8 @@ def _send_with_optional_debug(
     channel_map: List[int | None],
     per_voice_hold: List[bool] | None = None,
 ) -> List[str]:
-    """Send MIDI or simulate send in DEBUG mode; return send logs."""
     logs: List[str] = []
-    # Speed is fixed at 1/8 in this app.
-    step_seconds = 30.0 / float(send_tempo)
-
+    step_seconds = 60.0 / float(send_tempo)
     count = min(len(events), len(voicings))
     if count == 0:
         return logs
@@ -687,46 +581,42 @@ def _send_with_optional_debug(
     if len(hold_per_voice) < max_voices:
         hold_per_voice.extend([hold_same_pitch] * (max_voices - len(hold_per_voice)))
 
-    def _voice_note(chord: List[int], voice_idx: int) -> int | None:
-        return int(chord[voice_idx]) if voice_idx < len(chord) else None
+    def _voice_note(chord: List[int] | None, voice_idx: int) -> int | None:
+        if chord is None or voice_idx >= len(chord):
+            return None
+        return int(chord[voice_idx])
 
     previous_chord: List[int] | None = None
 
     if selected_port == "DEBUG":
-        debug_epoch = time.time()
-        debug_elapsed = 0.0
+        epoch = time.time()
+        elapsed = 0.0
         logs.append("Transport:start")
         for idx in range(count):
             event = events[idx]
             chord_notes = voicings[idx]
             triggered: List[str] = []
-
             for voice_idx in range(max_voices):
-                prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
+                prev_note = _voice_note(previous_chord, voice_idx)
                 cur_note = _voice_note(chord_notes, voice_idx)
                 ch = channels[voice_idx] if voice_idx < len(channels) else 1
                 if ch is None:
                     continue
-                voice_hold = bool(hold_per_voice[voice_idx])
-
-                if voice_hold:
+                if hold_per_voice[voice_idx]:
                     if cur_note is not None and cur_note != prev_note:
                         triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
-                else:
-                    if cur_note is not None:
-                        triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
-
+                elif cur_note is not None:
+                    triggered.append(f"v{voice_idx}:ch{ch}:{midi_to_note_name(cur_note)}")
             duration = step_seconds * int(event["duration_steps"])
-            ts = datetime.fromtimestamp(debug_epoch + debug_elapsed).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
-            logs.append(f"Send:{ts} コーチE{str(event['chord'])} {trigger_text} duration:{duration:.3f}s")
-            debug_elapsed += duration
+            ts = datetime.fromtimestamp(epoch + elapsed).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            logs.append(f"Send:{ts} chord:{event['chord']} {' '.join(triggered) if triggered else '[hold]'} duration:{duration:.3f}s")
+            elapsed += duration
             previous_chord = chord_notes
         logs.append("Transport:stop")
         return logs
 
     if mido is None:
-        raise RuntimeError("mido が未導�Eです、EEBUG を使ぁE�� realtime 依存を導�Eしてください、E)
+        raise RuntimeError("mido is required for realtime send")
 
     with mido.open_output(selected_port) as outport:
         outport.send(mido.Message("start"))
@@ -734,700 +624,188 @@ def _send_with_optional_debug(
             for idx in range(count):
                 event = events[idx]
                 chord_notes = voicings[idx]
-                triggered: List[str] = []
-
-                started_at = time.time()
-                ts = datetime.fromtimestamp(started_at).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-
                 for voice_idx in range(max_voices):
-                    prev_note = _voice_note(previous_chord, voice_idx) if previous_chord is not None else None
+                    prev_note = _voice_note(previous_chord, voice_idx)
                     cur_note = _voice_note(chord_notes, voice_idx)
                     ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
                     if ch_val is None:
                         continue
                     ch = ch_val - 1
-                    voice_hold = bool(hold_per_voice[voice_idx])
-
-                    if voice_hold:
+                    if hold_per_voice[voice_idx]:
                         if prev_note is not None and prev_note != cur_note:
                             outport.send(mido.Message("note_off", note=int(prev_note), velocity=0, channel=ch))
                         if cur_note is not None and prev_note != cur_note:
                             outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
-                            triggered.append(f"v{voice_idx}:ch{ch_val}:{midi_to_note_name(cur_note)}")
-                    else:
-                        if cur_note is not None:
-                            outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
-                            triggered.append(f"v{voice_idx}:ch{ch_val}:{midi_to_note_name(cur_note)}")
+                    elif cur_note is not None:
+                        outport.send(mido.Message("note_on", note=int(cur_note), velocity=100, channel=ch))
 
                 time.sleep(step_seconds * int(event["duration_steps"]))
 
-                duration_actual = time.time() - started_at
-                trigger_text = " ".join(f"[{x}]" for x in triggered) if triggered else "[hold]"
-                logs.append(f"Send:{ts} コーチE{str(event['chord'])} {trigger_text} duration:{duration_actual:.3f}s")
-                if any(not bool(hold_per_voice[v]) for v in range(max_voices)):
-                    for voice_idx in range(max_voices):
-                        if bool(hold_per_voice[voice_idx]):
-                            continue
-                        cur_note = _voice_note(chord_notes, voice_idx)
-                        ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
-                        if ch_val is None:
-                            continue
-                        if cur_note is not None:
-                            outport.send(
-                                mido.Message(
-                                    "note_off",
-                                    note=int(cur_note),
-                                    velocity=0,
-                                    channel=ch_val - 1,
-                                )
-                            )
+                for voice_idx in range(max_voices):
+                    if hold_per_voice[voice_idx]:
+                        continue
+                    cur_note = _voice_note(chord_notes, voice_idx)
+                    ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
+                    if ch_val is None or cur_note is None:
+                        continue
+                    outport.send(mido.Message("note_off", note=int(cur_note), velocity=0, channel=ch_val - 1))
 
                 previous_chord = chord_notes
 
             if previous_chord is not None:
                 for voice_idx in range(max_voices):
-                    if not bool(hold_per_voice[voice_idx]):
+                    if not hold_per_voice[voice_idx]:
                         continue
                     note = _voice_note(previous_chord, voice_idx)
                     ch_val = channels[voice_idx] if voice_idx < len(channels) else 1
-                    if ch_val is None:
+                    if ch_val is None or note is None:
                         continue
-                    if note is not None:
-                        outport.send(
-                            mido.Message(
-                                "note_off",
-                                note=int(note),
-                                velocity=0,
-                                channel=ch_val - 1,
-                            )
-                        )
+                    outport.send(mido.Message("note_off", note=int(note), velocity=0, channel=ch_val - 1))
         finally:
             outport.send(mido.Message("stop"))
 
     return logs
 
 
-def _send_len_note_test_events(
-    selected_port: str,
-    note_channel: int,
-    cc_channel: int,
-    velocity: int,
-    note_off_delay_ms: int,
-    cc_to_note_delay_ms: int,
-    sequence_events: Sequence[tuple[int, int]],
-    inter_event_delay_ms: int = 0,
-) -> List[str]:
-    """Send CC#5 LEN then note events for Digitone STEP RECORDING debug."""
-    logs: List[str] = []
-
-    def _timestamp() -> str:
-        return datetime.now().strftime("%H:%M:%S.%f")[:-3]
-
-    def _log(line: str) -> None:
-        logs.append(f"[{_timestamp()}] {line}")
-
-    note_ch = max(1, min(16, int(note_channel)))
-    cc_ch = max(1, min(16, int(cc_channel)))
-    vel = max(1, min(127, int(velocity)))
-    cc_wait = max(0, int(cc_to_note_delay_ms)) / 1000.0
-    off_wait = max(0, int(note_off_delay_ms)) / 1000.0
-    between_wait = max(0, int(inter_event_delay_ms)) / 1000.0
-
-    def _emit_event(outport: mido.ports.BaseOutput | None, cc_value: int, note: int) -> None:
-        cc_val = max(0, min(127, int(cc_value)))
-        midi_note = max(0, min(127, int(note)))
-
-        if outport is not None:
-            outport.send(mido.Message("control_change", channel=cc_ch - 1, control=5, value=cc_val))
-        _log(f"CC ch={cc_ch} controller=5 value={cc_val}")
-
-        if cc_wait > 0:
-            time.sleep(cc_wait)
-
-        if outport is not None:
-            outport.send(mido.Message("note_on", channel=note_ch - 1, note=midi_note, velocity=vel))
-        _log(f"NOTE_ON ch={note_ch} note={midi_note}({midi_to_note_name(midi_note)}) velocity={vel}")
-
-        if off_wait > 0:
-            time.sleep(off_wait)
-
-        if outport is not None:
-            outport.send(mido.Message("note_off", channel=note_ch - 1, note=midi_note, velocity=0))
-        _log(f"NOTE_OFF ch={note_ch} note={midi_note}({midi_to_note_name(midi_note)}) velocity=0")
-
-    if selected_port == "DEBUG":
-        for idx, (cc_value, note) in enumerate(sequence_events):
-            _emit_event(None, cc_value, note)
-            if idx < len(sequence_events) - 1 and between_wait > 0:
-                time.sleep(between_wait)
-        return logs
-
-    if mido is None:
-        raise RuntimeError("mido が未導�Eです、EEBUG を使ぁE�� realtime 依存を導�Eしてください、E)
-
-    with mido.open_output(selected_port) as outport:
-        for idx, (cc_value, note) in enumerate(sequence_events):
-            _emit_event(outport, cc_value, note)
-            if idx < len(sequence_events) - 1 and between_wait > 0:
-                time.sleep(between_wait)
-
-    return logs
-
-
 def main() -> None:
     st.set_page_config(page_title="Changes", layout="centered")
-    st.title("Changes  EMinimal UI")
-    st.caption("YAMLをドラチE��&ドロチE�Eして、MIDI生�Eまた�EDigitone IIへ送信")
+    st.title("EUB Changes")
+    st.caption("Generic MIDI export/realtime send UI")
 
     saved_files = _list_saved_yaml_files()
     saved_names = [p.name for p in saved_files]
 
-    selected_saved_name = st.selectbox(
-        "保存済みYAMLを選抁E,
-        options=["(選択なぁE"] + saved_names,
-        index=0,
-    )
-
-    if selected_saved_name != "(選択なぁE":
-        with st.expander("保存済みYAMLの管琁E):
-            new_name = st.text_input("新しいファイル吁E, value=selected_saved_name)
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("名前変更", use_container_width=True):
-                    try:
-                        renamed = _rename_saved_yaml(selected_saved_name, new_name)
-                        st.success(f"名前変更しました: {renamed.name}")
-                    except Exception as e:
-                        st.error(f"名前変更エラー: {e}")
-            with c2:
-                if st.button("削除", use_container_width=True):
-                    try:
-                        _delete_saved_yaml(selected_saved_name)
-                        st.success(f"削除しました: {selected_saved_name}")
-                    except Exception as e:
-                        st.error(f"削除エラー: {e}")
-
-    uploaded = st.file_uploader("また�E新規YAMLをドラチE��&ドロチE�E", type=["yaml", "yml"])
-
-    st.caption(f"YAML保存フォルダ: {APP_DATA_DIR}")
+    selected_saved_name = st.selectbox("Saved YAML", options=["(none)"] + saved_names, index=0)
+    uploaded = st.file_uploader("Upload progression YAML", type=["yaml", "yml"])
 
     uploaded_bytes: bytes | None = None
-    active_source_id = ""
-
     if uploaded is not None:
-        candidate_name = Path(uploaded.name).name
-        candidate_bytes = uploaded.getvalue()
-        destination = APP_DATA_DIR / candidate_name
-
-        if destination.exists():
-            st.warning(f"同名ファイルがありまぁE {destination.name}")
-            duplicate_action = st.radio(
-                "同名アチE�Eロード時の動佁E,
-                options=["キャンセル", "上書ぁE],
-                horizontal=True,
-            )
-            if duplicate_action == "上書ぁE:
-                if st.button("上書きを実衁E):
-                    try:
-                        saved_path = _save_uploaded_yaml(candidate_name, candidate_bytes, overwrite=True)
-                        st.success(f"上書き保存しました: {saved_path}")
-                        uploaded_bytes = candidate_bytes
-                        active_source_id = f"upload:{candidate_name}"
-                    except Exception as e:
-                        st.error(f"上書きエラー: {e}")
-                else:
-                    st.info("「上書きを実行」を押すと保存します、E)
-            else:
-                st.info("アチE�Eロード�E保存しません�E�キャンセル�E�、E)
-        else:
-            try:
-                saved_path = _save_uploaded_yaml(candidate_name, candidate_bytes)
-                st.success(f"アチE�Eロードを保存しました: {saved_path}")
-                uploaded_bytes = candidate_bytes
-                active_source_id = f"upload:{candidate_name}"
-            except Exception as e:
-                st.error(f"保存エラー: {e}")
-    elif selected_saved_name != "(選択なぁE":
-        saved_path = APP_DATA_DIR / selected_saved_name
-        uploaded_bytes = saved_path.read_bytes()
-        active_source_id = f"saved:{selected_saved_name}"
-        st.info(f"保存済みファイルを使用: {saved_path}")
+        uploaded_bytes = uploaded.getvalue()
+    elif selected_saved_name != "(none)":
+        uploaded_bytes = (APP_DATA_DIR / selected_saved_name).read_bytes()
 
     if uploaded_bytes is None:
-        st.info("保存済みYAMLを選ぶか、新規YAMLをアチE�Eロードしてください、E)
+        st.info("Upload or select a YAML file")
         return
 
     try:
         payload = _parse_uploaded_yaml_payload(uploaded_bytes)
         chord_bars, bar_meta = _extract_bars_with_meta(payload)
         if not chord_bars:
-            raise ValueError("progression/sections が空です、E)
-    except Exception as e:
-        st.error(f"YAML解析エラー: {e}")
+            raise ValueError("progression is empty")
+    except Exception as exc:
+        st.error(f"YAML parse error: {exc}")
         return
 
-    yaml_num, yaml_den = _parse_time_signature(payload.get("time_signature") if isinstance(payload, dict) else None)
-    default_tempo = int(payload.get("tempo")) if isinstance(payload.get("tempo"), int) else 120
-    default_numerator = int(yaml_num) if yaml_num is not None else 4
-    default_denominator = int(yaml_den) if yaml_den is not None else 4
-
-    if "hc_tempo_input" not in st.session_state:
-        st.session_state["hc_tempo_input"] = 120
-    if "hc_meter_numerator" not in st.session_state:
-        st.session_state["hc_meter_numerator"] = 4
-    if "hc_meter_denominator" not in st.session_state:
-        st.session_state["hc_meter_denominator"] = 4
-
-    if st.session_state.get("hc_defaults_source") != active_source_id:
-        st.session_state["hc_tempo_input"] = default_tempo
-        st.session_state["hc_meter_numerator"] = default_numerator
-        st.session_state["hc_meter_denominator"] = default_denominator
-        st.session_state["hc_defaults_source"] = active_source_id
-
-    tempo = st.number_input("Tempo (BPM)", min_value=30, max_value=600, step=1, key="hc_tempo_input")
-    send_tempo = st.number_input("送信チE��チE(BPM)", min_value=30, max_value=600, value=120, step=1)
-    meter_col1, meter_col2 = st.columns(2)
-    with meter_col1:
-        meter_numerator = st.number_input("拍孁E刁E��E, min_value=3, max_value=7, step=1, key="hc_meter_numerator")
-    with meter_col2:
-        meter_denominator = st.selectbox("拍孁E刁E��E, options=[4, 8], key="hc_meter_denominator")
-    output_path = st.text_input(
-        "MIDI保存�E",
-        value=str(Path.home() / "Downloads" / "changes_output.mid"),
+    st.subheader("Digitone Compile Pipeline")
+    artifact_dir = st.text_input(
+        "Digitone artifact output directory",
+        value=str(Path.home() / "Downloads" / "changes_digitone_artifacts"),
     )
+    write_syx = st.checkbox("Also generate SYX (requires digitone-syx-toolkit)", value=False)
+    if st.button("Compile Digitone Artifacts", use_container_width=True):
+        try:
+            song_model, rendered_timeline, compile_plan, events_payload = compile_digitone_pipeline(payload)
+            artifacts = save_digitone_pipeline_artifacts(
+                output_dir=artifact_dir,
+                song=song_model,
+                timeline=rendered_timeline,
+                plan=compile_plan,
+                events_payload=events_payload,
+                write_syx=write_syx,
+            )
+            st.success(f"Digitone artifacts written to: {artifact_dir}")
+            st.write(
+                f"speed={compile_plan.speed}, q_step={compile_plan.q_step}, "
+                f"device_tempo={float(compile_plan.device_tempo):.3f}, total_steps={compile_plan.total_steps}"
+            )
+            for key, path in artifacts.items():
+                st.write(f"{key}: {path}")
 
-    hold_same_pitch = st.checkbox(
-        "同音連続を保持して再トリガーしなぁE(Hold Trigger)",
-        value=True,
-    )
-    st.caption("ON: 同一トラチE��で同音は保持。OFF: 毎Stepで再トリガー、E)
+            with st.expander("Song Model JSON"):
+                st.code(json.dumps(song_model_to_dict(song_model), indent=2, ensure_ascii=True), language="json")
+            with st.expander("Rendered Timeline JSON"):
+                st.code(json.dumps(rendered_timeline_to_dict(rendered_timeline), indent=2, ensure_ascii=True), language="json")
+            with st.expander("Digitone Compile Plan JSON"):
+                st.code(json.dumps(digitone_compile_plan_to_dict(compile_plan), indent=2, ensure_ascii=True), language="json")
+            with st.expander("Digitone Events YAML Payload"):
+                st.code(yaml.safe_dump(events_payload, sort_keys=False, allow_unicode=False), language="yaml")
+        except Exception as exc:
+            st.error(f"Digitone compile error: {exc}")
 
-    channel_options = ["送らなぁE] + [str(i) for i in range(1, 17)]
+    default_tempo = int(payload.get("tempo") or 120) if isinstance(payload, dict) else 120
+    tempo = st.number_input("Tempo (BPM)", min_value=30, max_value=300, value=default_tempo, step=1)
+    send_tempo = st.number_input("Realtime Send Tempo (BPM)", min_value=30, max_value=300, value=120, step=1)
+    output_path = st.text_input("MIDI output path", value=str(Path.home() / "Downloads" / "changes_output.mid"))
 
-    st.markdown("**Chord 6トラチE��設宁E*")
-    channel_cols_top = st.columns(3)
-    ch1_opt = channel_cols_top[0].selectbox("Track 1", options=channel_options, index=1)
-    ch2_opt = channel_cols_top[1].selectbox("Track 2", options=channel_options, index=2)
-    ch3_opt = channel_cols_top[2].selectbox("Track 3", options=channel_options, index=3)
-    channel_cols_bottom = st.columns(3)
-    ch4_opt = channel_cols_bottom[0].selectbox("Track 4", options=channel_options, index=4)
-    ch5_opt = channel_cols_bottom[1].selectbox("Track 5", options=channel_options, index=5)
-    ch6_opt = channel_cols_bottom[2].selectbox("Track 6", options=channel_options, index=6)
-    chord_octave_shift = st.number_input(
-        "Chord 6トラチE�� Octave Shift",
-        min_value=-4,
-        max_value=4,
-        value=1,
-        step=1,
-    )
+    hold_same_pitch = st.checkbox("Hold repeated same pitch", value=True)
 
-    st.markdown("**BassトラチE��設宁E*")
-    bass_channel_opt = st.selectbox("Bass Track Channel", options=channel_options, index=9)
-    bass_hold_same_pitch = st.checkbox(
-        "Bass: 同音連続を保持して再トリガーしなぁE,
-        value=False,
-    )
-    bass_switch_enabled = st.checkbox(
-        "Bass: 同音連続で Root/Fifth を�Eり替える",
-        value=False,
-    )
-    bass_switch_every = st.number_input(
-        "Bass: 同音連続�E替回数 x",
-        min_value=1,
-        max_value=64,
-        value=4,
-        step=1,
-        disabled=not bass_switch_enabled,
-    )
-    bass_octave_shift = st.number_input(
-        "Bass Octave Shift",
-        min_value=-4,
-        max_value=4,
-        value=2,
-        step=1,
-    )
+    channel_options = ["off"] + [str(i) for i in range(1, 17)]
+    channel_cols = st.columns(4)
+    chord_channels = [
+        channel_cols[0].selectbox("Track 1", channel_options, index=1),
+        channel_cols[1].selectbox("Track 2", channel_options, index=2),
+        channel_cols[2].selectbox("Track 3", channel_options, index=3),
+        channel_cols[3].selectbox("Track 4", channel_options, index=4),
+    ]
+    channel_cols2 = st.columns(3)
+    chord_channels.extend([
+        channel_cols2[0].selectbox("Track 5", channel_options, index=5),
+        channel_cols2[1].selectbox("Track 6", channel_options, index=6),
+    ])
+    bass_channel = channel_cols2[2].selectbox("Bass", channel_options, index=9)
 
-    channel_map = _resolve_channel_map(
-        [
-            _channel_option_to_value(ch1_opt),
-            _channel_option_to_value(ch2_opt),
-            _channel_option_to_value(ch3_opt),
-            _channel_option_to_value(ch4_opt),
-            _channel_option_to_value(ch5_opt),
-            _channel_option_to_value(ch6_opt),
-            _channel_option_to_value(bass_channel_opt),
-        ]
-    )
-    st.caption(f"現在のChannel割り当て: {channel_map}")
-
-    st.caption(f"YAML既定値: tempo={default_tempo}, 拍孁E{default_numerator}/{default_denominator}")
-
-    effective_tempo = int(tempo)
-    effective_numerator = int(meter_numerator)
-    effective_denominator = int(meter_denominator)
+    channel_map = _resolve_channel_map([_channel_option_to_value(x) for x in chord_channels] + [_channel_option_to_value(bass_channel)])
 
     try:
         voicings = _build_voicings_from_bars(chord_bars)
-    except Exception as e:
-        st.error(f"ボイシング生�Eエラー: {e}")
+    except Exception as exc:
+        st.error(f"Voicing error: {exc}")
         return
 
-    steps_per_bar, total_length, events = _build_event_schedule(
-        chord_bars=chord_bars,
-        meter_numerator=effective_numerator,
-        meter_denominator=effective_denominator,
-        bar_meta=bar_meta,
-    )
+    _, _, events = _build_event_schedule(chord_bars=chord_bars, meter_numerator=4, meter_denominator=4, bar_meta=bar_meta)
+    bass_notes = _build_bassline_notes(events, switch_every=4, switch_enabled=False)
+    output_voicings = _append_bass_track(voicings, bass_notes)
+    per_voice_hold = [bool(hold_same_pitch)] * 6 + [False]
 
-    recommended_tempo = _compute_digitone_tempo_for_same_duration(
-        input_tempo=effective_tempo,
-        meter_numerator=effective_numerator,
-        meter_denominator=effective_denominator,
-        steps_per_bar=int(steps_per_bar),
-    )
+    st.subheader("Voicings")
+    st.code("\n".join(_format_chord_voicing_lines(events, voicings)), language="text")
+    st.subheader("Events")
+    lines = _format_trigger_event_lines(events, output_voicings) if hold_same_pitch else _format_basic_event_lines(events, output_voicings)
+    st.code("\n".join(lines), language="text")
 
-    digitone_tempo, digitone_length, scheduled_events = _apply_digitone_tempo_floor(
-        tempo=int(recommended_tempo),
-        length=int(total_length),
-        events=events,
-    )
-
-    bass_notes = _build_bassline_notes(
-        scheduled_events,
-        switch_every=int(bass_switch_every),
-        switch_enabled=bool(bass_switch_enabled),
-    )
-    combined_voicings = _append_bass_track(voicings, bass_notes)
-    output_voicings = _transpose_output_voicings(
-        combined_voicings,
-        chord_octave_shift=int(chord_octave_shift),
-        bass_octave_shift=int(bass_octave_shift),
-    )
-    per_voice_hold = [bool(hold_same_pitch)] * 6 + [bool(bass_hold_same_pitch)]
-
-    input_elapsed_seconds = _seconds_for_input_tempo(
-        bars_count=len(chord_bars),
-        meter_numerator=effective_numerator,
-        meter_denominator=effective_denominator,
-        input_tempo=effective_tempo,
-    )
-    send_elapsed_seconds = _seconds_for_send_tempo(
-        length_steps=int(digitone_length),
-        send_tempo=int(send_tempo),
-    )
-
-    formatted_lines = _format_chord_voicing_lines(scheduled_events, voicings)
-    st.subheader("解析結果�E�コーチE+ 6声ボイシング�E�E)
-    st.code("\n".join(formatted_lines), language="text")
-
-    st.subheader("イベント割り当て")
-    if hold_same_pitch:
-        event_lines = _format_trigger_event_lines(scheduled_events, output_voicings)
-    else:
-        event_lines = _format_basic_event_lines(scheduled_events, output_voicings)
-    st.code("\n".join(event_lines), language="text")
-
-    st.subheader("録音後にDigitoneで設定する値")
-    st.code(
-        "\n".join(
-            [
-                "Digitone",
-                f"tempo:{digitone_tempo} Length:{digitone_length} (1-{digitone_length}) Speed:1/8",
-            ]
-        ),
-        language="text",
-    )
-
-    st.subheader("時間")
-    st.code(
-        "\n".join(
-            [
-                f"入力テンポで全小節の経過にかかる時閁E {input_elapsed_seconds:.3f} 私E,
-                f"送信チE��ポで全小節の経過にかかる時閁E {send_elapsed_seconds:.3f} 私E,
-            ]
-        ),
-        language="text",
-    )
-
-    ports: List[str] = ["DEBUG"]
+    ports = ["DEBUG"]
     if mido is not None:
         try:
             ports.extend(mido.get_output_names())
         except Exception:
             pass
-
     selected_port = st.selectbox("MIDI Output Port", options=ports)
 
-    col1, col2 = st.columns(2)
-
-    with col1:
-        if st.button("生�E (MIDIファイル)", use_container_width=True):
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Generate MIDI", use_container_width=True):
             try:
-                write_midi_with_events(
-                    output_voicings,
-                    scheduled_events,
-                    output_path,
-                    tempo=effective_tempo,
+                write_midi_with_events(output_voicings, events, output_path, tempo=int(tempo), hold_same_pitch=hold_same_pitch, channel_map=channel_map, per_voice_hold=per_voice_hold)
+                st.success(f"Saved: {output_path}")
+            except Exception as exc:
+                st.error(f"MIDI save error: {exc}")
+    with c2:
+        if st.button("Send Realtime", use_container_width=True):
+            try:
+                logs = _send_with_optional_debug(
+                    voicings=output_voicings,
+                    events=events,
+                    send_tempo=int(send_tempo),
+                    selected_port=selected_port,
                     hold_same_pitch=hold_same_pitch,
                     channel_map=channel_map,
                     per_voice_hold=per_voice_hold,
                 )
-                st.success(f"保存しました: {output_path}")
-            except Exception as e:
-                st.error(f"MIDI保存エラー: {e}")
-
-    with col2:
-        if selected_port != "DEBUG" and mido is None:
-            st.button("送信", use_container_width=True, disabled=True)
-            st.caption("mido が未導�Eのため実機送信は無効です、EEBUG は利用できます、E)
-        else:
-            if st.button("送信", use_container_width=True):
-                try:
-                    send_logs = _send_with_optional_debug(
-                        voicings=output_voicings,
-                        events=scheduled_events,
-                        send_tempo=int(send_tempo),
-                        selected_port=selected_port,
-                        hold_same_pitch=hold_same_pitch,
-                        channel_map=channel_map,
-                        per_voice_hold=per_voice_hold,
-                    )
-                    st.success("送信完亁E)
-                    st.subheader("送信ログ")
-                    st.code("\n".join(send_logs), language="text")
-                except Exception as e:
-                    st.error(f"送信エラー: {e}")
-
-    if "hc_jump_midi_log" not in st.session_state:
-        st.session_state["hc_jump_midi_log"] = []
-    if "hc_jump_note_channel" not in st.session_state:
-        st.session_state["hc_jump_note_channel"] = 10
-    if "hc_jump_cc_channel" not in st.session_state:
-        st.session_state["hc_jump_cc_channel"] = 10
-
-    if False:  # legacy STEP RECORDING debug UI (kept in source, excluded from normal flow)
-        with st.expander("Digitone II STEP RECORDING / JUMP MODE Debug", expanded=False):
-        st.warning(
-            "Digitone II側は JUMP MODE / Step 1開姁E/ SPEED=1/8X / RECEIVE NOTES&CC ON を維持してください、E
-        )
-        st.caption(f"現在の送信ポ�EチE {selected_port}")
-
-        st.subheader("セクション2: Raw LEN / Note Test")
-        debug_col1, debug_col2 = st.columns(2)
-        with debug_col1:
-            jump_note_channel = st.number_input(
-                "Note送信チャンネル (AUTO CHANNEL)",
-                min_value=1,
-                max_value=16,
-                step=1,
-                key="hc_jump_note_channel",
-            )
-            jump_velocity = st.number_input(
-                "Velocity",
-                min_value=1,
-                max_value=127,
-                value=100,
-                step=1,
-            )
-            jump_note_off_ms = st.number_input(
-                "Note On ↁENote Off 征E��時間 (ms)",
-                min_value=0,
-                max_value=5000,
-                value=50,
-                step=10,
-            )
-        with debug_col2:
-            jump_cc_channel = st.number_input(
-                "LEN CC送信チャンネル",
-                min_value=1,
-                max_value=16,
-                step=1,
-                key="hc_jump_cc_channel",
-            )
-            jump_cc_to_note_ms = st.number_input(
-                "CC送信征EↁENote On 征E��時間 (ms)",
-                min_value=0,
-                max_value=5000,
-                value=50,
-                step=10,
-            )
-            jump_len_x = st.number_input(
-                "LEN x raw value",
-                min_value=0,
-                max_value=127,
-                value=32,
-                step=1,
-            )
-            st.caption("LEN x チE��ォルト値 32 (Digitone側で要確誁E")
-
-        jump_between_ms = st.number_input(
-            "Sequenceイベント間delay (ms)",
-            min_value=0,
-            max_value=5000,
-            value=150,
-            step=10,
-        )
-
-        btn_col1, btn_col2 = st.columns(2)
-        run_events: Sequence[tuple[int, int]] | None = None
-
-        with btn_col1:
-            if st.button("C5 / LEN 8 / 1 step", use_container_width=True):
-                run_events = [(8, 60)]
-            if st.button("E5 / LEN x / x steps", use_container_width=True):
-                run_events = [(int(jump_len_x), 64)]
-        with btn_col2:
-            if st.button("D5 / LEN 16 / 2 steps", use_container_width=True):
-                run_events = [(16, 62)]
-            if st.button("Run C5 ↁED5 ↁEE5 Sequence", use_container_width=True):
-                run_events = [(8, 60), (16, 62), (int(jump_len_x), 64)]
-
-        if run_events is not None:
-            try:
-                logs = _send_len_note_test_events(
-                    selected_port=selected_port,
-                    note_channel=int(jump_note_channel),
-                    cc_channel=int(jump_cc_channel),
-                    velocity=int(jump_velocity),
-                    note_off_delay_ms=int(jump_note_off_ms),
-                    cc_to_note_delay_ms=int(jump_cc_to_note_ms),
-                    sequence_events=run_events,
-                    inter_event_delay_ms=int(jump_between_ms),
-                )
-                history = st.session_state.get("hc_jump_midi_log", [])
-                history.extend(logs)
-                st.session_state["hc_jump_midi_log"] = history[-500:]
-                st.success("JUMP MODEチE��チE��送信完亁E)
-            except Exception as e:
-                st.error(f"チE��チE��送信エラー: {e}")
-
-        st.subheader("セクション4: MIDI Log")
-        clear_col, _ = st.columns([1, 3])
-        with clear_col:
-            if st.button("ログをクリア", use_container_width=True):
-                st.session_state["hc_jump_midi_log"] = []
-
-        jump_log_lines = st.session_state.get("hc_jump_midi_log", [])
-        if jump_log_lines:
-            st.code("\n".join(jump_log_lines), language="text")
-        else:
-            st.code("(empty)", language="text")
-
-    st.subheader("セクション別 生�E / 送信")
-    sections = payload.get("sections")
-    if isinstance(sections, list):
-        for sec_idx, section in enumerate(sections):
-            if not isinstance(section, dict):
-                continue
-
-            section_name = str(section.get("name") or f"section_{sec_idx + 1}")
-            section_progression = section.get("progression")
-            if not isinstance(section_progression, list):
-                continue
-
-            section_bars: List[List[str]] = []
-            for bar in section_progression:
-                if isinstance(bar, list):
-                    cleaned = [str(x).strip() for x in bar if str(x).strip()]
-                    if cleaned:
-                        section_bars.append(cleaned)
-
-            if not section_bars:
-                continue
-
-            try:
-                section_voicings = _build_voicings_from_bars(section_bars)
-            except Exception as e:
-                st.error(f"{section_name} のボイシング生�Eエラー: {e}")
-                continue
-
-            section_meta = [
-                {"section": section_name, "bar_in_section": i + 1}
-                for i in range(len(section_bars))
-            ]
-            section_steps_per_bar, section_total_length, section_events = _build_event_schedule(
-                chord_bars=section_bars,
-                meter_numerator=effective_numerator,
-                meter_denominator=effective_denominator,
-                bar_meta=section_meta,
-            )
-            section_recommended_tempo = _compute_digitone_tempo_for_same_duration(
-                input_tempo=effective_tempo,
-                meter_numerator=effective_numerator,
-                meter_denominator=effective_denominator,
-                steps_per_bar=int(section_steps_per_bar),
-            )
-            section_digitone_tempo, section_digitone_length, section_scheduled_events = _apply_digitone_tempo_floor(
-                tempo=int(section_recommended_tempo),
-                length=int(section_total_length),
-                events=section_events,
-            )
-
-            section_bass_notes = _build_bassline_notes(
-                section_scheduled_events,
-                switch_every=int(bass_switch_every),
-                switch_enabled=bool(bass_switch_enabled),
-            )
-            section_combined_voicings = _append_bass_track(section_voicings, section_bass_notes)
-            section_output_voicings = _transpose_output_voicings(
-                section_combined_voicings,
-                chord_octave_shift=int(chord_octave_shift),
-                bass_octave_shift=int(bass_octave_shift),
-            )
-            section_per_voice_hold = [bool(hold_same_pitch)] * 6 + [bool(bass_hold_same_pitch)]
-
-            st.markdown(f"**{section_name}**")
-            st.caption(
-                f"tempo:{section_digitone_tempo} Length:{section_digitone_length} Speed:1/8"
-            )
-            if hold_same_pitch:
-                section_event_lines = _format_trigger_event_lines(section_scheduled_events, section_output_voicings)
-            else:
-                section_event_lines = _format_basic_event_lines(section_scheduled_events, section_output_voicings)
-            st.code("\n".join(section_event_lines), language="text")
-
-            section_col1, section_col2 = st.columns(2)
-            with section_col1:
-                if st.button(f"{section_name} を生戁E, key=f"generate_section_{sec_idx}", use_container_width=True):
-                    try:
-                        section_output = _section_output_path(output_path, section_name)
-                        write_midi_with_events(
-                            section_output_voicings,
-                            section_scheduled_events,
-                            section_output,
-                            tempo=effective_tempo,
-                            hold_same_pitch=hold_same_pitch,
-                            channel_map=channel_map,
-                            per_voice_hold=section_per_voice_hold,
-                        )
-                        st.success(f"{section_name} を保存しました: {section_output}")
-                    except Exception as e:
-                        st.error(f"{section_name} のMIDI保存エラー: {e}")
-
-            with section_col2:
-                if selected_port != "DEBUG" and mido is None:
-                    st.button(
-                        f"{section_name} を送信",
-                        key=f"send_section_{sec_idx}",
-                        use_container_width=True,
-                        disabled=True,
-                    )
-                else:
-                    if st.button(f"{section_name} を送信", key=f"send_section_{sec_idx}", use_container_width=True):
-                        try:
-                            section_send_logs = _send_with_optional_debug(
-                                voicings=section_output_voicings,
-                                events=section_scheduled_events,
-                                send_tempo=int(send_tempo),
-                                selected_port=selected_port,
-                                hold_same_pitch=hold_same_pitch,
-                                channel_map=channel_map,
-                                per_voice_hold=section_per_voice_hold,
-                            )
-                            st.success(f"{section_name} の送信完亁E)
-                            st.code("\n".join(section_send_logs), language="text")
-                        except Exception as e:
-                            st.error(f"{section_name} の送信エラー: {e}")
+                st.success("Send complete")
+                st.code("\n".join(logs), language="text")
+            except Exception as exc:
+                st.error(f"Send error: {exc}")
 
 
 if __name__ == "__main__":

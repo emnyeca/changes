@@ -27,9 +27,10 @@ Contributions and issue reports are welcome once the basic architecture is in pl
 
 You can run a simple GUI for non-terminal workflows:
 
-1. Install UI dependencies:
+1. Install dependencies:
 
-	- `pip install -e .[ui]`
+	- `pip install -e ../digitone-syx-toolkit`
+	- `pip install -e .[ui,realtime,test]`
 
 2. Launch app:
 
@@ -44,6 +45,32 @@ The UI supports:
 - Independent Bass track (C1-B1), with root/fifth auto-switch after configurable repeats
 - MIDI file generation
 - Realtime send to selected MIDI output port
+- Digitone compile pipeline export:
+	- `song_model.json`
+	- `rendered_timeline.json`
+	- `digitone_compile_plan.json`
+	- `digitone.events.yaml`
+	- optional `digitone_pattern.syx`
+
+## CLI Usage
+
+Generic MIDI (existing flow):
+
+```bash
+changes examples/waltz.yaml --output out.mid --tempo 120
+```
+
+Digitone compile pipeline (Phase 4+):
+
+```bash
+changes examples/waltz.yaml --backend digitone-compile --artifact-dir out_digitone
+```
+
+With SYX generation through toolkit:
+
+```bash
+changes examples/waltz.yaml --backend digitone-compile --artifact-dir out_digitone --write-syx
+```
 
 Digitone-specific Native SysEx backend design notes:
 
@@ -60,11 +87,8 @@ build_digitone_syx_from_events_yaml(
 )
 ```
 
-When using the Digitone Native backend, install toolkit in dev environment:
-
-```bash
-pip install -e ../digitone-syx-toolkit
-```
+Toolkit package dependency is currently expected via local editable install.
+Pinning by tag/SHA can be introduced after API stabilization.
 
 Tempo separation for Native SysEx planning:
 
@@ -73,7 +97,8 @@ Tempo separation for Native SysEx planning:
 
 Formula:
 
-- `digitone_device_tempo = 2 * performance_tempo / q_step`
+- General form: `digitone_device_tempo = performance_tempo / (4 * speed_ratio * q_step)`
+- SPEED=`1/8` special case: `digitone_device_tempo = 2 * performance_tempo / q_step`
 
 For realtime send, also install:
 

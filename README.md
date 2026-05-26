@@ -2,17 +2,24 @@
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
 
-This repository contains a **machine‑jazz harmony engine** for generating six‑voice jazz chord clouds and recording them to Digitone II via MIDI.  The goal is to build a toolkit that lets performers call a jazz standard or progression and have a dense, voice‑led six‑note harmonic texture recorded onto the Digitone in a few seconds, ready for live layering and muting.
+This repository contains a **machine‑jazz harmony engine** for generating six‑voice jazz chord clouds.
+It provides generic MIDI output and prepares Digitone II output through a Native SysEx backend.
 
 The core concept is to:
 
 - Parse jazz chord progressions (for example from an iRealPro export).  
 - Expand each chord into a six‑note voicing such as a 6/9, 9, 13, sus or altered variant with added tensions.  
-- Allocate each note to one Digitone track and voice‑lead between chords with minimal melodic motion.  
-- Output MIDI (over USB or DIN) so the Digitone II can record the generated voices at very high tempo for real‑time capture.  
-- Use track muting and level controls during performance to reveal or hide layers and evolve the harmonic cloud.
+- Voice‑lead between chords with minimal melodic motion.  
+- Export Generic MIDI file or send Generic realtime MIDI for DAW/soft-synth/hardware checks.
+- Build Digitone II Pattern SysEx from toolkit-compatible `.events.yaml` via `digitone-syx-toolkit`.
 
 This project prioritizes deterministic behavior, readable music‑theory logic, and performance‑safe MIDI output. It is intended to be used in Emnyeca/EMN Records machine‑jazz sessions and Embient events, but the code may be adapted for other live harmony generation setups.
+
+## Backend Policy
+
+- Primary Digitone path: Native SysEx backend (`digitone-syx-toolkit` dependency).
+- Generic MIDI backend: kept as first-class output path.
+- Legacy high-speed Digitone realtime recording workflow: moved out of normal product flow.
 
 Contributions and issue reports are welcome once the basic architecture is in place.
 
@@ -37,6 +44,36 @@ The UI supports:
 - Independent Bass track (C1-B1), with root/fifth auto-switch after configurable repeats
 - MIDI file generation
 - Realtime send to selected MIDI output port
+
+Digitone-specific Native SysEx backend design notes:
+
+- `docs/design/digitone-native-syx-backend.md`
+
+Toolkit wrapper (events.yaml -> syx):
+
+```python
+from changes.digitone_backend import build_digitone_syx_from_events_yaml
+
+build_digitone_syx_from_events_yaml(
+	"../digitone-syx-toolkit/captures/generated/events/trial1_minimal_trigger.events.yaml",
+	"out/trial1.syx",
+)
+```
+
+When using the Digitone Native backend, install toolkit in dev environment:
+
+```bash
+pip install -e ../digitone-syx-toolkit
+```
+
+Tempo separation for Native SysEx planning:
+
+- `performance_tempo`: musical tempo used by performer/DAW context
+- `digitone_device_tempo`: tempo configured on Digitone for SPEED=`1/8`
+
+Formula:
+
+- `digitone_device_tempo = 2 * performance_tempo / q_step`
 
 For realtime send, also install:
 

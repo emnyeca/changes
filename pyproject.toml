@@ -1,7 +1,7 @@
 [project]
 name = "changes"
 version = "0.1.0"
-description = "A machine-jazz harmony engine for generating six-voice jazz chord clouds and recording them to Digitone II via MIDI."
+description = "A machine-jazz harmony engine with generic MIDI output and Digitone Native SysEx backend preparation."
 authors = [
     { name = "Emnyeca" },
 ]
@@ -15,6 +15,9 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "pytest>=8.0",
+]
+digitone = [
+    "digitone-syx-toolkit>=0.1.0",
 ]
 realtime = [
     "python-rtmidi>=1.4.9",

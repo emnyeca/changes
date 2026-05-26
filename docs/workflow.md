@@ -12,14 +12,15 @@ This document outlines a practical workflow for using Changes in a live machine-
    - Optimize voice leading to minimize motion between chords.
    - Output a MIDI file or stream.
 
-3. **Record to Digitone II**  
-   Set the Digitone II to record the six tracks. Use a high temporary BPM (e.g. 600 BPM) to record the full progression quickly. After recording, return to the normal session tempo.
+3. **Build Digitone Native Pattern (Optional)**  
+   For Digitone II output, use the Native SysEx backend path (`digitone-syx-toolkit`) to generate Pattern `.syx` from toolkit-compatible events YAML.
+   High-speed realtime MIDI recording is treated as a legacy experiment, not normal workflow.
 
 4. **Live Performance**  
    During the session, use track mutes, level controls, filters, and effects to shape the harmonic cloud:
    - Start with only a few tracks active for a sparse texture.
    - Bring in additional tracks to thicken the harmony during climactic sections.
-   - Use conditional trigs or probability on the Digitone to introduce movement.
+   - Use Digitone-side arrangement controls to introduce movement.
    - Optionally route tracks into effects like reverb, delay, or glitch processors.
 
 5. **Iteration and Expansion**  

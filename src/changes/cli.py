@@ -1,10 +1,4 @@
-"""
-Command-line interface for Changes.
-
-This module provides a simple CLI to generate six-voice chord clouds from a YAML
-progression file and write them to a MIDI file. This is a minimal example and
-can be extended with additional options as the project grows.
-"""
+"""Command-line interface for Changes generic MIDI export."""
 
 import argparse
 
@@ -17,7 +11,7 @@ from .midi_writer import write_midi
 def main() -> None:
     """Run the Changes CLI."""
     parser = argparse.ArgumentParser(
-        description="Generate six-voice chord clouds and export to MIDI"
+        description="Generate six-voice chord clouds and export to generic MIDI"
     )
     parser.add_argument(
         "input",
@@ -31,8 +25,8 @@ def main() -> None:
     parser.add_argument(
         "--tempo",
         type=int,
-        default=600,
-        help="BPM to use when recording the MIDI for high-speed capture",
+        default=120,
+        help="BPM for generic MIDI export",
     )
     args = parser.parse_args()
 

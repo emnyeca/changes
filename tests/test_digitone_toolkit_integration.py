@@ -62,6 +62,7 @@ def test_events_yaml_matches_toolkit_schema_and_validates(tmp_path: Path):
     assert assignment.pattern.tempo == float(plan.device_tempo)
     assert assignment.pattern.speed == plan.speed
     assert assignment.pattern.total_steps == plan.total_steps
+    assert assignment.name == "SIMPLE II-V-I"
     assert len(assignment.events) == len(plan.events)
 
     plan_codes = {
@@ -174,3 +175,27 @@ def test_e2e_simple_ii_v_i_to_syx_and_round_trip(tmp_path: Path):
 
     assert out["syx"].exists()
     assert out["syx"].stat().st_size > 0
+
+
+def test_toolkit_rejects_over_16_char_pattern_name_from_pipeline(tmp_path: Path):
+    _ensure_toolkit_or_skip()
+    from digitone_syx_toolkit.events_yaml import load_event_assignment_yaml
+    from digitone_syx_toolkit.errors import SyxFileError
+
+    payload = {
+        "name": "BLUE MOON SOLO FORM",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {
+                "name": "A",
+                "progression": [["Cmaj7", "Dm7", "G7", "Cmaj7"]],
+            }
+        ],
+    }
+
+    song, timeline, plan, events_payload = compile_digitone_pipeline(payload)
+    out = save_digitone_pipeline_artifacts(tmp_path, song, timeline, plan, events_payload, write_syx=False)
+
+    with pytest.raises(SyxFileError, match="exceeds 16"):
+        load_event_assignment_yaml(out["events_yaml"])

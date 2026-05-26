@@ -73,6 +73,7 @@ def main() -> None:
     )
 
     print(f"Wrote artifacts to: {args.artifact_dir}")
+    print(f"  pattern_name={plan.title}")
     print(f"  speed={plan.speed} q_step={plan.q_step} device_tempo={float(plan.device_tempo):.3f} total_steps={plan.total_steps}")
     for key, path in artifacts.items():
         print(f"  {key}: {path}")

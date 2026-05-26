@@ -34,4 +34,5 @@ def test_pipeline_artifacts_written(tmp_path: Path):
     assert loaded["events"]
     assert loaded["version"] == 1
     assert loaded["device"] == "digitone2"
+    assert loaded["name"] == plan.title
     assert loaded["pattern"]["speed"] == plan.speed

@@ -135,3 +135,15 @@ def test_compile_plan_and_events_export_smoke():
     assert out["pattern"]["speed"] == plan.speed
     assert out["events"]
     assert out["events"][0]["length_code"].startswith("0x")
+
+
+def test_events_export_includes_unmodified_plan_title_as_name():
+    payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
+    payload["name"] = "Blue Moon A"
+    song = compact_progression_to_song_model(payload)
+    timeline = render_timeline(song, default_render_profile())
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+
+    out = digitone_compile_plan_to_events_yaml_payload(plan)
+    assert out["name"] == plan.title
+    assert out["name"] == "Blue Moon A"

@@ -1,0 +1,44 @@
+version: 1
+device: digitone2
+name: BLUE MOON A
+pattern:
+  mode: pattern-wide
+  tempo: 120.0
+  speed: 1/8
+  total_steps: 2
+events:
+- step: 1
+  track: 1
+  note: C4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 2
+  note: E4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 3
+  note: G4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 4
+  note: A4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 5
+  note: D5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 6
+  note: E5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 1
+  track: 7
+  note: C3
+  velocity: inherit
+  length_code: '0x4E'

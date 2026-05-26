@@ -1,0 +1,68 @@
+{
+  "title": "\u00c5NGSTR\u00d6M",
+  "performance_tempo": "120",
+  "speed": "1/8",
+  "speed_ratio": "1/8",
+  "q_step": "2",
+  "device_tempo": "120",
+  "total_steps": 2,
+  "warnings": [],
+  "events": [
+    {
+      "source_event_id": "ev1_bass",
+      "track": 7,
+      "step": 1,
+      "note": "C3",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v1",
+      "track": 1,
+      "step": 1,
+      "note": "C4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v2",
+      "track": 2,
+      "step": 1,
+      "note": "E4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v3",
+      "track": 3,
+      "step": 1,
+      "note": "G4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v4",
+      "track": 4,
+      "step": 1,
+      "note": "A4",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v5",
+      "track": 5,
+      "step": 1,
+      "note": "D5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    },
+    {
+      "source_event_id": "ev1_v6",
+      "track": 6,
+      "step": 1,
+      "note": "E5",
+      "velocity": "inherit",
+      "length_code": "0x4E"
+    }
+  ]
+}

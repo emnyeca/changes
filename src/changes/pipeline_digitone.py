@@ -8,8 +8,16 @@ from pathlib import Path
 import yaml
 
 from changes.digitone_backend import build_digitone_syx_from_events_yaml
+from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
 from changes.digitone.planner import compile_timeline_to_digitone_plan
-from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
+from changes.exporters.digitone_events import (
+    digitone_compile_plan_to_events_yaml_payload,
+    digitone_pattern_segment_to_events_yaml_payload,
+)
+from changes.models.digitone_bundle_plan import (
+    DigitonePatternBundlePlan,
+    digitone_pattern_bundle_plan_to_dict,
+)
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_compile_plan import DigitoneCompilePlan, digitone_compile_plan_to_dict
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
@@ -21,6 +29,58 @@ from changes.rendering.timeline_renderer import render_timeline
 
 class DigitonePipelineArtifacts(dict):
     pass
+
+
+def _safe_ascii_slug(text: str, fallback: str = "UNTITLED") -> str:
+    chars: list[str] = []
+    prev_underscore = False
+    for ch in text:
+        code = ord(ch)
+        if 0x61 <= code <= 0x7A:
+            ch = chr(code - 0x20)
+            code = ord(ch)
+
+        is_ascii_alnum = (0x30 <= code <= 0x39) or (0x41 <= code <= 0x5A)
+        if is_ascii_alnum:
+            chars.append(ch)
+            prev_underscore = False
+            continue
+
+        if not prev_underscore:
+            chars.append("_")
+            prev_underscore = True
+
+    slug = "".join(chars).strip("_")
+    return slug if slug else fallback
+
+
+def _extract_explicit_pattern_name_overrides(payload: dict) -> dict[int, str]:
+    direct = payload.get("digitone_pattern_name_overrides")
+    nested = payload.get("digitone")
+    nested_overrides = nested.get("pattern_name_overrides") if isinstance(nested, dict) else None
+    raw = direct if direct is not None else nested_overrides
+
+    if raw is None:
+        return {}
+
+    if isinstance(raw, list):
+        return {idx: str(name) for idx, name in enumerate(raw, start=1) if name is not None}
+
+    if isinstance(raw, dict):
+        out: dict[int, str] = {}
+        for key, value in raw.items():
+            if value is None:
+                continue
+            try:
+                index = int(key)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Invalid pattern_name_overrides key: {key!r}") from exc
+            if index < 1:
+                raise ValueError(f"pattern_name_overrides index must be >= 1: {key!r}")
+            out[index] = str(value)
+        return out
+
+    raise ValueError("pattern_name_overrides must be a list or mapping")
 
 
 def compile_digitone_pipeline(
@@ -37,6 +97,27 @@ def compile_digitone_pipeline(
     events_payload = digitone_compile_plan_to_events_yaml_payload(plan)
 
     return song, timeline, plan, events_payload
+
+
+def compile_digitone_bundle_pipeline(
+    payload: dict,
+    render_profile: RenderProfile | None = None,
+    target_profile: DigitoneTargetProfile | None = None,
+) -> tuple[SongModel, RenderedTimeline, DigitonePatternBundlePlan]:
+    """Compile song into bundle-oriented Digitone plan (section/capacity split aware)."""
+    rp = render_profile or default_render_profile()
+    tp = target_profile or default_digitone_target_profile()
+
+    song = compact_progression_to_song_model(payload)
+    timeline = render_timeline(song, rp)
+    explicit_overrides = _extract_explicit_pattern_name_overrides(payload)
+    bundle_plan = compile_timeline_to_digitone_bundle_plan(
+        song,
+        timeline,
+        tp,
+        explicit_pattern_name_overrides=explicit_overrides,
+    )
+    return song, timeline, bundle_plan
 
 
 def save_digitone_pipeline_artifacts(
@@ -77,5 +158,106 @@ def save_digitone_pipeline_artifacts(
         syx_path = out / syx_filename
         build_digitone_syx_from_events_yaml(events_yaml, syx_path)
         artifacts["syx"] = syx_path
+
+    return artifacts
+
+
+def save_digitone_bundle_artifacts(
+    output_dir: str | Path,
+    song: SongModel,
+    timeline: RenderedTimeline,
+    bundle_plan: DigitonePatternBundlePlan,
+    write_syx: bool = False,
+    bundle_syx_filename: str | None = None,
+) -> DigitonePipelineArtifacts:
+    out = Path(output_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    patterns_dir = out / "patterns"
+    patterns_dir.mkdir(parents=True, exist_ok=True)
+
+    song_json = out / "song_model.json"
+    timeline_json = out / "rendered_timeline.json"
+    bundle_plan_json = out / "digitone_bundle_plan.json"
+    bundle_manifest_json = out / "bundle_manifest.json"
+
+    song_json.write_text(json.dumps(song_model_to_dict(song), indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+    timeline_json.write_text(
+        json.dumps(rendered_timeline_to_dict(timeline), indent=2, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+    bundle_plan_json.write_text(
+        json.dumps(digitone_pattern_bundle_plan_to_dict(bundle_plan), indent=2, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+
+    pattern_entries: list[dict] = []
+    syx_paths: list[Path] = []
+    for index, pattern in enumerate(bundle_plan.patterns, start=1):
+        safe_name = _safe_ascii_slug(pattern.pattern_name, fallback=f"PATTERN_{index:02d}")
+        base_name = f"{index:02d}_{safe_name}"
+        events_file = patterns_dir / f"{base_name}.digitone.events.yaml"
+        events_payload = digitone_pattern_segment_to_events_yaml_payload(pattern, bundle_plan.timing)
+        events_file.write_text(yaml.safe_dump(events_payload, sort_keys=False, allow_unicode=False), encoding="utf-8")
+
+        entry = {
+            "index": index,
+            "segment_index": pattern.segment_index,
+            "pattern_name": pattern.pattern_name,
+            "pattern_name_source": pattern.pattern_name_source,
+            "section_id": pattern.section_id,
+            "section_label": pattern.section_label,
+            "section_token": pattern.section_token,
+            "section_split_index": pattern.section_split_index,
+            "section_split_count": pattern.section_split_count,
+            "total_steps": pattern.total_steps,
+            "warnings": list(pattern.warnings),
+            "events_yaml": str(events_file.relative_to(out).as_posix()),
+        }
+
+        if write_syx:
+            syx_file = patterns_dir / f"{base_name}.syx"
+            build_digitone_syx_from_events_yaml(events_file, syx_file)
+            syx_paths.append(syx_file)
+            entry["syx"] = str(syx_file.relative_to(out).as_posix())
+
+        pattern_entries.append(entry)
+
+    bundle_file: Path | None = None
+    if write_syx and syx_paths:
+        if bundle_syx_filename is None:
+            bundle_syx_filename = f"{_safe_ascii_slug(bundle_plan.source_title)}.bundle.syx"
+        bundle_file = out / bundle_syx_filename
+        bundle_file.write_bytes(b"".join(path.read_bytes() for path in syx_paths))
+
+    bundle_manifest = {
+        "source_title": bundle_plan.source_title,
+        "timing": {
+            "performance_tempo": str(bundle_plan.timing.performance_tempo),
+            "speed": bundle_plan.timing.speed,
+            "speed_ratio": str(bundle_plan.timing.speed_ratio),
+            "q_step": str(bundle_plan.timing.q_step),
+            "device_tempo": str(bundle_plan.timing.device_tempo),
+        },
+        "warnings": list(bundle_plan.warnings),
+        "patterns": pattern_entries,
+    }
+    if bundle_file is not None:
+        bundle_manifest["bundle_syx"] = str(bundle_file.relative_to(out).as_posix())
+
+    bundle_manifest_json.write_text(json.dumps(bundle_manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
+
+    artifacts: DigitonePipelineArtifacts = DigitonePipelineArtifacts(
+        {
+            "song_model_json": song_json,
+            "rendered_timeline_json": timeline_json,
+            "digitone_bundle_plan_json": bundle_plan_json,
+            "bundle_manifest_json": bundle_manifest_json,
+            "patterns_dir": patterns_dir,
+        }
+    )
+
+    if bundle_file is not None:
+        artifacts["bundle_syx"] = bundle_file
 
     return artifacts

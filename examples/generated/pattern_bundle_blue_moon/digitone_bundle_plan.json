@@ -1,0 +1,137 @@
+{
+  "source_title": "BLUE MOON",
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "4",
+    "device_tempo": "60"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "INT BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Intro",
+      "section_label": "Intro",
+      "section_token": "INT",
+      "segment_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev1_v1",
+          "track": 1,
+          "step": 1,
+          "note": "C4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev2_v1",
+          "track": 1,
+          "step": 2,
+          "note": "C4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        }
+      ]
+    },
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "A BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "A",
+      "section_label": "A",
+      "section_token": "A",
+      "segment_index": 2,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev3_v1",
+          "track": 1,
+          "step": 1,
+          "note": "B3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev4_v1",
+          "track": 1,
+          "step": 2,
+          "note": "B3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        }
+      ]
+    },
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "SOL BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "segment_index": 3,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev5_v1",
+          "track": 1,
+          "step": 1,
+          "note": "B3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev6_v1",
+          "track": 1,
+          "step": 2,
+          "note": "B3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        }
+      ]
+    },
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "OUT BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Outro",
+      "section_label": "Outro",
+      "section_token": "OUT",
+      "segment_index": 4,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev7_v1",
+          "track": 1,
+          "step": 1,
+          "note": "C4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev8_v1",
+          "track": 1,
+          "step": 2,
+          "note": "C4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        }
+      ]
+    }
+  ]
+}

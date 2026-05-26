@@ -22,7 +22,9 @@ class CompiledDigitoneEvent:
 
 @dataclass(frozen=True)
 class DigitoneCompilePlan:
-    title: str
+    source_title: str
+    pattern_name: str
+    pattern_name_source: str
     performance_tempo: Fraction
     speed: str
     speed_ratio: Fraction
@@ -32,9 +34,18 @@ class DigitoneCompilePlan:
     events: tuple[CompiledDigitoneEvent, ...]
     warnings: tuple[str, ...]
 
+    @property
+    def title(self) -> str:
+        """Backward-compatible alias for legacy callers."""
+        return self.source_title
+
 
 def digitone_compile_plan_to_dict(plan: DigitoneCompilePlan) -> dict:
     return {
+        "source_title": plan.source_title,
+        "pattern_name": plan.pattern_name,
+        "pattern_name_source": plan.pattern_name_source,
+        # Keep legacy key for compatibility with older fixtures/tools.
         "title": plan.title,
         "performance_tempo": _fraction_to_text(plan.performance_tempo),
         "speed": plan.speed,

@@ -1,0 +1,86 @@
+{
+  "title": "BLUE MOON",
+  "performance_tempo": "120",
+  "events": [
+    {
+      "id": "ev1_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 48,
+      "onset_quarters": "0",
+      "duration_quarters": "4",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev2_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 48,
+      "onset_quarters": "4",
+      "duration_quarters": "4",
+      "source_harmony_id": "m2_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 47,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev4_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 47,
+      "onset_quarters": "12",
+      "duration_quarters": "4",
+      "source_harmony_id": "m4_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev5_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 47,
+      "onset_quarters": "16",
+      "duration_quarters": "4",
+      "source_harmony_id": "m5_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev6_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 47,
+      "onset_quarters": "20",
+      "duration_quarters": "4",
+      "source_harmony_id": "m6_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev7_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 48,
+      "onset_quarters": "24",
+      "duration_quarters": "4",
+      "source_harmony_id": "m7_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev8_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 48,
+      "onset_quarters": "28",
+      "duration_quarters": "4",
+      "source_harmony_id": "m8_h1",
+      "retrigger": true
+    }
+  ]
+}

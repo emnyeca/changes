@@ -1,0 +1,135 @@
+{
+  "title": "BLUE MOON",
+  "working_key": null,
+  "performance_tempo": "120",
+  "measures": [
+    {
+      "number": 1,
+      "section_id": "Intro",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "0",
+      "harmony": [
+        {
+          "id": "m1_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 1,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section_id": "Intro",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "4",
+      "harmony": [
+        {
+          "id": "m2_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 2,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "section_id": "A",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "8",
+      "harmony": [
+        {
+          "id": "m3_h1",
+          "symbol": "Dm7",
+          "measure_number": 3,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "section_id": "A",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "12",
+      "harmony": [
+        {
+          "id": "m4_h1",
+          "symbol": "Dm7",
+          "measure_number": 4,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "section_id": "Solo",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "16",
+      "harmony": [
+        {
+          "id": "m5_h1",
+          "symbol": "G7",
+          "measure_number": 5,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "section_id": "Solo",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "20",
+      "harmony": [
+        {
+          "id": "m6_h1",
+          "symbol": "G7",
+          "measure_number": 6,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "section_id": "Outro",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "24",
+      "harmony": [
+        {
+          "id": "m7_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 7,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "section_id": "Outro",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "28",
+      "harmony": [
+        {
+          "id": "m8_h1",
+          "symbol": "Cmaj7",
+          "measure_number": 8,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    }
+  ]
+}

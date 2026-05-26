@@ -1,0 +1,74 @@
+{
+  "source_title": "BLUE MOON",
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "4",
+    "device_tempo": "60"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "index": 1,
+      "segment_index": 1,
+      "pattern_name": "INT BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Intro",
+      "section_label": "Intro",
+      "section_token": "INT",
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events_yaml": "patterns/01_INT_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/01_INT_BLUE_MOON.syx"
+    },
+    {
+      "index": 2,
+      "segment_index": 2,
+      "pattern_name": "A BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "A",
+      "section_label": "A",
+      "section_token": "A",
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events_yaml": "patterns/02_A_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/02_A_BLUE_MOON.syx"
+    },
+    {
+      "index": 3,
+      "segment_index": 3,
+      "pattern_name": "SOL BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events_yaml": "patterns/03_SOL_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/03_SOL_BLUE_MOON.syx"
+    },
+    {
+      "index": 4,
+      "segment_index": 4,
+      "pattern_name": "OUT BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Outro",
+      "section_label": "Outro",
+      "section_token": "OUT",
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "total_steps": 2,
+      "warnings": [],
+      "events_yaml": "patterns/04_OUT_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/04_OUT_BLUE_MOON.syx"
+    }
+  ],
+  "bundle_syx": "blue_moon.bundle.syx"
+}

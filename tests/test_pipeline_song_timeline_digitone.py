@@ -5,6 +5,7 @@ from fractions import Fraction
 import pytest
 
 from changes.digitone.planner import (
+    choose_shared_timing_plan,
     choose_timing_plan,
     compile_timeline_to_digitone_plan,
     compute_digitone_device_tempo_for_speed_one_eighth,
@@ -120,6 +121,44 @@ def test_compile_plan_rejects_non_exact_length_code_mapping():
         compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
 
+def test_choose_shared_timing_plan_allows_total_steps_over_128_for_song_level_planning():
+    timeline = RenderedTimeline(
+        title="long-song",
+        performance_tempo=Fraction(120, 1),
+        events=(
+            RenderedNoteEvent(
+                id="e1",
+                voice_id="chord_voice_1",
+                role="chord",
+                note_midi=60,
+                onset_quarters=Fraction(0, 1),
+                duration_quarters=Fraction(1, 1),
+                source_harmony_id="h1",
+                retrigger=True,
+            ),
+            RenderedNoteEvent(
+                id="e2",
+                voice_id="chord_voice_1",
+                role="chord",
+                note_midi=60,
+                onset_quarters=Fraction(300, 1),
+                duration_quarters=Fraction(1, 1),
+                source_harmony_id="h2",
+                retrigger=True,
+            ),
+        ),
+    )
+
+    target = default_digitone_target_profile()
+
+    shared = choose_shared_timing_plan(timeline, target)
+    assert shared.total_steps > 128
+    assert Fraction(30, 1) <= shared.device_tempo <= Fraction(300, 1)
+
+    with pytest.raises(ValueError, match="128-step capacity"):
+        choose_timing_plan(timeline, target)
+
+
 def test_compile_plan_and_events_export_smoke():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     song = compact_progression_to_song_model(payload)
@@ -127,6 +166,9 @@ def test_compile_plan_and_events_export_smoke():
     plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
     assert plan.total_steps <= 128
+    assert plan.source_title == timeline.title
+    assert plan.pattern_name == timeline.title
+    assert plan.pattern_name_source == "auto"
     assert len(plan.events) > 0
 
     out = digitone_compile_plan_to_events_yaml_payload(plan)
@@ -145,5 +187,5 @@ def test_events_export_includes_unmodified_plan_title_as_name():
     plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
     out = digitone_compile_plan_to_events_yaml_payload(plan)
-    assert out["name"] == plan.title
+    assert out["name"] == plan.pattern_name
     assert out["name"] == "Blue Moon A"

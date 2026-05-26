@@ -1,0 +1,175 @@
+from __future__ import annotations
+
+from pathlib import Path
+from dataclasses import replace
+
+import pytest
+import json
+
+from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+from changes.importers.compact_progression import compact_progression_to_song_model
+from changes.models.digitone_target_profile import default_digitone_target_profile
+from changes.models.render_profile import default_render_profile
+from changes.pipeline_digitone import compile_digitone_bundle_pipeline, save_digitone_bundle_artifacts
+from changes.rendering.timeline_renderer import render_timeline
+
+
+def test_bundle_single_pattern_uses_song_title_only():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7"]]}],
+    }
+
+    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+
+    assert len(bundle.patterns) == 1
+    assert bundle.patterns[0].pattern_name == "BLUE MOON"
+    assert bundle.patterns[0].pattern_name_source == "auto"
+
+
+def test_bundle_named_multi_pattern_uses_section_prefix_first_names():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"]]},
+            {"name": "A", "progression": [["Dm7"]]},
+            {"name": "Solo", "progression": [["G7"]]},
+            {"name": "Outro", "progression": [["Cmaj7"]]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    names = [p.pattern_name for p in bundle.patterns]
+
+    assert names == ["INT BLUE MOON", "A BLUE MOON", "SOL BLUE MOON", "OUT BLUE MOON"]
+
+
+def test_bundle_overflow_split_adds_section_part_numbers():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {
+                "name": "Solo",
+                "progression": [["Cmaj7"] for _ in range(130)],
+            }
+        ],
+    }
+
+    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+    names = [p.pattern_name for p in bundle.patterns]
+
+    assert len(names) == 2
+    assert names[0] == "SOL1 BLUE MOON"
+    assert names[1] == "SOL2 BLUE MOON"
+
+
+def test_bundle_capacity_split_without_named_sections_uses_p_prefix():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {
+                "name": "A",
+                "progression": [["Cmaj7"] for _ in range(130)],
+            }
+        ],
+    }
+
+    song = compact_progression_to_song_model(payload)
+    song_without_sections = replace(
+        song,
+        measures=tuple(replace(m, section_id=None) for m in song.measures),
+    )
+    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    timeline = render_timeline(song_without_sections, rp)
+    bundle = compile_timeline_to_digitone_bundle_plan(
+        song_without_sections,
+        timeline,
+        default_digitone_target_profile(),
+    )
+
+    names = [p.pattern_name for p in bundle.patterns]
+    assert len(names) == 2
+    assert names[0] == "P1 BLUE MOON"
+    assert names[1] == "P2 BLUE MOON"
+
+
+def test_bundle_long_title_truncation_keeps_prefix_and_length_16():
+    payload = {
+        "name": "SOFTLY AS IN A MORNING SUNRISE",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Solo", "progression": [["Cmaj7"]]},
+            {"name": "Outro", "progression": [["Cmaj7"]]},
+        ],
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+
+    for segment in bundle.patterns:
+        assert len(segment.pattern_name) <= 16
+    assert bundle.patterns[0].pattern_name.startswith("SOL ")
+    assert any("truncated to 16" in w for w in bundle.patterns[0].warnings)
+
+
+def test_bundle_explicit_override_disables_auto_prefix_and_uses_explicit_source():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"]]},
+            {"name": "Solo", "progression": [["G7"]]},
+        ],
+        "digitone_pattern_name_overrides": {
+            "1": "scene one",
+        },
+    }
+
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+
+    assert [p.pattern_name for p in bundle.patterns] == ["SCENE ONE", "SOL BLUE MOON"]
+    assert [p.pattern_name_source for p in bundle.patterns] == ["explicit", "auto"]
+
+
+def test_bundle_explicit_override_truncates_and_manifest_records_warning(tmp_path: Path):
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7"]]}],
+        "digitone_pattern_name_overrides": ["blue moon solo long"],
+    }
+
+    song, timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    assert bundle.patterns[0].pattern_name == "BLUE MOON SOLO L"
+    assert bundle.patterns[0].pattern_name_source == "explicit"
+    assert any("truncated to 16" in w for w in bundle.patterns[0].warnings)
+
+    out = save_digitone_bundle_artifacts(tmp_path, song, timeline, bundle, write_syx=False)
+    manifest = json.loads(out["bundle_manifest_json"].read_text(encoding="utf-8"))
+    warnings = manifest["patterns"][0]["warnings"]
+    assert any("BLUE MOON SOLO LONG" in w and "BLUE MOON SOLO L" in w for w in warnings)
+
+
+def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_position():
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7"]]}],
+        "digitone_pattern_name_overrides": ["BLUE MOON SOLO LO😺"],
+    }
+
+    with pytest.raises(ValueError, match="Unsupported pattern name character"):
+        compile_digitone_bundle_pipeline(payload)

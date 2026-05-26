@@ -52,7 +52,12 @@ class TimingPlan:
     total_steps: int
 
 
-def choose_timing_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> TimingPlan:
+def _choose_timing_plan(
+    timeline: RenderedTimeline,
+    target: DigitoneTargetProfile,
+    *,
+    enforce_pattern_capacity: bool,
+) -> TimingPlan:
     preferred = [target.preferred_speed]
     for s in target.fallback_speeds:
         if s not in preferred:
@@ -72,7 +77,9 @@ def choose_timing_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile
             continue
 
         total_steps = int(total_duration / q_step)
-        if total_steps < 2 or total_steps > 128:
+        if total_steps < 2:
+            continue
+        if enforce_pattern_capacity and total_steps > 128:
             continue
 
         for speed in preferred:
@@ -80,7 +87,19 @@ def choose_timing_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile
             if Fraction(30, 1) <= device_tempo <= Fraction(300, 1):
                 return TimingPlan(speed_ratio=speed, q_step=q_step, device_tempo=device_tempo, total_steps=total_steps)
 
-    raise ValueError("No valid timing plan: speed/tempo range or 128-step capacity constraints are not satisfiable")
+    if enforce_pattern_capacity:
+        raise ValueError("No valid timing plan: speed/tempo range or 128-step capacity constraints are not satisfiable")
+    raise ValueError("No valid shared timing plan: speed/tempo range constraints are not satisfiable")
+
+
+def choose_shared_timing_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> TimingPlan:
+    """Choose song-level shared timing without applying per-pattern 128-step capacity limits."""
+    return _choose_timing_plan(timeline, target, enforce_pattern_capacity=False)
+
+
+def choose_timing_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> TimingPlan:
+    """Choose timing for single-pattern export (includes 2..128 pattern capacity constraints)."""
+    return _choose_timing_plan(timeline, target, enforce_pattern_capacity=True)
 
 
 def _midi_to_digitone_note_name(note_midi: int) -> str:
@@ -101,8 +120,23 @@ def _find_exact_length_code_for_units(units: Fraction) -> int | None:
     return find_exact_length_code_for_sixteenth_units(Fraction(units))
 
 
-def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> DigitoneCompilePlan:
-    timing = choose_timing_plan(timeline, target)
+def compile_timeline_events_with_timing(
+    timeline: RenderedTimeline,
+    target: DigitoneTargetProfile,
+    timing: TimingPlan,
+    *,
+    step_start: int = 1,
+    step_end: int | None = None,
+) -> tuple[CompiledDigitoneEvent, ...]:
+    """Compile timeline events using a preselected timing plan.
+
+    step_start/step_end define a global-step inclusive window. Returned events are
+    remapped to local steps where local_step = global_step - step_start + 1.
+    """
+    if step_start < 1:
+        raise ValueError(f"step_start must be >= 1, got {step_start}")
+    if step_end is not None and step_end < step_start:
+        raise ValueError(f"step_end must be >= step_start, got {step_end} < {step_start}")
 
     events: list[CompiledDigitoneEvent] = []
     seen_pairs: set[tuple[int, int]] = set()
@@ -112,14 +146,22 @@ def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: Digito
             continue
 
         track = target.voice_to_track[event.voice_id]
-        step_fraction = event.onset_quarters / timing.q_step
-        if step_fraction.denominator != 1:
+        global_step_fraction = event.onset_quarters / timing.q_step
+        if global_step_fraction.denominator != 1:
             raise ValueError(f"event onset is not on planner step grid: {event.id}")
-        step = int(step_fraction) + 1
+        global_step = int(global_step_fraction) + 1
 
-        pair = (track, step)
+        if global_step < step_start:
+            continue
+        if step_end is not None and global_step > step_end:
+            continue
+
+        local_step = global_step - step_start + 1
+        pair = (track, local_step)
         if pair in seen_pairs:
-            raise ValueError(f"Compile conflict: duplicate track/step detected for track={track}, step={step}")
+            raise ValueError(
+                f"Compile conflict: duplicate track/step detected for track={track}, local_step={local_step}"
+            )
         seen_pairs.add(pair)
 
         length_units = event.duration_quarters / (timing.speed_ratio * timing.q_step)
@@ -133,15 +175,24 @@ def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: Digito
             CompiledDigitoneEvent(
                 source_event_id=event.id,
                 track=track,
-                step=step,
+                step=local_step,
                 note=_midi_to_digitone_note_name(event.note_midi),
                 velocity=target.default_velocity,
                 length_code=code,
             )
         )
 
+    return tuple(events)
+
+
+def compile_timeline_to_digitone_plan(timeline: RenderedTimeline, target: DigitoneTargetProfile) -> DigitoneCompilePlan:
+    timing = choose_timing_plan(timeline, target)
+    events = compile_timeline_events_with_timing(timeline, target, timing)
+
     return DigitoneCompilePlan(
-        title=timeline.title,
+        source_title=timeline.title,
+        pattern_name=timeline.title,
+        pattern_name_source="auto",
         performance_tempo=timeline.performance_tempo,
         speed=speed_fraction_to_label(timing.speed_ratio),
         speed_ratio=timing.speed_ratio,

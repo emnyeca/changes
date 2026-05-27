@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <work>
+    <work-title>Normalization Case</work-title>
+  </work>
+  <identification>
+    <creator type="composer">Converted Composer</creator>
+    <encoding>
+      <software>@infojunkie/ireal-musicxml 2.1.1</software>
+    </encoding>
+  </identification>
+  <part-list>
+    <score-part id="P1">
+      <part-name>Music</part-name>
+    </score-part>
+  </part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>1</divisions>
+        <key><fifths>0</fifths></key>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+      </attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="M7">major-seventh</kind></harmony>
+    </measure>
+    <measure number="2">
+      <harmony>
+        <root><root-step>D</root-step></root>
+        <kind text="m7b5">half-diminished</kind>
+      </harmony>
+    </measure>
+    <measure number="3">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7b9">dominant</kind>
+        <degree><degree-value>9</degree-value><degree-alter>-1</degree-alter><degree-type>add</degree-type></degree>
+      </harmony>
+    </measure>
+    <measure number="4">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7#9">dominant</kind>
+        <degree><degree-value>9</degree-value><degree-alter>1</degree-alter><degree-type>add</degree-type></degree>
+      </harmony>
+    </measure>
+    <measure number="5">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7+">augmented-seventh</kind>
+      </harmony>
+    </measure>
+    <measure number="6">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7#11">dominant</kind>
+        <degree><degree-value>11</degree-value><degree-alter>1</degree-alter><degree-type>add</degree-type></degree>
+      </harmony>
+    </measure>
+    <measure number="7">
+      <harmony>
+        <root><root-step>A</root-step></root>
+        <kind text="mM7">major-minor</kind>
+      </harmony>
+    </measure>
+    <measure number="8">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7sus">dominant</kind>
+        <degree><degree-value>4</degree-value><degree-alter>0</degree-alter><degree-type>add</degree-type></degree>
+        <degree><degree-value>3</degree-value><degree-alter>0</degree-alter><degree-type>subtract</degree-type></degree>
+      </harmony>
+    </measure>
+    <measure number="9">
+      <harmony>
+        <root><root-step>G</root-step></root>
+        <kind text="7alt">dominant</kind>
+        <degree><degree-value>5</degree-value><degree-alter>-1</degree-alter><degree-type>alter</degree-type></degree>
+        <degree><degree-value>9</degree-value><degree-alter>-1</degree-alter><degree-type>add</degree-type></degree>
+      </harmony>
+      <barline location="right"><repeat direction="backward" times="2"/></barline>
+    </measure>
+    <measure number="10">
+      <barline location="left"><ending number="1" type="start">1.</ending></barline>
+      <direction><direction-type><words>Medium Swing</words></direction-type></direction>
+      <harmony>
+        <root><root-step>C</root-step></root>
+        <kind text="M7">major-seventh</kind>
+      </harmony>
+      <barline location="right"><ending number="1" type="stop">1.</ending></barline>
+    </measure>
+  </part>
+</score-partwise>

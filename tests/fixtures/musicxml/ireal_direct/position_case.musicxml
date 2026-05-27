@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <work><work-title>Position Case</work-title></work>
+  <identification><encoding><software>iReal Pro 2026.5</software></encoding></identification>
+  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>2</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+      </attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="maj7">major-seventh</kind></harmony>
+      <note><rest/><duration>4</duration><type>half</type></note>
+      <harmony><root><root-step>F</root-step></root><kind text="7">dominant</kind></harmony>
+      <note><rest/><duration>4</duration><type>half</type></note>
+    </measure>
+  </part>
+</score-partwise>

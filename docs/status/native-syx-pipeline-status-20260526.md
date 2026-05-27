@@ -46,6 +46,13 @@
   - normalized harmonic identity used for repeated-chord context decisions
   - chromatic fallback removed; context-reduction retry policy implemented (`current+prev+next` -> `current+prev` -> `current`)
   - sus heptatonic extraction rule added: `1-4-5-13-b7-9`
+- MusicXML importer normalization completed:
+  - accepts both iReal Pro direct-export MusicXML and `@infojunkie/ireal-musicxml` output
+  - source-independent harmony normalization (`kind + degree + bass`) with compatibility overrides for `alt` and direct-export `7sus4`
+  - normalized import-layer structured event model implemented with raw degree/form-marker diagnostics retained
+  - phase-1 timing policy implemented: keep source positions as metadata, generate durations by equal subdivision per measure event count
+  - form-marker policy implemented: preserve raw markers, default backward repeat without `times` to normalized `2`, no unfolding yet
+  - paired compatibility tests added for local 20-pair corpus (`examples/musicXML/iRealPro` vs `examples/musicXML/ireal-musicxml`)
 - Regression validation completed:
   - `changes`: `97 passed, 2 skipped`
   - `digitone-syx-toolkit`: `81 passed`
@@ -99,7 +106,6 @@ Execution note:
 
 ## Intentionally Unimplemented Scope (Current)
 
-- MusicXML importer implementation itself (policy is finalized, implementation deferred to importer task).
 - iReal Pro HTML / `irealb://` direct decoding.
 - iReal Pro alias grammar expansion remains deferred (data-driven implementation after symbol-sample collection).
 - `allow_sus_add3` remains deferred.
@@ -107,4 +113,4 @@ Execution note:
 ## Next major target
 
 - iReal Pro HTML importer implementation
-- MusicXML importer implementation
+- MusicXML repeat/ending/DS/DC/Coda unfolding with dedicated validation

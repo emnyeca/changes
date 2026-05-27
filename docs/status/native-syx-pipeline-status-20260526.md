@@ -35,8 +35,14 @@
   - Overflow/sequential import test: pass
   - Repeated section naming test: pass
   - verification mode: direct visual/aural confirmation on hardware (no screenshot/capture evidence recorded)
+- Harmonic context engine extension completed:
+  - canonical qualities added: `m`, `mMaj7`, `m7b5`, `dim7`, `7b9`, `7b13`, `aug7`, `7#5`, `alt`
+  - prioritized collection families added: diatonic/dorian, harmonic minor, melodic minor/lydian dominant, whole-tone, diminished
+  - deterministic tie-break by signature-root circular distance + stable ordering
+  - normalized harmonic identity used for repeated-chord context decisions
+  - chromatic fallback removed; context-reduction retry policy implemented (`current+prev+next` -> `current+prev` -> `current`)
 - Regression validation completed:
-  - `changes`: `63 passed, 2 skipped`
+  - `changes`: `88 passed, 2 skipped`
   - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior
@@ -88,19 +94,9 @@ Execution note:
 
 ## Intentionally Unimplemented Scope (Current)
 
-- Parser/harmony core currently targets only: `maj7`, `m7`, `7`.
-- Chord qualities intentionally deferred in this phase:
-  - altered
-  - sus
-  - diminished
-  - half-diminished
-  - full slash-chord harmonic rules
-- Scale-collection families intentionally deferred in this phase:
-  - harmonic minor collections (priority implementation)
-  - melodic minor / lydian dominant collections (priority implementation)
-  - whole-tone collections (priority implementation)
-  - half-whole / whole-half diminished collections (priority implementation)
-- These are deferred intentionally to keep the current context-aware migration deterministic and stable for the verified `maj7` / `m7` / `7` path.
+- iReal Pro alias grammar expansion remains deferred (data-driven implementation after symbol-sample collection).
+- `sus` quality-specific extraction remains deferred (including `allow_sus_add3`).
+- Advanced importer work remains deferred.
 
 ## Next major target
 

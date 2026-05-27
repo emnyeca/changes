@@ -6,9 +6,9 @@ from typing import List, Sequence
 
 from .chord_parser import flatten_progression
 from .harmonic_context import (
-    build_local_pitch_collection,
     chord_tone_pitch_classes,
     extract_output_chord_tone_set,
+    resolve_scale_collection_with_retry,
     select_scale_collection,
 )
 
@@ -29,8 +29,12 @@ def _fit_chord_range(notes: list[int]) -> list[int]:
 
 def _output_pitch_classes_for_event(chords: Sequence[str], index: int) -> tuple[int, int, int, int, int, int]:
     symbol = chords[index]
-    local = build_local_pitch_collection(chords, index, circular=True, include_slash_bass=True)
-    selected = select_scale_collection(symbol, local)
+    _local, selected = resolve_scale_collection_with_retry(
+        chords,
+        index,
+        circular=True,
+        include_slash_bass=True,
+    )
     return extract_output_chord_tone_set(symbol, selected)
 
 

@@ -1,10 +1,10 @@
 """Context-aware harmonic selection for six-slot voicing generation.
 
 This module owns musical-context decisions:
-- chord-tone extraction from supported symbols
-- local pitch collection construction (prev/current/next distinct chord)
-- deterministic scale-collection selection
-- output slot extraction (1, 3, 5, 6/13, 7, 9)
+- chord constituent extraction
+- local pitch collection construction (with deterministic retry)
+- prioritized scale-collection selection
+- output slot extraction by collection family
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
-from .chord_parser import parse_chord_symbol
+from .chord_parser import normalize_chord_quality, parse_chord_symbol
 from .note import pitch_class_to_semitone, semitone_to_pitch_class
 
 
@@ -21,49 +21,225 @@ class ChordCore:
     symbol: str
     root: str
     quality: str
+    normalized_quality: str
+    normalized_alterations: tuple[str, ...]
     bass: str | None
+    root_pc: int
+    bass_pc: int | None
+
+
+@dataclass(frozen=True)
+class HarmonicIdentity:
+    root_pc: int
+    normalized_quality: str
+    normalized_alterations: tuple[str, ...]
+    slash_bass_pc: int | None
 
 
 @dataclass(frozen=True)
 class ScaleCollection:
     name: str
+    family: str
     priority: int
     pitch_classes: frozenset[int]
+    anchor_root_pc: int | None
+    extraction_rule: str
+    ordered_pitch_classes: tuple[int, ...]
+    requires_signature_root_match: bool = False
 
 
-SUPPORTED_QUALITIES = {"maj7", "m7", "7"}
-CHROMATIC_COLLECTION = ScaleCollection(
-    name="chromatic_fallback",
-    priority=99,
-    pitch_classes=frozenset(range(12)),
-)
+class UnsupportedHarmonicContextError(ValueError):
+    """Raised when no implemented collection can resolve a chord context."""
 
-# Preferred six-slot color for currently supported chord qualities.
-SLOT_INTERVAL_BLUEPRINTS: dict[str, tuple[int, int, int, int, int, int]] = {
-    "maj7": (0, 4, 7, 9, 11, 2),
-    "m7": (0, 3, 7, 9, 10, 2),
-    "7": (0, 4, 7, 9, 10, 2),
+
+SUPPORTED_QUALITIES = {
+    "maj7",
+    "m7",
+    "7",
+    "m",
+    "mMaj7",
+    "m7b5",
+    "dim7",
+    "7b9",
+    "7b13",
+    "aug7",
+    "7#5",
+    "alt",
 }
 
+EXTRACTION_HEPTATONIC = "heptatonic_1351379"
+EXTRACTION_WHOLE_TONE = "whole_tone_13sharp11sharp5b79"
+EXTRACTION_DIM_HALF_WHOLE = "dim_half_whole_1b3b56b7b9"
+EXTRACTION_DIM_WHOLE_HALF = "dim_whole_half_1b3b5679"
 
-def _major_collection(root_pc: int) -> frozenset[int]:
-    return frozenset((root_pc + i) % 12 for i in (0, 2, 4, 5, 7, 9, 11))
+_HEPTATONIC_DEGREE_INDEXES = (0, 2, 4, 5, 6, 1)
 
 
-def _diatonic_collection_candidates() -> tuple[ScaleCollection, ...]:
+def _family_rank(family: str) -> int:
+    if family == "diatonic_dorian":
+        return 1
+    if family == "harmonic_minor":
+        return 2
+    if family == "melodic_minor_lydian_dominant":
+        return 3
+    if family == "whole_tone":
+        return 4
+    if family == "diminished":
+        return 5
+    return 99
+
+
+def _normalized_alterations_for_quality(quality: str) -> tuple[str, ...]:
+    q = normalize_chord_quality(quality)
+    if q == "7b9":
+        return ("b9",)
+    if q == "7b13":
+        return ("b13",)
+    if q == "7#5":
+        return ("#5",)
+    if q == "m7b5":
+        return ("b5",)
+    if q == "dim7":
+        return ("dim7",)
+    if q == "alt":
+        return ("alt",)
+    return ()
+
+def _ordered_pcs(anchor_root_pc: int, intervals: tuple[int, ...]) -> tuple[int, ...]:
+    return tuple((anchor_root_pc + i) % 12 for i in intervals)
+
+
+def _collection_from_intervals(
+    *,
+    name: str,
+    family: str,
+    priority: int,
+    anchor_root_pc: int,
+    intervals_from_anchor: tuple[int, ...],
+    extraction_rule: str,
+    requires_signature_root_match: bool = False,
+) -> ScaleCollection:
+    ordered = _ordered_pcs(anchor_root_pc, intervals_from_anchor)
+    return ScaleCollection(
+        name=name,
+        family=family,
+        priority=priority,
+        pitch_classes=frozenset(ordered),
+        anchor_root_pc=anchor_root_pc,
+        extraction_rule=extraction_rule,
+        ordered_pitch_classes=ordered,
+        requires_signature_root_match=requires_signature_root_match,
+    )
+
+
+def _all_scale_collections() -> tuple[ScaleCollection, ...]:
     out: list[ScaleCollection] = []
-    for tonic in range(12):
+
+    # Priority 1: Dorian-identified diatonic collections (7-note).
+    for dorian_root in range(12):
+        major_tonic = (dorian_root - 2) % 12
         out.append(
-            ScaleCollection(
-                name=f"{semitone_to_pitch_class(tonic)}_diatonic",
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(dorian_root)}_dorian_diatonic",
+                family="diatonic_dorian",
                 priority=1,
-                pitch_classes=_major_collection(tonic),
+                anchor_root_pc=dorian_root,
+                intervals_from_anchor=(0, 2, 3, 5, 7, 9, 10),
+                extraction_rule=EXTRACTION_HEPTATONIC,
             )
         )
+        # Keep the underlying pitch set equal to the related major collection.
+        if major_tonic != dorian_root:
+            pcs = _ordered_pcs(major_tonic, (0, 2, 4, 5, 7, 9, 11))
+            out[-1] = ScaleCollection(
+                name=out[-1].name,
+                family=out[-1].family,
+                priority=out[-1].priority,
+                pitch_classes=frozenset(pcs),
+                anchor_root_pc=out[-1].anchor_root_pc,
+                extraction_rule=out[-1].extraction_rule,
+                ordered_pitch_classes=out[-1].ordered_pitch_classes,
+                requires_signature_root_match=out[-1].requires_signature_root_match,
+            )
+
+    # Priority 2: Harmonic minor.
+    for root in range(12):
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_harmonic_minor",
+                family="harmonic_minor",
+                priority=2,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 3, 5, 7, 8, 11),
+                extraction_rule=EXTRACTION_HEPTATONIC,
+            )
+        )
+
+    # Priority 3: Melodic minor + Lydian dominant families.
+    for root in range(12):
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_melodic_minor",
+                family="melodic_minor_lydian_dominant",
+                priority=3,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 3, 5, 7, 9, 11),
+                extraction_rule=EXTRACTION_HEPTATONIC,
+            )
+        )
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_lydian_dominant",
+                family="melodic_minor_lydian_dominant",
+                priority=3,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 4, 6, 7, 9, 10),
+                extraction_rule=EXTRACTION_HEPTATONIC,
+            )
+        )
+
+    # Priority 4: Whole tone.
+    for root in range(12):
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_whole_tone",
+                family="whole_tone",
+                priority=4,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 4, 6, 8, 10),
+                extraction_rule=EXTRACTION_WHOLE_TONE,
+            )
+        )
+
+    # Priority 5: Diminished collections.
+    for root in range(12):
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_half_whole_diminished",
+                family="diminished",
+                priority=5,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 1, 3, 4, 6, 7, 9, 10),
+                extraction_rule=EXTRACTION_DIM_HALF_WHOLE,
+                requires_signature_root_match=True,
+            )
+        )
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_whole_half_diminished",
+                family="diminished",
+                priority=5,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 3, 5, 6, 8, 9, 11),
+                extraction_rule=EXTRACTION_DIM_WHOLE_HALF,
+                requires_signature_root_match=True,
+            )
+        )
+
     return tuple(out)
 
 
-DIATONIC_COLLECTIONS = _diatonic_collection_candidates()
+ALL_SCALE_COLLECTIONS = _all_scale_collections()
 
 
 def parse_chord_core(symbol: str) -> ChordCore:
@@ -77,7 +253,9 @@ def parse_chord_core(symbol: str) -> ChordCore:
     if parsed["quality"] not in SUPPORTED_QUALITIES:
         raise ValueError(f"Unsupported chord quality: {parsed['quality']}")
 
+    root_pc = pitch_class_to_semitone(parsed["root"])
     bass: str | None = None
+    bass_pc: int | None = None
     if right is not None:
         # Slash bass parsing intentionally limited to pitch class only.
         if len(right) >= 2 and right[1] in ("#", "b"):
@@ -85,27 +263,54 @@ def parse_chord_core(symbol: str) -> ChordCore:
         else:
             bass = right[:1]
         if bass:
-            pitch_class_to_semitone(bass)
+            bass_pc = pitch_class_to_semitone(bass)
 
-    return ChordCore(symbol=text, root=parsed["root"], quality=parsed["quality"], bass=bass)
+    normalized_quality = parsed.get("normalized_quality") or normalize_chord_quality(parsed["quality"])
+    return ChordCore(
+        symbol=text,
+        root=parsed["root"],
+        quality=parsed["quality"],
+        normalized_quality=normalized_quality,
+        normalized_alterations=_normalized_alterations_for_quality(parsed["quality"]),
+        bass=bass,
+        root_pc=root_pc,
+        bass_pc=bass_pc,
+    )
+
+
+def normalized_harmonic_identity(symbol: str) -> HarmonicIdentity:
+    core = parse_chord_core(symbol)
+    return HarmonicIdentity(
+        root_pc=core.root_pc,
+        normalized_quality=core.normalized_quality,
+        normalized_alterations=core.normalized_alterations,
+        slash_bass_pc=core.bass_pc,
+    )
 
 
 def chord_tone_pitch_classes(symbol: str, include_bass: bool = False) -> frozenset[int]:
     core = parse_chord_core(symbol)
-    root_pc = pitch_class_to_semitone(core.root)
+    intervals_by_quality: dict[str, tuple[int, ...]] = {
+        "maj7": (0, 4, 7, 11),
+        "m7": (0, 3, 7, 10),
+        "7": (0, 4, 7, 10),
+        "m": (0, 3, 7),
+        "mMaj7": (0, 3, 7, 11),
+        "m7b5": (0, 3, 6, 10),
+        "dim7": (0, 3, 6, 9),
+        "7b9": (0, 4, 7, 10, 1),
+        "7b13": (0, 4, 7, 10, 8),
+        "7#5": (0, 4, 8, 10),
+        "alt": (0, 1, 4, 8),
+    }
 
-    if core.quality == "maj7":
-        intervals = (0, 4, 7, 11)
-    elif core.quality == "m7":
-        intervals = (0, 3, 7, 10)
-    elif core.quality == "7":
-        intervals = (0, 4, 7, 10)
-    else:  # pragma: no cover
+    intervals = intervals_by_quality.get(core.normalized_quality)
+    if intervals is None:
         raise ValueError(f"Unsupported chord quality: {core.quality}")
 
-    pcs = {(root_pc + i) % 12 for i in intervals}
-    if include_bass and core.bass is not None:
-        pcs.add(pitch_class_to_semitone(core.bass))
+    pcs = {(core.root_pc + i) % 12 for i in intervals}
+    if include_bass and core.bass_pc is not None:
+        pcs.add(core.bass_pc)
     return frozenset(pcs)
 
 
@@ -125,17 +330,17 @@ def _normalize_progression(progression: Sequence[str | Sequence[str]]) -> list[s
 
 
 def _find_distinct_index(
-    symbols: Sequence[str],
+    identities: Sequence[HarmonicIdentity],
     current_index: int,
     direction: int,
     *,
     circular: bool,
 ) -> int | None:
-    n = len(symbols)
+    n = len(identities)
     if n == 0:
         return None
 
-    current_symbol = symbols[current_index]
+    current_identity = identities[current_index]
     cursor = current_index
     visited = 0
 
@@ -147,7 +352,7 @@ def _find_distinct_index(
             return None
 
         visited += 1
-        if symbols[cursor] != current_symbol:
+        if identities[cursor] != current_identity:
             return cursor
 
     return None
@@ -166,13 +371,14 @@ def build_local_pitch_collection(
     if index < 0 or index >= len(symbols):
         raise IndexError(f"index out of range: {index}")
 
+    identities = [normalized_harmonic_identity(s) for s in symbols]
     local = set(chord_tone_pitch_classes(symbols[index], include_bass=include_slash_bass))
 
-    prev_idx = _find_distinct_index(symbols, index, -1, circular=circular)
+    prev_idx = _find_distinct_index(identities, index, -1, circular=circular)
     if prev_idx is not None:
         local.update(chord_tone_pitch_classes(symbols[prev_idx], include_bass=include_slash_bass))
 
-    next_idx = _find_distinct_index(symbols, index, +1, circular=circular)
+    next_idx = _find_distinct_index(identities, index, +1, circular=circular)
     if next_idx is not None:
         local.update(chord_tone_pitch_classes(symbols[next_idx], include_bass=include_slash_bass))
 
@@ -187,77 +393,139 @@ def _collection_scale_intervals_from_root(collection: Iterable[int], root_pc: in
 def _extract_slots_from_heptatonic_intervals(intervals: tuple[int, ...]) -> tuple[int, int, int, int, int, int]:
     if len(intervals) != 7:
         raise ValueError("heptatonic interval extraction requires 7 notes")
-    return (
-        intervals[0],
-        intervals[2],
-        intervals[4],
-        intervals[5],
-        intervals[6],
-        intervals[1],
-    )
+    return tuple(intervals[i] for i in _HEPTATONIC_DEGREE_INDEXES)
 
 
-def _chord_quality_constraints(quality: str) -> tuple[int, int, int]:
-    if quality == "maj7":
-        return (4, 7, 11)
-    if quality == "m7":
-        return (3, 7, 10)
-    if quality == "7":
-        return (4, 7, 10)
-    raise ValueError(f"Unsupported chord quality: {quality}")
+def _circular_semitone_distance(a: int, b: int) -> int:
+    up = (b - a) % 12
+    down = (a - b) % 12
+    return min(up, down)
+
+
+def _relative_order_for_signature_root(collection: ScaleCollection, signature_root_pc: int) -> tuple[int, ...] | None:
+    try:
+        root_index = collection.ordered_pitch_classes.index(signature_root_pc)
+    except ValueError:
+        return None
+
+    rotated = collection.ordered_pitch_classes[root_index:] + collection.ordered_pitch_classes[:root_index]
+    return tuple((pc - signature_root_pc) % 12 for pc in rotated)
 
 
 def select_scale_collection(symbol: str, local_pitch_collection: set[int] | frozenset[int]) -> ScaleCollection:
     core = parse_chord_core(symbol)
-    root_pc = pitch_class_to_semitone(core.root)
     local = set(local_pitch_collection)
 
-    constrained_third, constrained_fifth, constrained_seventh = _chord_quality_constraints(core.quality)
-    desired = SLOT_INTERVAL_BLUEPRINTS[core.quality]
-
-    candidates: list[tuple[int, int, ScaleCollection]] = []
-    for candidate in DIATONIC_COLLECTIONS:
+    candidates: list[ScaleCollection] = []
+    for candidate in ALL_SCALE_COLLECTIONS:
         pcs = set(candidate.pitch_classes)
         if not local.issubset(pcs):
             continue
-
-        intervals = _collection_scale_intervals_from_root(pcs, root_pc)
-        if 0 not in intervals:
+        if core.root_pc not in pcs:
             continue
-        if constrained_third not in intervals or constrained_fifth not in intervals or constrained_seventh not in intervals:
+        if candidate.requires_signature_root_match and candidate.anchor_root_pc != core.root_pc:
             continue
-        if len(intervals) != 7:
-            continue
+        candidates.append(candidate)
 
-        slots = _extract_slots_from_heptatonic_intervals(intervals)
-        mismatch_score = sum(2 if i in (3, 5) else 1 for i, (a, b) in enumerate(zip(slots, desired)) if a != b)
-        candidates.append((candidate.priority, mismatch_score, candidate))
+    if not candidates:
+        pcs_text = ",".join(semitone_to_pitch_class(pc) for pc in sorted(local))
+        raise UnsupportedHarmonicContextError(
+            f"Unsupported harmonic context for {symbol}: local pitch collection {{{pcs_text}}}"
+        )
 
-    if candidates:
-        candidates.sort(key=lambda row: (row[0], row[1], row[2].name))
-        return candidates[0][2]
+    best_priority = min(c.priority for c in candidates)
+    pool = [c for c in candidates if c.priority == best_priority]
+
+    def _sort_key(c: ScaleCollection) -> tuple[int, int, int, int, str]:
+        anchor = c.anchor_root_pc if c.anchor_root_pc is not None else core.root_pc
+        distance = _circular_semitone_distance(core.root_pc, anchor)
+        diminished_bias = 0
+        if c.family == "diminished" and c.extraction_rule == EXTRACTION_DIM_WHOLE_HALF:
+            diminished_bias = 1
+        return (distance, diminished_bias, _family_rank(c.family), anchor, c.name)
+
+    pool.sort(key=_sort_key)
+    return pool[0]
+
+
+def resolve_scale_collection_with_retry(
+    progression: Sequence[str | Sequence[str]],
+    index: int,
+    *,
+    circular: bool = True,
+    include_slash_bass: bool = True,
+) -> tuple[frozenset[int], ScaleCollection]:
+    symbols = _normalize_progression(progression)
+    if not symbols:
+        raise ValueError("progression must not be empty")
+    if index < 0 or index >= len(symbols):
+        raise IndexError(f"index out of range: {index}")
+
+    identities = [normalized_harmonic_identity(s) for s in symbols]
+    prev_idx = _find_distinct_index(identities, index, -1, circular=circular)
+    next_idx = _find_distinct_index(identities, index, +1, circular=circular)
+
+    attempts: list[tuple[str, tuple[int, ...]]] = []
+
+    attempt1_indexes = [index]
+    if prev_idx is not None:
+        attempt1_indexes.append(prev_idx)
+    if next_idx is not None:
+        attempt1_indexes.append(next_idx)
+    attempts.append(("current+previous+next", tuple(attempt1_indexes)))
+
+    attempt2_indexes = [index]
+    if prev_idx is not None:
+        attempt2_indexes.append(prev_idx)
+    attempts.append(("current+previous", tuple(attempt2_indexes)))
+
+    attempts.append(("current_only", (index,)))
+
+    last_error: UnsupportedHarmonicContextError | None = None
+    for _label, indices in attempts:
+        local: set[int] = set()
+        for i in indices:
+            local.update(chord_tone_pitch_classes(symbols[i], include_bass=include_slash_bass))
+        local_frozen = frozenset(local)
+        try:
+            selected = select_scale_collection(symbols[index], local_frozen)
+            return local_frozen, selected
+        except UnsupportedHarmonicContextError as exc:
+            last_error = exc
+
+    if last_error is not None:
+        raise last_error
+
+    raise UnsupportedHarmonicContextError(f"Unsupported harmonic context for {symbols[index]}")
 
     return CHROMATIC_COLLECTION
 
 
 def extract_output_chord_tone_set(symbol: str, selected_collection: ScaleCollection) -> tuple[int, int, int, int, int, int]:
     core = parse_chord_core(symbol)
-    root_pc = pitch_class_to_semitone(core.root)
 
-    if selected_collection == CHROMATIC_COLLECTION:
-        intervals = SLOT_INTERVAL_BLUEPRINTS[core.quality]
+    if selected_collection.extraction_rule == EXTRACTION_HEPTATONIC:
+        rel = _relative_order_for_signature_root(selected_collection, core.root_pc)
+        if rel is None or len(rel) != 7:
+            raise UnsupportedHarmonicContextError(
+                f"Heptatonic extraction unavailable for {symbol} in {selected_collection.name}"
+            )
+        intervals = _extract_slots_from_heptatonic_intervals(rel)
+    elif selected_collection.extraction_rule == EXTRACTION_WHOLE_TONE:
+        intervals = (0, 4, 6, 8, 10, 2)
+    elif selected_collection.extraction_rule == EXTRACTION_DIM_HALF_WHOLE:
+        intervals = (0, 3, 6, 9, 10, 1)
+    elif selected_collection.extraction_rule == EXTRACTION_DIM_WHOLE_HALF:
+        intervals = (0, 3, 6, 9, 11, 2)
     else:
-        rel = _collection_scale_intervals_from_root(selected_collection.pitch_classes, root_pc)
-        if len(rel) != 7 or 0 not in rel:
-            intervals = SLOT_INTERVAL_BLUEPRINTS[core.quality]
-        else:
-            intervals = _extract_slots_from_heptatonic_intervals(rel)
+        raise UnsupportedHarmonicContextError(
+            f"Unknown extraction rule {selected_collection.extraction_rule} for {selected_collection.name}"
+        )
 
-    return tuple((root_pc + i) % 12 for i in intervals)
+    return tuple((core.root_pc + i) % 12 for i in intervals)
 
 
 def output_chord_tone_names(symbol: str, progression: Sequence[str | Sequence[str]], index: int) -> tuple[str, ...]:
-    local = build_local_pitch_collection(progression, index)
-    selected = select_scale_collection(symbol, local)
+    local, selected = resolve_scale_collection_with_retry(progression, index)
     tones = extract_output_chord_tone_set(symbol, selected)
     return tuple(semitone_to_pitch_class(pc) for pc in tones)

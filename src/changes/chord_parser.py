@@ -6,7 +6,30 @@ import re
 from typing import Dict, List, Sequence
 import yaml
 
-_CHORD_RE = re.compile(r"^(?P<root>[A-G](?:#|b)?)(?P<quality>maj7|m7|7)$")
+_QUALITY_PATTERNS = (
+    "mMaj7",
+    "m7b5",
+    "dim7",
+    "7b13",
+    "7b9",
+    "aug7",
+    "7#5",
+    "alt",
+    "maj7",
+    "m7",
+    "m",
+    "7",
+)
+_CHORD_RE = re.compile(
+    r"^(?P<root>[A-G](?:#|b)?)(?P<quality>" + "|".join(_QUALITY_PATTERNS) + r")$"
+)
+
+
+def normalize_chord_quality(quality: str) -> str:
+    q = str(quality)
+    if q == "aug7":
+        return "7#5"
+    return q
 
 
 def parse_progression(path: str) -> Sequence[Sequence[str]]:
@@ -41,17 +64,19 @@ def parse_progression(path: str) -> Sequence[Sequence[str]]:
 
 
 def parse_chord_symbol(chord: str) -> Dict[str, str]:
-    """Parse chord symbols for the core ii-V-I set: Cmaj7 / Dm7 / G7."""
+    """Parse canonical chord symbols used by the harmony engine."""
     m = _CHORD_RE.match(chord.strip())
     if not m:
         raise ValueError(f"Unsupported chord symbol: {chord}")
 
     root = m.group("root")
     quality = m.group("quality")
+    normalized_quality = normalize_chord_quality(quality)
     return {
         "symbol": chord.strip(),
         "root": root,
         "quality": quality,
+        "normalized_quality": normalized_quality,
     }
 
 

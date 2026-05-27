@@ -12,27 +12,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
-from .chord_parser import normalize_chord_quality, parse_chord_symbol
+from .chord_parser import ChordSymbolCore, parse_chord_core
 from .note import pitch_class_to_semitone, semitone_to_pitch_class
-
-
-@dataclass(frozen=True)
-class ChordCore:
-    symbol: str
-    root: str
-    quality: str
-    normalized_quality: str
-    normalized_alterations: tuple[str, ...]
-    bass: str | None
-    root_pc: int
-    bass_pc: int | None
-
 
 @dataclass(frozen=True)
 class HarmonicIdentity:
     root_pc: int
     normalized_quality: str
-    normalized_alterations: tuple[str, ...]
+    normalized_modifiers: tuple[str, ...]
     slash_bass_pc: int | None
 
 
@@ -53,17 +40,29 @@ class UnsupportedHarmonicContextError(ValueError):
 
 
 SUPPORTED_QUALITIES = {
+    "",
+    "m",
+    "6",
+    "m6",
     "maj7",
     "m7",
-    "7",
-    "m",
     "mMaj7",
+    "m9",
     "m7b5",
     "dim7",
+    "7",
+    "9",
     "7b9",
-    "7b13",
-    "aug7",
+    "7#9",
+    "7b5",
     "7#5",
+    "aug7",
+    "7#11",
+    "7b13",
+    "7#9b5",
+    "7sus4",
+    "9sus4",
+    "7b9sus4",
     "alt",
 }
 
@@ -89,21 +88,15 @@ def _family_rank(family: str) -> int:
     return 99
 
 
-def _normalized_alterations_for_quality(quality: str) -> tuple[str, ...]:
-    q = normalize_chord_quality(quality)
-    if q == "7b9":
-        return ("b9",)
-    if q == "7b13":
-        return ("b13",)
-    if q == "7#5":
-        return ("#5",)
-    if q == "m7b5":
-        return ("b5",)
-    if q == "dim7":
-        return ("dim7",)
-    if q == "alt":
-        return ("alt",)
-    return ()
+def _normalized_modifiers(core: ChordSymbolCore) -> tuple[str, ...]:
+    parts: set[str] = set()
+    parts.update(f"ext:{x}" for x in core.extensions)
+    parts.update(f"add:{x}" for x in core.added_degrees)
+    parts.update(f"alt:{x}" for x in core.altered_degrees)
+    parts.update(f"omit:{x}" for x in core.omitted_degrees)
+    if core.special_semantic_tag is not None:
+        parts.add(f"tag:{core.special_semantic_tag}")
+    return tuple(sorted(parts))
 
 def _ordered_pcs(anchor_root_pc: int, intervals: tuple[int, ...]) -> tuple[int, ...]:
     return tuple((anchor_root_pc + i) % 12 for i in intervals)
@@ -242,64 +235,40 @@ def _all_scale_collections() -> tuple[ScaleCollection, ...]:
 ALL_SCALE_COLLECTIONS = _all_scale_collections()
 
 
-def parse_chord_core(symbol: str) -> ChordCore:
-    text = str(symbol).strip()
-    left, right = text, None
-    if "/" in text:
-        left, right = text.split("/", 1)
-        right = right.strip() or None
-
-    parsed = parse_chord_symbol(left.strip())
-    if parsed["quality"] not in SUPPORTED_QUALITIES:
-        raise ValueError(f"Unsupported chord quality: {parsed['quality']}")
-
-    root_pc = pitch_class_to_semitone(parsed["root"])
-    bass: str | None = None
-    bass_pc: int | None = None
-    if right is not None:
-        # Slash bass parsing intentionally limited to pitch class only.
-        if len(right) >= 2 and right[1] in ("#", "b"):
-            bass = right[:2]
-        else:
-            bass = right[:1]
-        if bass:
-            bass_pc = pitch_class_to_semitone(bass)
-
-    normalized_quality = parsed.get("normalized_quality") or normalize_chord_quality(parsed["quality"])
-    return ChordCore(
-        symbol=text,
-        root=parsed["root"],
-        quality=parsed["quality"],
-        normalized_quality=normalized_quality,
-        normalized_alterations=_normalized_alterations_for_quality(parsed["quality"]),
-        bass=bass,
-        root_pc=root_pc,
-        bass_pc=bass_pc,
-    )
-
-
 def normalized_harmonic_identity(symbol: str) -> HarmonicIdentity:
     core = parse_chord_core(symbol)
     return HarmonicIdentity(
         root_pc=core.root_pc,
         normalized_quality=core.normalized_quality,
-        normalized_alterations=core.normalized_alterations,
-        slash_bass_pc=core.bass_pc,
+        normalized_modifiers=_normalized_modifiers(core),
+        slash_bass_pc=core.slash_bass_pc,
     )
 
 
 def chord_tone_pitch_classes(symbol: str, include_bass: bool = False) -> frozenset[int]:
     core = parse_chord_core(symbol)
     intervals_by_quality: dict[str, tuple[int, ...]] = {
+        "": (0, 4, 7),
         "maj7": (0, 4, 7, 11),
         "m7": (0, 3, 7, 10),
         "7": (0, 4, 7, 10),
         "m": (0, 3, 7),
+        "6": (0, 4, 7, 9),
+        "m6": (0, 3, 7, 9),
         "mMaj7": (0, 3, 7, 11),
+        "m9": (0, 3, 7, 10, 2),
         "m7b5": (0, 3, 6, 10),
         "dim7": (0, 3, 6, 9),
+        "9": (0, 4, 7, 10, 2),
         "7b9": (0, 4, 7, 10, 1),
+        "7#9": (0, 4, 7, 10, 3),
+        "7b5": (0, 4, 6, 10),
+        "7#11": (0, 4, 7, 10, 6),
         "7b13": (0, 4, 7, 10, 8),
+        "7#9b5": (0, 4, 6, 10, 3),
+        "7sus4": (0, 5, 7, 10),
+        "9sus4": (0, 5, 7, 10, 2),
+        "7b9sus4": (0, 5, 7, 10, 1),
         "7#5": (0, 4, 8, 10),
         "alt": (0, 1, 4, 8),
     }
@@ -309,8 +278,8 @@ def chord_tone_pitch_classes(symbol: str, include_bass: bool = False) -> frozens
         raise ValueError(f"Unsupported chord quality: {core.quality}")
 
     pcs = {(core.root_pc + i) % 12 for i in intervals}
-    if include_bass and core.bass_pc is not None:
-        pcs.add(core.bass_pc)
+    if include_bass and core.slash_bass_pc is not None:
+        pcs.add(core.slash_bass_pc)
     return frozenset(pcs)
 
 
@@ -498,8 +467,6 @@ def resolve_scale_collection_with_retry(
 
     raise UnsupportedHarmonicContextError(f"Unsupported harmonic context for {symbols[index]}")
 
-    return CHROMATIC_COLLECTION
-
 
 def extract_output_chord_tone_set(symbol: str, selected_collection: ScaleCollection) -> tuple[int, int, int, int, int, int]:
     core = parse_chord_core(symbol)
@@ -510,7 +477,15 @@ def extract_output_chord_tone_set(symbol: str, selected_collection: ScaleCollect
             raise UnsupportedHarmonicContextError(
                 f"Heptatonic extraction unavailable for {symbol} in {selected_collection.name}"
             )
-        intervals = _extract_slots_from_heptatonic_intervals(rel)
+        if core.special_semantic_tag == "sus":
+            # Sus-specific heptatonic extraction: 1,4,5,13,b7,9
+            if len(rel) != 7:
+                raise UnsupportedHarmonicContextError(
+                    f"Sus extraction unavailable for {symbol} in {selected_collection.name}"
+                )
+            intervals = (rel[0], rel[3], rel[4], rel[5], rel[6], rel[1])
+        else:
+            intervals = _extract_slots_from_heptatonic_intervals(rel)
     elif selected_collection.extraction_rule == EXTRACTION_WHOLE_TONE:
         intervals = (0, 4, 6, 8, 10, 2)
     elif selected_collection.extraction_rule == EXTRACTION_DIM_HALF_WHOLE:

@@ -36,13 +36,18 @@
   - Repeated section naming test: pass
   - verification mode: direct visual/aural confirmation on hardware (no screenshot/capture evidence recorded)
 - Harmonic context engine extension completed:
-  - canonical qualities added: `m`, `mMaj7`, `m7b5`, `dim7`, `7b9`, `7b13`, `aug7`, `7#5`, `alt`
+  - canonical qualities added:
+    - `major`, `m`, `6`, `m6`, `maj7`, `m7`, `mMaj7`, `m9`, `m7b5`, `dim7`
+    - `7`, `9`, `7b9`, `7#9`, `7b5`, `7#5`, `7#11`, `7b13`, `7#9b5`
+    - `7sus4`, `9sus4`, `7b9sus4`, `alt`, slash bass
+  - structured internal chord model introduced (base quality / 7th / extensions / altered / added / omitted / slash / semantic tag)
   - prioritized collection families added: diatonic/dorian, harmonic minor, melodic minor/lydian dominant, whole-tone, diminished
   - deterministic tie-break by signature-root circular distance + stable ordering
   - normalized harmonic identity used for repeated-chord context decisions
   - chromatic fallback removed; context-reduction retry policy implemented (`current+prev+next` -> `current+prev` -> `current`)
+  - sus heptatonic extraction rule added: `1-4-5-13-b7-9`
 - Regression validation completed:
-  - `changes`: `88 passed, 2 skipped`
+  - `changes`: `97 passed, 2 skipped`
   - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior
@@ -94,9 +99,10 @@ Execution note:
 
 ## Intentionally Unimplemented Scope (Current)
 
+- MusicXML importer implementation itself (policy is finalized, implementation deferred to importer task).
+- iReal Pro HTML / `irealb://` direct decoding.
 - iReal Pro alias grammar expansion remains deferred (data-driven implementation after symbol-sample collection).
-- `sus` quality-specific extraction remains deferred (including `allow_sus_add3`).
-- Advanced importer work remains deferred.
+- `allow_sus_add3` remains deferred.
 
 ## Next major target
 

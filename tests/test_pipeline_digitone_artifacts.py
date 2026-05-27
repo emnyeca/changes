@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import importlib
 
 import yaml
+import pytest
 
 from changes.pipeline_digitone import (
     compile_digitone_bundle_pipeline,
@@ -125,3 +127,39 @@ def test_bundle_artifacts_write_syx_and_concat_in_manifest_order(tmp_path: Path,
 
     bundle_bytes = (tmp_path / manifest["bundle_syx"]).read_bytes()
     assert bundle_bytes == concatenated_expected
+
+
+def test_bundle_artifacts_write_syx_with_real_toolkit_end_to_end(tmp_path: Path):
+    if importlib.util.find_spec("digitone_syx_toolkit.syx") is None:
+        pytest.skip("digitone-syx-toolkit is not installed")
+
+    from digitone_syx_toolkit.syx import load_syx_file
+
+    payload = {
+        "name": "Blue Moon",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "Intro", "progression": [["Cmaj7"] for _ in range(16)]},
+            {"name": "A", "progression": [["Dm7"] for _ in range(16)]},
+            {"name": "Solo", "progression": [["G7"] for _ in range(16)]},
+            {"name": "Outro", "progression": [["Cmaj7"] for _ in range(16)]},
+        ],
+    }
+
+    song, timeline, bundle_plan = compile_digitone_bundle_pipeline(payload)
+    out = save_digitone_bundle_artifacts(tmp_path, song, timeline, bundle_plan, write_syx=True)
+
+    manifest = json.loads(out["bundle_manifest_json"].read_text(encoding="utf-8"))
+    assert manifest["pattern_count"] == len(manifest["patterns"])
+
+    individual_messages: list[bytes] = []
+    for entry in manifest["patterns"]:
+        syx_path = tmp_path / entry["syx"]
+        packets = load_syx_file(syx_path)
+        assert len(packets) == 1
+        individual_messages.extend(packets)
+
+    bundle_packets = load_syx_file(tmp_path / manifest["bundle_syx"])
+    assert len(bundle_packets) == manifest["pattern_count"]
+    assert bundle_packets == individual_messages

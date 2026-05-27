@@ -1,0 +1,40 @@
+name: BLUE MOON
+tempo: 120
+time_signature: 4/4
+sections:
+  - name: Intro
+    progression:
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+  - name: A
+    progression:
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]
+      - [Cmaj7]

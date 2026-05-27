@@ -1,0 +1,611 @@
+{
+  "source_title": "BLUE MOON",
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "8",
+    "device_tempo": "30"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "SOL1 BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo__OCC1",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "segment_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 2,
+      "global_step_start": 1,
+      "global_step_end": 128,
+      "total_steps": 128,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev1_bass#chunk1",
+          "track": 7,
+          "step": 1,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk2",
+          "track": 7,
+          "step": 17,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk3",
+          "track": 7,
+          "step": 33,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk4",
+          "track": 7,
+          "step": 49,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk5",
+          "track": 7,
+          "step": 65,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk6",
+          "track": 7,
+          "step": 81,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk7",
+          "track": 7,
+          "step": 97,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk8",
+          "track": 7,
+          "step": 113,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk1",
+          "track": 1,
+          "step": 1,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk2",
+          "track": 1,
+          "step": 17,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk3",
+          "track": 1,
+          "step": 33,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk4",
+          "track": 1,
+          "step": 49,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk5",
+          "track": 1,
+          "step": 65,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk6",
+          "track": 1,
+          "step": 81,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk7",
+          "track": 1,
+          "step": 97,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk8",
+          "track": 1,
+          "step": 113,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk1",
+          "track": 2,
+          "step": 1,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk2",
+          "track": 2,
+          "step": 17,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk3",
+          "track": 2,
+          "step": 33,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk4",
+          "track": 2,
+          "step": 49,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk5",
+          "track": 2,
+          "step": 65,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk6",
+          "track": 2,
+          "step": 81,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk7",
+          "track": 2,
+          "step": 97,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk8",
+          "track": 2,
+          "step": 113,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk1",
+          "track": 3,
+          "step": 1,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk2",
+          "track": 3,
+          "step": 17,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk3",
+          "track": 3,
+          "step": 33,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk4",
+          "track": 3,
+          "step": 49,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk5",
+          "track": 3,
+          "step": 65,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk6",
+          "track": 3,
+          "step": 81,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk7",
+          "track": 3,
+          "step": 97,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk8",
+          "track": 3,
+          "step": 113,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk1",
+          "track": 4,
+          "step": 1,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk2",
+          "track": 4,
+          "step": 17,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk3",
+          "track": 4,
+          "step": 33,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk4",
+          "track": 4,
+          "step": 49,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk5",
+          "track": 4,
+          "step": 65,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk6",
+          "track": 4,
+          "step": 81,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk7",
+          "track": 4,
+          "step": 97,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk8",
+          "track": 4,
+          "step": 113,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk1",
+          "track": 5,
+          "step": 1,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk2",
+          "track": 5,
+          "step": 17,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk3",
+          "track": 5,
+          "step": 33,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk4",
+          "track": 5,
+          "step": 49,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk5",
+          "track": 5,
+          "step": 65,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk6",
+          "track": 5,
+          "step": 81,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk7",
+          "track": 5,
+          "step": 97,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk8",
+          "track": 5,
+          "step": 113,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk1",
+          "track": 6,
+          "step": 1,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk2",
+          "track": 6,
+          "step": 17,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk3",
+          "track": 6,
+          "step": 33,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk4",
+          "track": 6,
+          "step": 49,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk5",
+          "track": 6,
+          "step": 65,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk6",
+          "track": 6,
+          "step": 81,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk7",
+          "track": 6,
+          "step": 97,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk8",
+          "track": 6,
+          "step": 113,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        }
+      ]
+    },
+    {
+      "source_title": "BLUE MOON",
+      "pattern_name": "SOL2 BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo__OCC1",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "segment_index": 2,
+      "section_split_index": 2,
+      "section_split_count": 2,
+      "global_step_start": 129,
+      "global_step_end": 150,
+      "total_steps": 22,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev1_bass#chunk1",
+          "track": 7,
+          "step": 1,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_bass#chunk2",
+          "track": 7,
+          "step": 17,
+          "note": "G3",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk1",
+          "track": 1,
+          "step": 1,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v1#chunk2",
+          "track": 1,
+          "step": 17,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk1",
+          "track": 2,
+          "step": 1,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v2#chunk2",
+          "track": 2,
+          "step": 17,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk1",
+          "track": 3,
+          "step": 1,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v3#chunk2",
+          "track": 3,
+          "step": 17,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk1",
+          "track": 4,
+          "step": 1,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v4#chunk2",
+          "track": 4,
+          "step": 17,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk1",
+          "track": 5,
+          "step": 1,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v5#chunk2",
+          "track": 5,
+          "step": 17,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk1",
+          "track": 6,
+          "step": 1,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x7E"
+        },
+        {
+          "source_event_id": "ev1_v6#chunk2",
+          "track": 6,
+          "step": 17,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        }
+      ]
+    }
+  ]
+}

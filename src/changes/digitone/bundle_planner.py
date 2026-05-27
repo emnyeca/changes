@@ -204,7 +204,34 @@ def _resolve_short_segments(segments: list[_RawSegment]) -> tuple[list[_RawSegme
 
         if short_index + 1 < len(resolved):
             nxt = resolved[short_index + 1]
+            if seg.global_step_end + 1 == nxt.global_step_start and _segment_span(nxt) > 2:
+                resolved[short_index] = replace(seg, global_step_end=seg.global_step_end + 1)
+                resolved[short_index + 1] = replace(nxt, global_step_start=nxt.global_step_start + 1)
+                warnings.append(
+                    "short section boundary-adjusted by borrowing 1 step from next segment: "
+                    f'section="{seg.section_label}" occurrence={seg.section_occurrence_index}'
+                )
+                continue
+
+        if short_index > 0:
+            prev = resolved[short_index - 1]
+            if prev.global_step_end + 1 == seg.global_step_start and _segment_span(prev) > 2:
+                resolved[short_index - 1] = replace(prev, global_step_end=prev.global_step_end - 1)
+                resolved[short_index] = replace(seg, global_step_start=seg.global_step_start - 1)
+                warnings.append(
+                    "short section boundary-adjusted by borrowing 1 step from previous segment: "
+                    f'section="{seg.section_label}" occurrence={seg.section_occurrence_index}'
+                )
+                continue
+
+        if short_index + 1 < len(resolved):
+            nxt = resolved[short_index + 1]
             if seg.global_step_end + 1 == nxt.global_step_start:
+                if _segment_span(seg) + _segment_span(nxt) > MAX_PATTERN_STEPS:
+                    raise ValueError(
+                        "Cannot resolve short bundle segment without exceeding 128 steps: "
+                        f"segment_index={short_index + 1}"
+                    )
                 resolved[short_index + 1] = replace(nxt, global_step_start=seg.global_step_start)
                 warnings.append(
                     "short section merged due to Digitone minimum pattern length: "
@@ -219,6 +246,11 @@ def _resolve_short_segments(segments: list[_RawSegment]) -> tuple[list[_RawSegme
         if short_index > 0:
             prev = resolved[short_index - 1]
             if prev.global_step_end + 1 == seg.global_step_start:
+                if _segment_span(prev) + _segment_span(seg) > MAX_PATTERN_STEPS:
+                    raise ValueError(
+                        "Cannot resolve short bundle segment without exceeding 128 steps: "
+                        f"segment_index={short_index + 1}"
+                    )
                 resolved[short_index - 1] = replace(prev, global_step_end=seg.global_step_end)
                 warnings.append(
                     "short section merged due to Digitone minimum pattern length: "

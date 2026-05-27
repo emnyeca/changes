@@ -1,0 +1,57 @@
+{
+  "source_title": "BLUE MOON",
+  "pattern_count": 2,
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "8",
+    "device_tempo": "30"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "index": 1,
+      "segment_index": 1,
+      "pattern_name": "SOL1 BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo__OCC1",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 2,
+      "global_step_start": 1,
+      "global_step_end": 128,
+      "total_steps": 128,
+      "warnings": [],
+      "events_yaml": "patterns/01_SOL1_BLUE_MOON.digitone.events.yaml",
+      "events_yaml_path": "patterns/01_SOL1_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/01_SOL1_BLUE_MOON.syx",
+      "syx_path": "patterns/01_SOL1_BLUE_MOON.syx"
+    },
+    {
+      "index": 2,
+      "segment_index": 2,
+      "pattern_name": "SOL2 BLUE MOON",
+      "pattern_name_source": "auto",
+      "section_id": "Solo__OCC1",
+      "section_label": "Solo",
+      "section_token": "SOL",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "section_split_index": 2,
+      "section_split_count": 2,
+      "global_step_start": 129,
+      "global_step_end": 150,
+      "total_steps": 22,
+      "warnings": [],
+      "events_yaml": "patterns/02_SOL2_BLUE_MOON.digitone.events.yaml",
+      "events_yaml_path": "patterns/02_SOL2_BLUE_MOON.digitone.events.yaml",
+      "syx": "patterns/02_SOL2_BLUE_MOON.syx",
+      "syx_path": "patterns/02_SOL2_BLUE_MOON.syx"
+    }
+  ],
+  "bundle_syx": "BLUE_MOON.bundle.syx"
+}

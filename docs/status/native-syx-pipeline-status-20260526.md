@@ -29,6 +29,12 @@
   - shared Pattern Name policy for single and bundle outputs (auto/explicit consistent validation)
   - `digitone-bundle` CLI backend integrated with artifact and optional SYX output
   - manifest enriched with `pattern_count`, occurrence/global-order metadata, and path aliases
+- Bundle transport/display/timing hardware validation completed:
+  - Section bundle smoke test: pass
+  - Held note boundary test: pass
+  - Overflow/sequential import test: pass
+  - Repeated section naming test: pass
+  - verification mode: direct visual/aural confirmation on hardware (no screenshot/capture evidence recorded)
 - Regression validation completed:
   - `changes`: `63 passed, 2 skipped`
   - `digitone-syx-toolkit`: `81 passed`
@@ -63,6 +69,23 @@ Execution note:
 
 - This session generated artifacts and checklist documents for hardware validation; runbook execution results should be appended in `docs/hardware-validation/pattern-name-native-sysex-send-2026-05-26.md`.
 
+## Bundle transport validation artifacts (generated)
+
+- `examples/generated/hardware_validation_bundle_precheck/section_bundle_smoke/`
+  - pattern names: `INT BLUE MOON`, `A BLUE MOON`, `SOL BLUE MOON`, `OUT BLUE MOON`
+  - packet check: 4 individual `.syx` packets and 4 packets in `.bundle.syx`
+- `examples/generated/hardware_validation_bundle_precheck/held_note_boundary/`
+  - pattern names: `INT BLUE MOON`, `A BLUE MOON`
+  - packet check: 2 individual `.syx` packets and 2 packets in `.bundle.syx`
+- `examples/generated/hardware_validation_bundle_precheck/overflow_split/`
+  - pattern names: `SOL1 BLUE MOON`, `SOL2 BLUE MOON`
+  - packet check: 2 individual `.syx` packets and 2 packets in `.bundle.syx`
+- `examples/generated/hardware_validation_bundle_precheck/repeated_section_naming/`
+  - pattern names: `A1 BLUE MOON`, `B BLUE MOON`, `A2 BLUE MOON`
+  - packet check: 3 individual `.syx` packets and 3 packets in `.bundle.syx`
+- Manual checklist document:
+  - `docs/hardware-validation/digitone-bundle-pre-hardware-validation-2026-05-26.md`
+
 ## Intentionally Unimplemented Scope (Current)
 
 - Parser/harmony core currently targets only: `maj7`, `m7`, `7`.
@@ -81,6 +104,5 @@ Execution note:
 
 ## Next major target
 
-- Additional hardware validation for bundle workflow (sequential import order, practical display readability, shared timing behavior across sections)
 - iReal Pro HTML importer implementation
 - MusicXML importer implementation

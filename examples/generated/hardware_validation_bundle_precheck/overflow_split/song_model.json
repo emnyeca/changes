@@ -1,0 +1,4807 @@
+{
+  "title": "BLUE MOON",
+  "working_key": null,
+  "performance_tempo": "120",
+  "measures": [
+    {
+      "number": 1,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "0",
+      "harmony": [
+        {
+          "id": "m1_h1",
+          "symbol": "G7",
+          "measure_number": 1,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "4",
+      "harmony": [
+        {
+          "id": "m2_h1",
+          "symbol": "G7",
+          "measure_number": 2,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "8",
+      "harmony": [
+        {
+          "id": "m3_h1",
+          "symbol": "G7",
+          "measure_number": 3,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "12",
+      "harmony": [
+        {
+          "id": "m4_h1",
+          "symbol": "G7",
+          "measure_number": 4,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "16",
+      "harmony": [
+        {
+          "id": "m5_h1",
+          "symbol": "G7",
+          "measure_number": 5,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "20",
+      "harmony": [
+        {
+          "id": "m6_h1",
+          "symbol": "G7",
+          "measure_number": 6,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "24",
+      "harmony": [
+        {
+          "id": "m7_h1",
+          "symbol": "G7",
+          "measure_number": 7,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "28",
+      "harmony": [
+        {
+          "id": "m8_h1",
+          "symbol": "G7",
+          "measure_number": 8,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "32",
+      "harmony": [
+        {
+          "id": "m9_h1",
+          "symbol": "G7",
+          "measure_number": 9,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "36",
+      "harmony": [
+        {
+          "id": "m10_h1",
+          "symbol": "G7",
+          "measure_number": 10,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "40",
+      "harmony": [
+        {
+          "id": "m11_h1",
+          "symbol": "G7",
+          "measure_number": 11,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "44",
+      "harmony": [
+        {
+          "id": "m12_h1",
+          "symbol": "G7",
+          "measure_number": 12,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "48",
+      "harmony": [
+        {
+          "id": "m13_h1",
+          "symbol": "G7",
+          "measure_number": 13,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "52",
+      "harmony": [
+        {
+          "id": "m14_h1",
+          "symbol": "G7",
+          "measure_number": 14,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "56",
+      "harmony": [
+        {
+          "id": "m15_h1",
+          "symbol": "G7",
+          "measure_number": 15,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "60",
+      "harmony": [
+        {
+          "id": "m16_h1",
+          "symbol": "G7",
+          "measure_number": 16,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "64",
+      "harmony": [
+        {
+          "id": "m17_h1",
+          "symbol": "G7",
+          "measure_number": 17,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "68",
+      "harmony": [
+        {
+          "id": "m18_h1",
+          "symbol": "G7",
+          "measure_number": 18,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "72",
+      "harmony": [
+        {
+          "id": "m19_h1",
+          "symbol": "G7",
+          "measure_number": 19,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "76",
+      "harmony": [
+        {
+          "id": "m20_h1",
+          "symbol": "G7",
+          "measure_number": 20,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "80",
+      "harmony": [
+        {
+          "id": "m21_h1",
+          "symbol": "G7",
+          "measure_number": 21,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "84",
+      "harmony": [
+        {
+          "id": "m22_h1",
+          "symbol": "G7",
+          "measure_number": 22,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "88",
+      "harmony": [
+        {
+          "id": "m23_h1",
+          "symbol": "G7",
+          "measure_number": 23,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "92",
+      "harmony": [
+        {
+          "id": "m24_h1",
+          "symbol": "G7",
+          "measure_number": 24,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "96",
+      "harmony": [
+        {
+          "id": "m25_h1",
+          "symbol": "G7",
+          "measure_number": 25,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "100",
+      "harmony": [
+        {
+          "id": "m26_h1",
+          "symbol": "G7",
+          "measure_number": 26,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 27,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "104",
+      "harmony": [
+        {
+          "id": "m27_h1",
+          "symbol": "G7",
+          "measure_number": 27,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "108",
+      "harmony": [
+        {
+          "id": "m28_h1",
+          "symbol": "G7",
+          "measure_number": 28,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 29,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "112",
+      "harmony": [
+        {
+          "id": "m29_h1",
+          "symbol": "G7",
+          "measure_number": 29,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "116",
+      "harmony": [
+        {
+          "id": "m30_h1",
+          "symbol": "G7",
+          "measure_number": 30,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 31,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "120",
+      "harmony": [
+        {
+          "id": "m31_h1",
+          "symbol": "G7",
+          "measure_number": 31,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 32,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "124",
+      "harmony": [
+        {
+          "id": "m32_h1",
+          "symbol": "G7",
+          "measure_number": 32,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "128",
+      "harmony": [
+        {
+          "id": "m33_h1",
+          "symbol": "G7",
+          "measure_number": 33,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 34,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "132",
+      "harmony": [
+        {
+          "id": "m34_h1",
+          "symbol": "G7",
+          "measure_number": 34,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 35,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "136",
+      "harmony": [
+        {
+          "id": "m35_h1",
+          "symbol": "G7",
+          "measure_number": 35,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 36,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "140",
+      "harmony": [
+        {
+          "id": "m36_h1",
+          "symbol": "G7",
+          "measure_number": 36,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 37,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "144",
+      "harmony": [
+        {
+          "id": "m37_h1",
+          "symbol": "G7",
+          "measure_number": 37,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 38,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "148",
+      "harmony": [
+        {
+          "id": "m38_h1",
+          "symbol": "G7",
+          "measure_number": 38,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 39,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "152",
+      "harmony": [
+        {
+          "id": "m39_h1",
+          "symbol": "G7",
+          "measure_number": 39,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 40,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "156",
+      "harmony": [
+        {
+          "id": "m40_h1",
+          "symbol": "G7",
+          "measure_number": 40,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 41,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "160",
+      "harmony": [
+        {
+          "id": "m41_h1",
+          "symbol": "G7",
+          "measure_number": 41,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 42,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "164",
+      "harmony": [
+        {
+          "id": "m42_h1",
+          "symbol": "G7",
+          "measure_number": 42,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 43,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "168",
+      "harmony": [
+        {
+          "id": "m43_h1",
+          "symbol": "G7",
+          "measure_number": 43,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 44,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "172",
+      "harmony": [
+        {
+          "id": "m44_h1",
+          "symbol": "G7",
+          "measure_number": 44,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 45,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "176",
+      "harmony": [
+        {
+          "id": "m45_h1",
+          "symbol": "G7",
+          "measure_number": 45,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 46,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "180",
+      "harmony": [
+        {
+          "id": "m46_h1",
+          "symbol": "G7",
+          "measure_number": 46,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 47,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "184",
+      "harmony": [
+        {
+          "id": "m47_h1",
+          "symbol": "G7",
+          "measure_number": 47,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 48,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "188",
+      "harmony": [
+        {
+          "id": "m48_h1",
+          "symbol": "G7",
+          "measure_number": 48,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 49,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "192",
+      "harmony": [
+        {
+          "id": "m49_h1",
+          "symbol": "G7",
+          "measure_number": 49,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 50,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "196",
+      "harmony": [
+        {
+          "id": "m50_h1",
+          "symbol": "G7",
+          "measure_number": 50,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 51,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "200",
+      "harmony": [
+        {
+          "id": "m51_h1",
+          "symbol": "G7",
+          "measure_number": 51,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 52,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "204",
+      "harmony": [
+        {
+          "id": "m52_h1",
+          "symbol": "G7",
+          "measure_number": 52,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 53,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "208",
+      "harmony": [
+        {
+          "id": "m53_h1",
+          "symbol": "G7",
+          "measure_number": 53,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 54,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "212",
+      "harmony": [
+        {
+          "id": "m54_h1",
+          "symbol": "G7",
+          "measure_number": 54,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 55,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "216",
+      "harmony": [
+        {
+          "id": "m55_h1",
+          "symbol": "G7",
+          "measure_number": 55,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 56,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "220",
+      "harmony": [
+        {
+          "id": "m56_h1",
+          "symbol": "G7",
+          "measure_number": 56,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 57,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "224",
+      "harmony": [
+        {
+          "id": "m57_h1",
+          "symbol": "G7",
+          "measure_number": 57,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 58,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "228",
+      "harmony": [
+        {
+          "id": "m58_h1",
+          "symbol": "G7",
+          "measure_number": 58,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 59,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "232",
+      "harmony": [
+        {
+          "id": "m59_h1",
+          "symbol": "G7",
+          "measure_number": 59,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 60,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "236",
+      "harmony": [
+        {
+          "id": "m60_h1",
+          "symbol": "G7",
+          "measure_number": 60,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 61,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "240",
+      "harmony": [
+        {
+          "id": "m61_h1",
+          "symbol": "G7",
+          "measure_number": 61,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 62,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "244",
+      "harmony": [
+        {
+          "id": "m62_h1",
+          "symbol": "G7",
+          "measure_number": 62,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 63,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "248",
+      "harmony": [
+        {
+          "id": "m63_h1",
+          "symbol": "G7",
+          "measure_number": 63,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 64,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "252",
+      "harmony": [
+        {
+          "id": "m64_h1",
+          "symbol": "G7",
+          "measure_number": 64,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 65,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "256",
+      "harmony": [
+        {
+          "id": "m65_h1",
+          "symbol": "G7",
+          "measure_number": 65,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 66,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "260",
+      "harmony": [
+        {
+          "id": "m66_h1",
+          "symbol": "G7",
+          "measure_number": 66,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 67,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "264",
+      "harmony": [
+        {
+          "id": "m67_h1",
+          "symbol": "G7",
+          "measure_number": 67,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 68,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "268",
+      "harmony": [
+        {
+          "id": "m68_h1",
+          "symbol": "G7",
+          "measure_number": 68,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 69,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "272",
+      "harmony": [
+        {
+          "id": "m69_h1",
+          "symbol": "G7",
+          "measure_number": 69,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 70,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "276",
+      "harmony": [
+        {
+          "id": "m70_h1",
+          "symbol": "G7",
+          "measure_number": 70,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 71,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "280",
+      "harmony": [
+        {
+          "id": "m71_h1",
+          "symbol": "G7",
+          "measure_number": 71,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 72,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "284",
+      "harmony": [
+        {
+          "id": "m72_h1",
+          "symbol": "G7",
+          "measure_number": 72,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 73,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "288",
+      "harmony": [
+        {
+          "id": "m73_h1",
+          "symbol": "G7",
+          "measure_number": 73,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 74,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "292",
+      "harmony": [
+        {
+          "id": "m74_h1",
+          "symbol": "G7",
+          "measure_number": 74,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 75,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "296",
+      "harmony": [
+        {
+          "id": "m75_h1",
+          "symbol": "G7",
+          "measure_number": 75,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 76,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "300",
+      "harmony": [
+        {
+          "id": "m76_h1",
+          "symbol": "G7",
+          "measure_number": 76,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 77,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "304",
+      "harmony": [
+        {
+          "id": "m77_h1",
+          "symbol": "G7",
+          "measure_number": 77,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 78,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "308",
+      "harmony": [
+        {
+          "id": "m78_h1",
+          "symbol": "G7",
+          "measure_number": 78,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 79,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "312",
+      "harmony": [
+        {
+          "id": "m79_h1",
+          "symbol": "G7",
+          "measure_number": 79,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 80,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "316",
+      "harmony": [
+        {
+          "id": "m80_h1",
+          "symbol": "G7",
+          "measure_number": 80,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 81,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "320",
+      "harmony": [
+        {
+          "id": "m81_h1",
+          "symbol": "G7",
+          "measure_number": 81,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 82,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "324",
+      "harmony": [
+        {
+          "id": "m82_h1",
+          "symbol": "G7",
+          "measure_number": 82,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 83,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "328",
+      "harmony": [
+        {
+          "id": "m83_h1",
+          "symbol": "G7",
+          "measure_number": 83,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 84,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "332",
+      "harmony": [
+        {
+          "id": "m84_h1",
+          "symbol": "G7",
+          "measure_number": 84,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 85,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "336",
+      "harmony": [
+        {
+          "id": "m85_h1",
+          "symbol": "G7",
+          "measure_number": 85,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 86,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "340",
+      "harmony": [
+        {
+          "id": "m86_h1",
+          "symbol": "G7",
+          "measure_number": 86,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 87,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "344",
+      "harmony": [
+        {
+          "id": "m87_h1",
+          "symbol": "G7",
+          "measure_number": 87,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 88,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "348",
+      "harmony": [
+        {
+          "id": "m88_h1",
+          "symbol": "G7",
+          "measure_number": 88,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 89,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "352",
+      "harmony": [
+        {
+          "id": "m89_h1",
+          "symbol": "G7",
+          "measure_number": 89,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 90,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "356",
+      "harmony": [
+        {
+          "id": "m90_h1",
+          "symbol": "G7",
+          "measure_number": 90,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 91,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "360",
+      "harmony": [
+        {
+          "id": "m91_h1",
+          "symbol": "G7",
+          "measure_number": 91,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 92,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "364",
+      "harmony": [
+        {
+          "id": "m92_h1",
+          "symbol": "G7",
+          "measure_number": 92,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 93,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "368",
+      "harmony": [
+        {
+          "id": "m93_h1",
+          "symbol": "G7",
+          "measure_number": 93,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 94,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "372",
+      "harmony": [
+        {
+          "id": "m94_h1",
+          "symbol": "G7",
+          "measure_number": 94,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 95,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "376",
+      "harmony": [
+        {
+          "id": "m95_h1",
+          "symbol": "G7",
+          "measure_number": 95,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 96,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "380",
+      "harmony": [
+        {
+          "id": "m96_h1",
+          "symbol": "G7",
+          "measure_number": 96,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 97,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "384",
+      "harmony": [
+        {
+          "id": "m97_h1",
+          "symbol": "G7",
+          "measure_number": 97,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 98,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "388",
+      "harmony": [
+        {
+          "id": "m98_h1",
+          "symbol": "G7",
+          "measure_number": 98,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 99,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "392",
+      "harmony": [
+        {
+          "id": "m99_h1",
+          "symbol": "G7",
+          "measure_number": 99,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 100,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "396",
+      "harmony": [
+        {
+          "id": "m100_h1",
+          "symbol": "G7",
+          "measure_number": 100,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 101,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "400",
+      "harmony": [
+        {
+          "id": "m101_h1",
+          "symbol": "G7",
+          "measure_number": 101,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 102,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "404",
+      "harmony": [
+        {
+          "id": "m102_h1",
+          "symbol": "G7",
+          "measure_number": 102,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 103,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "408",
+      "harmony": [
+        {
+          "id": "m103_h1",
+          "symbol": "G7",
+          "measure_number": 103,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 104,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "412",
+      "harmony": [
+        {
+          "id": "m104_h1",
+          "symbol": "G7",
+          "measure_number": 104,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 105,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "416",
+      "harmony": [
+        {
+          "id": "m105_h1",
+          "symbol": "G7",
+          "measure_number": 105,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 106,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "420",
+      "harmony": [
+        {
+          "id": "m106_h1",
+          "symbol": "G7",
+          "measure_number": 106,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 107,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "424",
+      "harmony": [
+        {
+          "id": "m107_h1",
+          "symbol": "G7",
+          "measure_number": 107,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 108,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "428",
+      "harmony": [
+        {
+          "id": "m108_h1",
+          "symbol": "G7",
+          "measure_number": 108,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 109,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "432",
+      "harmony": [
+        {
+          "id": "m109_h1",
+          "symbol": "G7",
+          "measure_number": 109,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 110,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "436",
+      "harmony": [
+        {
+          "id": "m110_h1",
+          "symbol": "G7",
+          "measure_number": 110,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 111,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "440",
+      "harmony": [
+        {
+          "id": "m111_h1",
+          "symbol": "G7",
+          "measure_number": 111,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 112,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "444",
+      "harmony": [
+        {
+          "id": "m112_h1",
+          "symbol": "G7",
+          "measure_number": 112,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 113,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "448",
+      "harmony": [
+        {
+          "id": "m113_h1",
+          "symbol": "G7",
+          "measure_number": 113,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 114,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "452",
+      "harmony": [
+        {
+          "id": "m114_h1",
+          "symbol": "G7",
+          "measure_number": 114,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 115,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "456",
+      "harmony": [
+        {
+          "id": "m115_h1",
+          "symbol": "G7",
+          "measure_number": 115,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 116,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "460",
+      "harmony": [
+        {
+          "id": "m116_h1",
+          "symbol": "G7",
+          "measure_number": 116,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 117,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "464",
+      "harmony": [
+        {
+          "id": "m117_h1",
+          "symbol": "G7",
+          "measure_number": 117,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 118,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "468",
+      "harmony": [
+        {
+          "id": "m118_h1",
+          "symbol": "G7",
+          "measure_number": 118,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 119,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "472",
+      "harmony": [
+        {
+          "id": "m119_h1",
+          "symbol": "G7",
+          "measure_number": 119,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 120,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "476",
+      "harmony": [
+        {
+          "id": "m120_h1",
+          "symbol": "G7",
+          "measure_number": 120,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 121,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "480",
+      "harmony": [
+        {
+          "id": "m121_h1",
+          "symbol": "G7",
+          "measure_number": 121,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 122,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "484",
+      "harmony": [
+        {
+          "id": "m122_h1",
+          "symbol": "G7",
+          "measure_number": 122,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 123,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "488",
+      "harmony": [
+        {
+          "id": "m123_h1",
+          "symbol": "G7",
+          "measure_number": 123,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 124,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "492",
+      "harmony": [
+        {
+          "id": "m124_h1",
+          "symbol": "G7",
+          "measure_number": 124,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 125,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "496",
+      "harmony": [
+        {
+          "id": "m125_h1",
+          "symbol": "G7",
+          "measure_number": 125,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 126,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "500",
+      "harmony": [
+        {
+          "id": "m126_h1",
+          "symbol": "G7",
+          "measure_number": 126,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 127,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "504",
+      "harmony": [
+        {
+          "id": "m127_h1",
+          "symbol": "G7",
+          "measure_number": 127,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 128,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "508",
+      "harmony": [
+        {
+          "id": "m128_h1",
+          "symbol": "G7",
+          "measure_number": 128,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 129,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "512",
+      "harmony": [
+        {
+          "id": "m129_h1",
+          "symbol": "G7",
+          "measure_number": 129,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 130,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "516",
+      "harmony": [
+        {
+          "id": "m130_h1",
+          "symbol": "G7",
+          "measure_number": 130,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 131,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "520",
+      "harmony": [
+        {
+          "id": "m131_h1",
+          "symbol": "G7",
+          "measure_number": 131,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 132,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "524",
+      "harmony": [
+        {
+          "id": "m132_h1",
+          "symbol": "G7",
+          "measure_number": 132,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 133,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "528",
+      "harmony": [
+        {
+          "id": "m133_h1",
+          "symbol": "G7",
+          "measure_number": 133,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 134,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "532",
+      "harmony": [
+        {
+          "id": "m134_h1",
+          "symbol": "G7",
+          "measure_number": 134,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 135,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "536",
+      "harmony": [
+        {
+          "id": "m135_h1",
+          "symbol": "G7",
+          "measure_number": 135,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 136,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "540",
+      "harmony": [
+        {
+          "id": "m136_h1",
+          "symbol": "G7",
+          "measure_number": 136,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 137,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "544",
+      "harmony": [
+        {
+          "id": "m137_h1",
+          "symbol": "G7",
+          "measure_number": 137,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 138,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "548",
+      "harmony": [
+        {
+          "id": "m138_h1",
+          "symbol": "G7",
+          "measure_number": 138,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 139,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "552",
+      "harmony": [
+        {
+          "id": "m139_h1",
+          "symbol": "G7",
+          "measure_number": 139,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 140,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "556",
+      "harmony": [
+        {
+          "id": "m140_h1",
+          "symbol": "G7",
+          "measure_number": 140,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 141,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "560",
+      "harmony": [
+        {
+          "id": "m141_h1",
+          "symbol": "G7",
+          "measure_number": 141,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 142,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "564",
+      "harmony": [
+        {
+          "id": "m142_h1",
+          "symbol": "G7",
+          "measure_number": 142,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 143,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "568",
+      "harmony": [
+        {
+          "id": "m143_h1",
+          "symbol": "G7",
+          "measure_number": 143,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 144,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "572",
+      "harmony": [
+        {
+          "id": "m144_h1",
+          "symbol": "G7",
+          "measure_number": 144,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 145,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "576",
+      "harmony": [
+        {
+          "id": "m145_h1",
+          "symbol": "G7",
+          "measure_number": 145,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 146,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "580",
+      "harmony": [
+        {
+          "id": "m146_h1",
+          "symbol": "G7",
+          "measure_number": 146,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 147,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "584",
+      "harmony": [
+        {
+          "id": "m147_h1",
+          "symbol": "G7",
+          "measure_number": 147,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 148,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "588",
+      "harmony": [
+        {
+          "id": "m148_h1",
+          "symbol": "G7",
+          "measure_number": 148,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 149,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "592",
+      "harmony": [
+        {
+          "id": "m149_h1",
+          "symbol": "G7",
+          "measure_number": 149,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 150,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "596",
+      "harmony": [
+        {
+          "id": "m150_h1",
+          "symbol": "G7",
+          "measure_number": 150,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 151,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "600",
+      "harmony": [
+        {
+          "id": "m151_h1",
+          "symbol": "G7",
+          "measure_number": 151,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 152,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "604",
+      "harmony": [
+        {
+          "id": "m152_h1",
+          "symbol": "G7",
+          "measure_number": 152,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 153,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "608",
+      "harmony": [
+        {
+          "id": "m153_h1",
+          "symbol": "G7",
+          "measure_number": 153,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 154,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "612",
+      "harmony": [
+        {
+          "id": "m154_h1",
+          "symbol": "G7",
+          "measure_number": 154,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 155,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "616",
+      "harmony": [
+        {
+          "id": "m155_h1",
+          "symbol": "G7",
+          "measure_number": 155,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 156,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "620",
+      "harmony": [
+        {
+          "id": "m156_h1",
+          "symbol": "G7",
+          "measure_number": 156,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 157,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "624",
+      "harmony": [
+        {
+          "id": "m157_h1",
+          "symbol": "G7",
+          "measure_number": 157,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 158,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "628",
+      "harmony": [
+        {
+          "id": "m158_h1",
+          "symbol": "G7",
+          "measure_number": 158,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 159,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "632",
+      "harmony": [
+        {
+          "id": "m159_h1",
+          "symbol": "G7",
+          "measure_number": 159,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 160,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "636",
+      "harmony": [
+        {
+          "id": "m160_h1",
+          "symbol": "G7",
+          "measure_number": 160,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 161,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "640",
+      "harmony": [
+        {
+          "id": "m161_h1",
+          "symbol": "G7",
+          "measure_number": 161,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 162,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "644",
+      "harmony": [
+        {
+          "id": "m162_h1",
+          "symbol": "G7",
+          "measure_number": 162,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 163,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "648",
+      "harmony": [
+        {
+          "id": "m163_h1",
+          "symbol": "G7",
+          "measure_number": 163,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 164,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "652",
+      "harmony": [
+        {
+          "id": "m164_h1",
+          "symbol": "G7",
+          "measure_number": 164,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 165,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "656",
+      "harmony": [
+        {
+          "id": "m165_h1",
+          "symbol": "G7",
+          "measure_number": 165,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 166,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "660",
+      "harmony": [
+        {
+          "id": "m166_h1",
+          "symbol": "G7",
+          "measure_number": 166,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 167,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "664",
+      "harmony": [
+        {
+          "id": "m167_h1",
+          "symbol": "G7",
+          "measure_number": 167,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 168,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "668",
+      "harmony": [
+        {
+          "id": "m168_h1",
+          "symbol": "G7",
+          "measure_number": 168,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 169,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "672",
+      "harmony": [
+        {
+          "id": "m169_h1",
+          "symbol": "G7",
+          "measure_number": 169,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 170,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "676",
+      "harmony": [
+        {
+          "id": "m170_h1",
+          "symbol": "G7",
+          "measure_number": 170,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 171,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "680",
+      "harmony": [
+        {
+          "id": "m171_h1",
+          "symbol": "G7",
+          "measure_number": 171,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 172,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "684",
+      "harmony": [
+        {
+          "id": "m172_h1",
+          "symbol": "G7",
+          "measure_number": 172,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 173,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "688",
+      "harmony": [
+        {
+          "id": "m173_h1",
+          "symbol": "G7",
+          "measure_number": 173,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 174,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "692",
+      "harmony": [
+        {
+          "id": "m174_h1",
+          "symbol": "G7",
+          "measure_number": 174,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 175,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "696",
+      "harmony": [
+        {
+          "id": "m175_h1",
+          "symbol": "G7",
+          "measure_number": 175,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 176,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "700",
+      "harmony": [
+        {
+          "id": "m176_h1",
+          "symbol": "G7",
+          "measure_number": 176,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 177,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "704",
+      "harmony": [
+        {
+          "id": "m177_h1",
+          "symbol": "G7",
+          "measure_number": 177,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 178,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "708",
+      "harmony": [
+        {
+          "id": "m178_h1",
+          "symbol": "G7",
+          "measure_number": 178,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 179,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "712",
+      "harmony": [
+        {
+          "id": "m179_h1",
+          "symbol": "G7",
+          "measure_number": 179,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 180,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "716",
+      "harmony": [
+        {
+          "id": "m180_h1",
+          "symbol": "G7",
+          "measure_number": 180,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 181,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "720",
+      "harmony": [
+        {
+          "id": "m181_h1",
+          "symbol": "G7",
+          "measure_number": 181,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 182,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "724",
+      "harmony": [
+        {
+          "id": "m182_h1",
+          "symbol": "G7",
+          "measure_number": 182,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 183,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "728",
+      "harmony": [
+        {
+          "id": "m183_h1",
+          "symbol": "G7",
+          "measure_number": 183,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 184,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "732",
+      "harmony": [
+        {
+          "id": "m184_h1",
+          "symbol": "G7",
+          "measure_number": 184,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 185,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "736",
+      "harmony": [
+        {
+          "id": "m185_h1",
+          "symbol": "G7",
+          "measure_number": 185,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 186,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "740",
+      "harmony": [
+        {
+          "id": "m186_h1",
+          "symbol": "G7",
+          "measure_number": 186,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 187,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "744",
+      "harmony": [
+        {
+          "id": "m187_h1",
+          "symbol": "G7",
+          "measure_number": 187,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 188,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "748",
+      "harmony": [
+        {
+          "id": "m188_h1",
+          "symbol": "G7",
+          "measure_number": 188,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 189,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "752",
+      "harmony": [
+        {
+          "id": "m189_h1",
+          "symbol": "G7",
+          "measure_number": 189,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 190,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "756",
+      "harmony": [
+        {
+          "id": "m190_h1",
+          "symbol": "G7",
+          "measure_number": 190,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 191,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "760",
+      "harmony": [
+        {
+          "id": "m191_h1",
+          "symbol": "G7",
+          "measure_number": 191,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 192,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "764",
+      "harmony": [
+        {
+          "id": "m192_h1",
+          "symbol": "G7",
+          "measure_number": 192,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 193,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "768",
+      "harmony": [
+        {
+          "id": "m193_h1",
+          "symbol": "G7",
+          "measure_number": 193,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 194,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "772",
+      "harmony": [
+        {
+          "id": "m194_h1",
+          "symbol": "G7",
+          "measure_number": 194,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 195,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "776",
+      "harmony": [
+        {
+          "id": "m195_h1",
+          "symbol": "G7",
+          "measure_number": 195,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 196,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "780",
+      "harmony": [
+        {
+          "id": "m196_h1",
+          "symbol": "G7",
+          "measure_number": 196,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 197,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "784",
+      "harmony": [
+        {
+          "id": "m197_h1",
+          "symbol": "G7",
+          "measure_number": 197,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 198,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "788",
+      "harmony": [
+        {
+          "id": "m198_h1",
+          "symbol": "G7",
+          "measure_number": 198,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 199,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "792",
+      "harmony": [
+        {
+          "id": "m199_h1",
+          "symbol": "G7",
+          "measure_number": 199,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 200,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "796",
+      "harmony": [
+        {
+          "id": "m200_h1",
+          "symbol": "G7",
+          "measure_number": 200,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 201,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "800",
+      "harmony": [
+        {
+          "id": "m201_h1",
+          "symbol": "G7",
+          "measure_number": 201,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 202,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "804",
+      "harmony": [
+        {
+          "id": "m202_h1",
+          "symbol": "G7",
+          "measure_number": 202,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 203,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "808",
+      "harmony": [
+        {
+          "id": "m203_h1",
+          "symbol": "G7",
+          "measure_number": 203,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 204,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "812",
+      "harmony": [
+        {
+          "id": "m204_h1",
+          "symbol": "G7",
+          "measure_number": 204,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 205,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "816",
+      "harmony": [
+        {
+          "id": "m205_h1",
+          "symbol": "G7",
+          "measure_number": 205,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 206,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "820",
+      "harmony": [
+        {
+          "id": "m206_h1",
+          "symbol": "G7",
+          "measure_number": 206,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 207,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "824",
+      "harmony": [
+        {
+          "id": "m207_h1",
+          "symbol": "G7",
+          "measure_number": 207,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 208,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "828",
+      "harmony": [
+        {
+          "id": "m208_h1",
+          "symbol": "G7",
+          "measure_number": 208,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 209,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "832",
+      "harmony": [
+        {
+          "id": "m209_h1",
+          "symbol": "G7",
+          "measure_number": 209,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 210,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "836",
+      "harmony": [
+        {
+          "id": "m210_h1",
+          "symbol": "G7",
+          "measure_number": 210,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 211,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "840",
+      "harmony": [
+        {
+          "id": "m211_h1",
+          "symbol": "G7",
+          "measure_number": 211,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 212,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "844",
+      "harmony": [
+        {
+          "id": "m212_h1",
+          "symbol": "G7",
+          "measure_number": 212,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 213,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "848",
+      "harmony": [
+        {
+          "id": "m213_h1",
+          "symbol": "G7",
+          "measure_number": 213,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 214,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "852",
+      "harmony": [
+        {
+          "id": "m214_h1",
+          "symbol": "G7",
+          "measure_number": 214,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 215,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "856",
+      "harmony": [
+        {
+          "id": "m215_h1",
+          "symbol": "G7",
+          "measure_number": 215,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 216,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "860",
+      "harmony": [
+        {
+          "id": "m216_h1",
+          "symbol": "G7",
+          "measure_number": 216,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 217,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "864",
+      "harmony": [
+        {
+          "id": "m217_h1",
+          "symbol": "G7",
+          "measure_number": 217,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 218,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "868",
+      "harmony": [
+        {
+          "id": "m218_h1",
+          "symbol": "G7",
+          "measure_number": 218,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 219,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "872",
+      "harmony": [
+        {
+          "id": "m219_h1",
+          "symbol": "G7",
+          "measure_number": 219,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 220,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "876",
+      "harmony": [
+        {
+          "id": "m220_h1",
+          "symbol": "G7",
+          "measure_number": 220,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 221,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "880",
+      "harmony": [
+        {
+          "id": "m221_h1",
+          "symbol": "G7",
+          "measure_number": 221,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 222,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "884",
+      "harmony": [
+        {
+          "id": "m222_h1",
+          "symbol": "G7",
+          "measure_number": 222,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 223,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "888",
+      "harmony": [
+        {
+          "id": "m223_h1",
+          "symbol": "G7",
+          "measure_number": 223,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 224,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "892",
+      "harmony": [
+        {
+          "id": "m224_h1",
+          "symbol": "G7",
+          "measure_number": 224,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 225,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "896",
+      "harmony": [
+        {
+          "id": "m225_h1",
+          "symbol": "G7",
+          "measure_number": 225,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 226,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "900",
+      "harmony": [
+        {
+          "id": "m226_h1",
+          "symbol": "G7",
+          "measure_number": 226,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 227,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "904",
+      "harmony": [
+        {
+          "id": "m227_h1",
+          "symbol": "G7",
+          "measure_number": 227,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 228,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "908",
+      "harmony": [
+        {
+          "id": "m228_h1",
+          "symbol": "G7",
+          "measure_number": 228,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 229,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "912",
+      "harmony": [
+        {
+          "id": "m229_h1",
+          "symbol": "G7",
+          "measure_number": 229,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 230,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "916",
+      "harmony": [
+        {
+          "id": "m230_h1",
+          "symbol": "G7",
+          "measure_number": 230,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 231,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "920",
+      "harmony": [
+        {
+          "id": "m231_h1",
+          "symbol": "G7",
+          "measure_number": 231,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 232,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "924",
+      "harmony": [
+        {
+          "id": "m232_h1",
+          "symbol": "G7",
+          "measure_number": 232,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 233,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "928",
+      "harmony": [
+        {
+          "id": "m233_h1",
+          "symbol": "G7",
+          "measure_number": 233,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 234,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "932",
+      "harmony": [
+        {
+          "id": "m234_h1",
+          "symbol": "G7",
+          "measure_number": 234,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 235,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "936",
+      "harmony": [
+        {
+          "id": "m235_h1",
+          "symbol": "G7",
+          "measure_number": 235,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 236,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "940",
+      "harmony": [
+        {
+          "id": "m236_h1",
+          "symbol": "G7",
+          "measure_number": 236,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 237,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "944",
+      "harmony": [
+        {
+          "id": "m237_h1",
+          "symbol": "G7",
+          "measure_number": 237,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 238,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "948",
+      "harmony": [
+        {
+          "id": "m238_h1",
+          "symbol": "G7",
+          "measure_number": 238,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 239,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "952",
+      "harmony": [
+        {
+          "id": "m239_h1",
+          "symbol": "G7",
+          "measure_number": 239,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 240,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "956",
+      "harmony": [
+        {
+          "id": "m240_h1",
+          "symbol": "G7",
+          "measure_number": 240,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 241,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "960",
+      "harmony": [
+        {
+          "id": "m241_h1",
+          "symbol": "G7",
+          "measure_number": 241,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 242,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "964",
+      "harmony": [
+        {
+          "id": "m242_h1",
+          "symbol": "G7",
+          "measure_number": 242,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 243,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "968",
+      "harmony": [
+        {
+          "id": "m243_h1",
+          "symbol": "G7",
+          "measure_number": 243,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 244,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "972",
+      "harmony": [
+        {
+          "id": "m244_h1",
+          "symbol": "G7",
+          "measure_number": 244,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 245,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "976",
+      "harmony": [
+        {
+          "id": "m245_h1",
+          "symbol": "G7",
+          "measure_number": 245,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 246,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "980",
+      "harmony": [
+        {
+          "id": "m246_h1",
+          "symbol": "G7",
+          "measure_number": 246,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 247,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "984",
+      "harmony": [
+        {
+          "id": "m247_h1",
+          "symbol": "G7",
+          "measure_number": 247,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 248,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "988",
+      "harmony": [
+        {
+          "id": "m248_h1",
+          "symbol": "G7",
+          "measure_number": 248,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 249,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "992",
+      "harmony": [
+        {
+          "id": "m249_h1",
+          "symbol": "G7",
+          "measure_number": 249,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 250,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "996",
+      "harmony": [
+        {
+          "id": "m250_h1",
+          "symbol": "G7",
+          "measure_number": 250,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 251,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1000",
+      "harmony": [
+        {
+          "id": "m251_h1",
+          "symbol": "G7",
+          "measure_number": 251,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 252,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1004",
+      "harmony": [
+        {
+          "id": "m252_h1",
+          "symbol": "G7",
+          "measure_number": 252,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 253,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1008",
+      "harmony": [
+        {
+          "id": "m253_h1",
+          "symbol": "G7",
+          "measure_number": 253,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 254,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1012",
+      "harmony": [
+        {
+          "id": "m254_h1",
+          "symbol": "G7",
+          "measure_number": 254,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 255,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1016",
+      "harmony": [
+        {
+          "id": "m255_h1",
+          "symbol": "G7",
+          "measure_number": 255,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 256,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1020",
+      "harmony": [
+        {
+          "id": "m256_h1",
+          "symbol": "G7",
+          "measure_number": 256,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 257,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1024",
+      "harmony": [
+        {
+          "id": "m257_h1",
+          "symbol": "G7",
+          "measure_number": 257,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 258,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1028",
+      "harmony": [
+        {
+          "id": "m258_h1",
+          "symbol": "G7",
+          "measure_number": 258,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 259,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1032",
+      "harmony": [
+        {
+          "id": "m259_h1",
+          "symbol": "G7",
+          "measure_number": 259,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 260,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1036",
+      "harmony": [
+        {
+          "id": "m260_h1",
+          "symbol": "G7",
+          "measure_number": 260,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 261,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1040",
+      "harmony": [
+        {
+          "id": "m261_h1",
+          "symbol": "G7",
+          "measure_number": 261,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 262,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1044",
+      "harmony": [
+        {
+          "id": "m262_h1",
+          "symbol": "G7",
+          "measure_number": 262,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 263,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1048",
+      "harmony": [
+        {
+          "id": "m263_h1",
+          "symbol": "G7",
+          "measure_number": 263,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 264,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1052",
+      "harmony": [
+        {
+          "id": "m264_h1",
+          "symbol": "G7",
+          "measure_number": 264,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 265,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1056",
+      "harmony": [
+        {
+          "id": "m265_h1",
+          "symbol": "G7",
+          "measure_number": 265,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 266,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1060",
+      "harmony": [
+        {
+          "id": "m266_h1",
+          "symbol": "G7",
+          "measure_number": 266,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 267,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1064",
+      "harmony": [
+        {
+          "id": "m267_h1",
+          "symbol": "G7",
+          "measure_number": 267,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 268,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1068",
+      "harmony": [
+        {
+          "id": "m268_h1",
+          "symbol": "G7",
+          "measure_number": 268,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 269,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1072",
+      "harmony": [
+        {
+          "id": "m269_h1",
+          "symbol": "G7",
+          "measure_number": 269,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 270,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1076",
+      "harmony": [
+        {
+          "id": "m270_h1",
+          "symbol": "G7",
+          "measure_number": 270,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 271,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1080",
+      "harmony": [
+        {
+          "id": "m271_h1",
+          "symbol": "G7",
+          "measure_number": 271,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 272,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1084",
+      "harmony": [
+        {
+          "id": "m272_h1",
+          "symbol": "G7",
+          "measure_number": 272,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 273,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1088",
+      "harmony": [
+        {
+          "id": "m273_h1",
+          "symbol": "G7",
+          "measure_number": 273,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 274,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1092",
+      "harmony": [
+        {
+          "id": "m274_h1",
+          "symbol": "G7",
+          "measure_number": 274,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 275,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1096",
+      "harmony": [
+        {
+          "id": "m275_h1",
+          "symbol": "G7",
+          "measure_number": 275,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 276,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1100",
+      "harmony": [
+        {
+          "id": "m276_h1",
+          "symbol": "G7",
+          "measure_number": 276,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 277,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1104",
+      "harmony": [
+        {
+          "id": "m277_h1",
+          "symbol": "G7",
+          "measure_number": 277,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 278,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1108",
+      "harmony": [
+        {
+          "id": "m278_h1",
+          "symbol": "G7",
+          "measure_number": 278,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 279,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1112",
+      "harmony": [
+        {
+          "id": "m279_h1",
+          "symbol": "G7",
+          "measure_number": 279,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 280,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1116",
+      "harmony": [
+        {
+          "id": "m280_h1",
+          "symbol": "G7",
+          "measure_number": 280,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 281,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1120",
+      "harmony": [
+        {
+          "id": "m281_h1",
+          "symbol": "G7",
+          "measure_number": 281,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 282,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1124",
+      "harmony": [
+        {
+          "id": "m282_h1",
+          "symbol": "G7",
+          "measure_number": 282,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 283,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1128",
+      "harmony": [
+        {
+          "id": "m283_h1",
+          "symbol": "G7",
+          "measure_number": 283,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 284,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1132",
+      "harmony": [
+        {
+          "id": "m284_h1",
+          "symbol": "G7",
+          "measure_number": 284,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 285,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1136",
+      "harmony": [
+        {
+          "id": "m285_h1",
+          "symbol": "G7",
+          "measure_number": 285,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 286,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1140",
+      "harmony": [
+        {
+          "id": "m286_h1",
+          "symbol": "G7",
+          "measure_number": 286,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 287,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1144",
+      "harmony": [
+        {
+          "id": "m287_h1",
+          "symbol": "G7",
+          "measure_number": 287,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 288,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1148",
+      "harmony": [
+        {
+          "id": "m288_h1",
+          "symbol": "G7",
+          "measure_number": 288,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 289,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1152",
+      "harmony": [
+        {
+          "id": "m289_h1",
+          "symbol": "G7",
+          "measure_number": 289,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 290,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1156",
+      "harmony": [
+        {
+          "id": "m290_h1",
+          "symbol": "G7",
+          "measure_number": 290,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 291,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1160",
+      "harmony": [
+        {
+          "id": "m291_h1",
+          "symbol": "G7",
+          "measure_number": 291,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 292,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1164",
+      "harmony": [
+        {
+          "id": "m292_h1",
+          "symbol": "G7",
+          "measure_number": 292,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 293,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1168",
+      "harmony": [
+        {
+          "id": "m293_h1",
+          "symbol": "G7",
+          "measure_number": 293,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 294,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1172",
+      "harmony": [
+        {
+          "id": "m294_h1",
+          "symbol": "G7",
+          "measure_number": 294,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 295,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1176",
+      "harmony": [
+        {
+          "id": "m295_h1",
+          "symbol": "G7",
+          "measure_number": 295,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 296,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1180",
+      "harmony": [
+        {
+          "id": "m296_h1",
+          "symbol": "G7",
+          "measure_number": 296,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 297,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1184",
+      "harmony": [
+        {
+          "id": "m297_h1",
+          "symbol": "G7",
+          "measure_number": 297,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 298,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1188",
+      "harmony": [
+        {
+          "id": "m298_h1",
+          "symbol": "G7",
+          "measure_number": 298,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 299,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1192",
+      "harmony": [
+        {
+          "id": "m299_h1",
+          "symbol": "G7",
+          "measure_number": 299,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 300,
+      "section_id": "Solo__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "1196",
+      "harmony": [
+        {
+          "id": "m300_h1",
+          "symbol": "G7",
+          "measure_number": 300,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    }
+  ]
+}

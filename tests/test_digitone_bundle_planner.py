@@ -6,7 +6,11 @@ from dataclasses import replace
 import pytest
 import json
 
-from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+from changes.digitone.bundle_planner import (
+    _RawSegment,
+    _resolve_short_segments,
+    compile_timeline_to_digitone_bundle_plan,
+)
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_target_profile import default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
@@ -309,3 +313,103 @@ def test_short_section_resolution_is_deterministic_and_reported():
 
     assert [p.global_step_start for p in bundle1.patterns] == [p.global_step_start for p in bundle2.patterns]
     assert any("short section merged due to Digitone minimum pattern length" in w for w in bundle1.warnings)
+
+
+def test_short_segment_one_plus_128_borrows_from_next_deterministically():
+    segments = [
+        _RawSegment(
+            section_id="A__OCC1",
+            section_label="A",
+            section_occurrence_index=1,
+            section_global_order_index=1,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=1,
+            global_step_end=1,
+        ),
+        _RawSegment(
+            section_id="B__OCC1",
+            section_label="B",
+            section_occurrence_index=1,
+            section_global_order_index=2,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=2,
+            global_step_end=129,
+        ),
+    ]
+
+    resolved, warnings = _resolve_short_segments(segments)
+
+    assert [(s.global_step_start, s.global_step_end) for s in resolved] == [(1, 2), (3, 129)]
+    assert any("boundary-adjusted by borrowing 1 step from next segment" in w for w in warnings)
+
+
+def test_short_segment_128_plus_1_borrows_from_previous_deterministically():
+    segments = [
+        _RawSegment(
+            section_id="A__OCC1",
+            section_label="A",
+            section_occurrence_index=1,
+            section_global_order_index=1,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=1,
+            global_step_end=128,
+        ),
+        _RawSegment(
+            section_id="B__OCC1",
+            section_label="B",
+            section_occurrence_index=1,
+            section_global_order_index=2,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=129,
+            global_step_end=129,
+        ),
+    ]
+
+    resolved, warnings = _resolve_short_segments(segments)
+
+    assert [(s.global_step_start, s.global_step_end) for s in resolved] == [(1, 127), (128, 129)]
+    assert any("boundary-adjusted by borrowing 1 step from previous segment" in w for w in warnings)
+
+
+def test_short_segment_128_plus_1_plus_128_borrows_from_next_first():
+    segments = [
+        _RawSegment(
+            section_id="A__OCC1",
+            section_label="A",
+            section_occurrence_index=1,
+            section_global_order_index=1,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=1,
+            global_step_end=128,
+        ),
+        _RawSegment(
+            section_id="B__OCC1",
+            section_label="B",
+            section_occurrence_index=1,
+            section_global_order_index=2,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=129,
+            global_step_end=129,
+        ),
+        _RawSegment(
+            section_id="C__OCC1",
+            section_label="C",
+            section_occurrence_index=1,
+            section_global_order_index=3,
+            section_split_index=1,
+            section_split_count=1,
+            global_step_start=130,
+            global_step_end=257,
+        ),
+    ]
+
+    resolved, warnings = _resolve_short_segments(segments)
+
+    assert [(s.global_step_start, s.global_step_end) for s in resolved] == [(1, 128), (129, 130), (131, 257)]
+    assert any("boundary-adjusted by borrowing 1 step from next segment" in w for w in warnings)

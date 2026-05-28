@@ -83,6 +83,19 @@ def test_bounded_voice_sliding_uses_pitch_order_when_voice_lanes_are_crossed():
     assert fitted != [60, 52, 69, 55, 59, 62]
 
 
+def test_bounded_voice_sliding_uses_pitch_order_for_crossed_lower_overflow():
+    target = [60, 52, 47, 57, 50, 55]  # lanes: C5 E4 B3 A4 D4 G4
+
+    fitted = fit_bounded_voice_vector(
+        target,
+        target,
+        min_midi=48,
+        max_midi=69,
+    )
+
+    assert fitted == [59, 52, 48, 57, 50, 55]
+
+
 def test_bounded_voice_sliding_in_range_identity():
     target = [48, 52, 55, 57, 59, 62]  # C4 E4 G4 A4 B4 D5
     fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)

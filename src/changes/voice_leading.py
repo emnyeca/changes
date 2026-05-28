@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from bisect import bisect_left
 from collections import Counter
 from itertools import permutations
 from typing import List, Sequence
@@ -63,22 +64,30 @@ def _assign_minimum_motion_target(previous_notes: Sequence[int], target_notes: S
     return best_notes
 
 
-def _slide_remove_donor_insert_missing(
+def _slide_on_pitch_order(
     vector: Sequence[int],
-    donor_index: int,
-    insert_index: int,
+    donor_lane: int,
     missing_note: int,
 ) -> tuple[int, ...]:
-    out = list(int(n) for n in vector)
-    if insert_index <= donor_index:
-        for idx in range(donor_index, insert_index, -1):
-            out[idx] = out[idx - 1]
-        out[insert_index] = int(missing_note)
-    else:
-        for idx in range(donor_index, insert_index):
-            out[idx] = out[idx + 1]
-        out[insert_index] = int(missing_note)
-    return tuple(out)
+    indexed = [(lane, int(note)) for lane, note in enumerate(vector)]
+    ordered = sorted(indexed, key=lambda item: (item[1], item[0]))
+
+    ordered_lanes = [lane for lane, _note in ordered]
+    ordered_notes = [note for _lane, note in ordered]
+
+    donor_pos = ordered_lanes.index(int(donor_lane))
+    insert_pos = bisect_left(ordered_notes, int(missing_note))
+
+    transformed = list(ordered_notes)
+    transformed.pop(donor_pos)
+    if donor_pos < insert_pos:
+        insert_pos -= 1
+    transformed.insert(insert_pos, int(missing_note))
+
+    lane_to_note = {lane: note for lane, note in enumerate(int(n) for n in vector)}
+    for pos, lane in enumerate(ordered_lanes):
+        lane_to_note[lane] = transformed[pos]
+    return tuple(lane_to_note[lane] for lane in range(len(vector)))
 
 
 def _repair_single_overflow_states(
@@ -115,16 +124,14 @@ def _repair_single_overflow_states(
     states: set[tuple[int, ...]] = set()
     for donor_idx in donors:
         for missing_note in missing_notes:
-            for insert_idx in range(len(absorbed)):
-                candidate = _slide_remove_donor_insert_missing(
-                    absorbed,
-                    donor_index=donor_idx,
-                    insert_index=insert_idx,
-                    missing_note=int(missing_note),
-                )
-                if Counter(_pitch_class_multiset(candidate)) != original_multiset:
-                    continue
-                states.add(candidate)
+            candidate = _slide_on_pitch_order(
+                absorbed,
+                donor_lane=donor_idx,
+                missing_note=int(missing_note),
+            )
+            if Counter(_pitch_class_multiset(candidate)) != original_multiset:
+                continue
+            states.add(candidate)
     return sorted(states)
 
 

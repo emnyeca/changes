@@ -69,6 +69,20 @@ def test_bounded_voice_sliding_exact_example_2_preserves_lane_order():
     assert fitted != [52, 55, 60, 62, 69, 59]  # reject pure octave-fold lane relocation
 
 
+def test_bounded_voice_sliding_uses_pitch_order_when_voice_lanes_are_crossed():
+    target = [60, 52, 69, 55, 62, 71]  # lanes: C5 E4 A5 G4 D5 B5
+
+    fitted = fit_bounded_voice_vector(
+        target,
+        target,
+        min_midi=48,
+        max_midi=69,
+    )
+
+    assert fitted == [59, 52, 62, 55, 60, 69]
+    assert fitted != [60, 52, 69, 55, 59, 62]
+
+
 def test_bounded_voice_sliding_in_range_identity():
     target = [48, 52, 55, 57, 59, 62]  # C4 E4 G4 A4 B4 D5
     fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
@@ -118,6 +132,14 @@ def test_bounded_voice_sliding_keeps_unaffected_lanes_without_global_reassignmen
     # First two in-range lanes must remain untouched in this boundary repair case.
     assert fitted[0] == 52
     assert fitted[1] == 55
+
+
+def test_duplicate_multiset_collision_repair_is_deferred_current_contract():
+    # Current production contract emits six distinct pitch classes.
+    # Duplicate multiset collision redistribution is intentionally deferred.
+    target = [60, 60, 64, 67, 69, 71]
+    with pytest.raises(RegisterFitError, match="No in-range realization"):
+        fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
 
 
 def test_generate_voice_leading_uses_previous_bounded_output_as_next_reference_state():

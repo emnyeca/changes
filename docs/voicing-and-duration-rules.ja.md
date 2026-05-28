@@ -87,6 +87,13 @@ After harmony collection extraction, chord voices are realized by bounded minimu
 Bounded voice sliding is a boundary-repair stage on an already voice-led six-lane vector.
 It is not an arbitrary bounded permutation search over all pitch-class lane assignments.
 
+Bounded Voice Sliding determines the sliding chain from audible pitch order,
+not voice-lane index order.
+
+The returned voicing remains indexed by moving voice lanes; it is not
+pitch-sorted. This distinction is required because ordinary voice leading may
+produce voice crossing.
+
 Pipeline:
 
 - ordinary minimum-motion voice leading against previous audible bounded chord
@@ -109,11 +116,26 @@ Concrete examples:
 - `B3 E4 G4 A4 D4 C5 -> C4 E4 G4 A4 D4 B4`
 - `E4 G4 C5 D5 A5 B5 -> E4 G4 B4 C5 D5 A5`
 
+Crossed-lane example:
+
+- Lane vector: `C5 E4 A5 G4 D5 B5`
+- Audible pitch order: `E4 G4 C5 D5 A5 B5`
+- After pitch-order sliding: `E4 G4 B4 C5 D5 A5`
+- Returned lane vector: `B4 E4 D5 G4 C5 A5`
+
 ### Velocity-layer interpretation
 
 Track Default Velocity represents voice-layer balance, not fixed chord-degree balance.
 
 Because voice leading and bounded register sliding may reassign chord degrees between moving voice lanes, quieter tracks may sound different chord degrees over time. This behavior is currently intentional and will be evaluated by hardware listening validation.
+
+### Current scope note (duplicate multiset)
+
+Bounded Voice Sliding currently supports the present Changes output contract:
+six distinct pitch classes per chord output.
+
+Full collision-repair support for intentionally duplicated pitch-class
+multisets is deferred until an output extraction rule produces such data.
 
 ## 5. Normalized harmonic identity
 

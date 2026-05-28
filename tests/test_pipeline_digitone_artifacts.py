@@ -44,6 +44,8 @@ def test_pipeline_artifacts_written(tmp_path: Path):
     assert loaded["device"] == "digitone2"
     assert loaded["name"] == plan.pattern_name
     assert loaded["pattern"]["speed"] == plan.speed
+    assert loaded["track_defaults"]["velocity"] == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+    assert all(event["velocity"] == "inherit" for event in loaded["events"])
 
 
 def test_bundle_artifacts_written_with_manifest_and_order(tmp_path: Path):
@@ -86,6 +88,8 @@ def test_bundle_artifacts_written_with_manifest_and_order(tmp_path: Path):
 
         payload_loaded = yaml.safe_load(events_path.read_text(encoding="utf-8"))
         assert payload_loaded["name"] == entry["pattern_name"]
+        assert payload_loaded["track_defaults"]["velocity"] == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+        assert all(event["velocity"] == "inherit" for event in payload_loaded["events"])
 
 
 def test_bundle_artifacts_write_syx_and_concat_in_manifest_order(tmp_path: Path, monkeypatch):

@@ -6,6 +6,15 @@ pattern:
   tempo: 60.0
   speed: 1/8
   total_steps: 3
+track_defaults:
+  velocity:
+    1: 70
+    2: 70
+    3: 70
+    4: 50
+    5: 70
+    6: 50
+    7: 100
 events:
 - step: 1
   track: 1

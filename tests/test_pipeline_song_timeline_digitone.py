@@ -223,6 +223,20 @@ def test_compile_plan_and_events_export_smoke():
     assert out["events"][0]["length_code"].startswith("0x")
 
 
+def test_default_target_profile_contains_track_default_velocity_map():
+    profile = default_digitone_target_profile()
+    assert profile.track_default_velocity == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+
+
+def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_velocity_inherit():
+    payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
+    _song, _timeline, _plan, events_payload = compile_digitone_pipeline(payload)
+
+    assert events_payload["track_defaults"]["velocity"] == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+    assert events_payload["events"]
+    assert all(event["velocity"] == "inherit" for event in events_payload["events"])
+
+
 def test_single_pattern_plan_pattern_name_is_final_device_name():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     payload["name"] = "Blue Moon A"

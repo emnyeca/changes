@@ -17,6 +17,7 @@ class DigitoneTargetProfile:
     approximation: str
     preferred_speed: Fraction
     fallback_speeds: tuple[Fraction, ...]
+    track_default_velocity: dict[int, int] | None = None
 
 
 DEFAULT_SPEED_CANDIDATES = (
@@ -47,6 +48,7 @@ def default_digitone_target_profile() -> DigitoneTargetProfile:
         approximation="error",
         preferred_speed=Fraction(1, 8),
         fallback_speeds=(Fraction(1, 4), Fraction(1, 2), Fraction(1, 1), Fraction(2, 1)),
+        track_default_velocity={1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100},
     )
 
 

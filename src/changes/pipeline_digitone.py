@@ -186,7 +186,10 @@ def compile_digitone_pipeline(
     song = compact_progression_to_song_model(payload)
     timeline = render_timeline(song, rp)
     plan = compile_timeline_to_digitone_plan(timeline, tp)
-    events_payload = digitone_compile_plan_to_events_yaml_payload(plan)
+    events_payload = digitone_compile_plan_to_events_yaml_payload(
+        plan,
+        track_default_velocity=tp.track_default_velocity,
+    )
 
     return song, timeline, plan, events_payload
 
@@ -280,6 +283,7 @@ def save_digitone_bundle_artifacts(
     write_syx: bool = False,
     bundle_syx_filename: str | None = None,
     harmony_resolution: dict | None = None,
+    target_profile: DigitoneTargetProfile | None = None,
 ) -> DigitonePipelineArtifacts:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -303,13 +307,19 @@ def save_digitone_bundle_artifacts(
         encoding="utf-8",
     )
 
+    tp = target_profile or default_digitone_target_profile()
+
     pattern_entries: list[dict] = []
     syx_paths: list[Path] = []
     for index, pattern in enumerate(bundle_plan.patterns, start=1):
         safe_name = _safe_ascii_slug(pattern.pattern_name, fallback=f"PATTERN_{index:02d}")
         base_name = f"{index:02d}_{safe_name}"
         events_file = patterns_dir / f"{base_name}.digitone.events.yaml"
-        events_payload = digitone_pattern_segment_to_events_yaml_payload(pattern, bundle_plan.timing)
+        events_payload = digitone_pattern_segment_to_events_yaml_payload(
+            pattern,
+            bundle_plan.timing,
+            track_default_velocity=tp.track_default_velocity,
+        )
         events_file.write_text(yaml.safe_dump(events_payload, sort_keys=False, allow_unicode=False), encoding="utf-8")
 
         entry = {

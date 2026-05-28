@@ -23,8 +23,19 @@ def _compiled_events_to_yaml_rows(events: Iterable) -> list[dict]:
     return rows
 
 
-def digitone_compile_plan_to_events_yaml_payload(plan: DigitoneCompilePlan) -> dict:
-    return {
+def _track_defaults_payload(track_default_velocity: dict[int, int] | None) -> dict | None:
+    if not track_default_velocity:
+        return None
+    ordered = {int(track): int(velocity) for track, velocity in sorted(track_default_velocity.items())}
+    return {"velocity": ordered}
+
+
+def digitone_compile_plan_to_events_yaml_payload(
+    plan: DigitoneCompilePlan,
+    *,
+    track_default_velocity: dict[int, int] | None = None,
+) -> dict:
+    payload: dict = {
         "version": 1,
         "device": "digitone2",
         "name": plan.pattern_name,
@@ -34,15 +45,21 @@ def digitone_compile_plan_to_events_yaml_payload(plan: DigitoneCompilePlan) -> d
             "speed": plan.speed,
             "total_steps": plan.total_steps,
         },
-        "events": _compiled_events_to_yaml_rows(plan.events),
     }
+    track_defaults = _track_defaults_payload(track_default_velocity)
+    if track_defaults is not None:
+        payload["track_defaults"] = track_defaults
+    payload["events"] = _compiled_events_to_yaml_rows(plan.events)
+    return payload
 
 
 def digitone_pattern_segment_to_events_yaml_payload(
     segment: DigitonePatternSegment,
     timing: DigitoneSongTimingPlan,
+    *,
+    track_default_velocity: dict[int, int] | None = None,
 ) -> dict:
-    return {
+    payload: dict = {
         "version": 1,
         "device": "digitone2",
         "name": segment.pattern_name,
@@ -52,5 +69,9 @@ def digitone_pattern_segment_to_events_yaml_payload(
             "speed": timing.speed,
             "total_steps": segment.total_steps,
         },
-        "events": _compiled_events_to_yaml_rows(segment.events),
     }
+    track_defaults = _track_defaults_payload(track_default_velocity)
+    if track_defaults is not None:
+        payload["track_defaults"] = track_defaults
+    payload["events"] = _compiled_events_to_yaml_rows(segment.events)
+    return payload

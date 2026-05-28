@@ -76,6 +76,12 @@
 - Regression validation completed:
   - `changes`: `142 passed`
   - `digitone-syx-toolkit`: `81 passed`
+- Register policy rollout completed (render-layer):
+  - chord voices now bounded to Digitone display `C4-A5` (MIDI `48..69`)
+  - bass now bounded to Digitone display `G2-F#3` (MIDI `31..42`)
+  - bass source now follows slash bass when present (`Dm7/G` -> `G` bass, `C/E` -> `E` bass)
+  - bounded voice sliding integrated into sequential voice leading state (next chord references previously bounded audible output)
+  - no changes to harmonic collection selection policy, diagnostics semantics, Track Default Velocity policy, trigger inherit encoding, or SYX structure
 
 ## Confirmed import behavior
 
@@ -134,3 +140,22 @@ Execution note:
 
 - iReal Pro HTML importer implementation
 - MusicXML repeat/ending/DS/DC/Coda unfolding with dedicated validation
+
+## Register Policy and Bounded Voice Sliding (current default)
+
+Bass:
+
+- source: slash bass if present, otherwise chord signature root
+- register: Digitone display `G2-F#3` / MIDI `31..42`
+
+Chord voices:
+
+- target register: Digitone display `C4-A5` / MIDI `48..69`
+- realized by bounded minimum-motion voice sliding over six moving lanes
+- final lane output is not pitch-sorted by force; voice crossing is permitted
+- explicit `RegisterFitError` is raised when no in-range distinct realization exists for requested multiset/range
+
+Velocity-layer interpretation:
+
+- Track Default Velocity is interpreted as moving voice-layer balance, not fixed degree-role balance
+- voice leading and bounded sliding may reassign degree content per track over time by design

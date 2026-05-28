@@ -225,14 +225,14 @@ def test_compile_plan_and_events_export_smoke():
 
 def test_default_target_profile_contains_track_default_velocity_map():
     profile = default_digitone_target_profile()
-    assert profile.track_default_velocity == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+    assert profile.track_default_velocity == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
 
 
 def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_velocity_inherit():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     _song, _timeline, _plan, events_payload = compile_digitone_pipeline(payload)
 
-    assert events_payload["track_defaults"]["velocity"] == {1: 50, 2: 70, 3: 70, 4: 70, 5: 70, 6: 70, 7: 100}
+    assert events_payload["track_defaults"]["velocity"] == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
     assert events_payload["events"]
     assert all(event["velocity"] == "inherit" for event in events_payload["events"])
 
@@ -339,3 +339,43 @@ def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_colli
     # chord voices 1..6 and bass track 7 are all used by default profile/mapping.
     assert {1, 2, 3, 4, 5, 6}.issubset(tracks)
     assert 7 in tracks
+
+
+@pytest.mark.parametrize(
+    ("symbol", "expected_bass_midi"),
+    [
+        ("Cmaj7", 36),
+        ("F#7", 42),
+        ("Gm7", 31),
+        ("Am7", 33),
+        ("B7", 35),
+        ("Dm7/G", 31),
+        ("C/E", 40),
+    ],
+)
+def test_bass_register_policy_and_slash_bass_source(symbol: str, expected_bass_midi: int):
+    payload = _song_payload([[symbol]])
+    song = compact_progression_to_song_model(payload)
+    timeline = render_timeline(song, default_render_profile())
+
+    bass_events = [e for e in timeline.events if e.role == "bass"]
+    assert len(bass_events) == 1
+    assert bass_events[0].note_midi == expected_bass_midi
+
+
+def test_rendered_timeline_chord_and_bass_events_are_within_profile_register_bounds():
+    payload = {
+        "name": "Blue Moon Head",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
+    }
+    song = compact_progression_to_song_model(payload)
+    rp = default_render_profile()
+    timeline = render_timeline(song, rp)
+
+    for event in timeline.events:
+        if event.role == "chord":
+            assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
+        if event.role == "bass":
+            assert rp.bass_min_midi <= event.note_midi <= rp.bass_max_midi

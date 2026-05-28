@@ -12,16 +12,19 @@ from .harmonic_context import (
     select_scale_collection,
 )
 
-VOICE_MIN_MIDI = 48  # C3
-VOICE_MAX_MIDI = 71  # B4
+# Initial construction window only.
+# Final output bounds are enforced in bounded voice leading via RenderProfile.
+# Digitone display convention in this project: MIDI 60 = C5.
+INITIAL_VOICE_MIN_MIDI = 48  # C4
+INITIAL_VOICE_MAX_MIDI = 71  # B5
 
 
-def _fit_chord_range(notes: list[int]) -> list[int]:
+def _fit_initial_chord_window(notes: list[int]) -> list[int]:
     out = list(notes)
-    while out and max(out) > VOICE_MAX_MIDI and min(out) - 12 >= VOICE_MIN_MIDI:
+    while out and max(out) > INITIAL_VOICE_MAX_MIDI and min(out) - 12 >= INITIAL_VOICE_MIN_MIDI:
         out = [n - 12 for n in out]
 
-    while out and min(out) < VOICE_MIN_MIDI and max(out) + 12 <= VOICE_MAX_MIDI:
+    while out and min(out) < INITIAL_VOICE_MIN_MIDI and max(out) + 12 <= INITIAL_VOICE_MAX_MIDI:
         out = [n + 12 for n in out]
 
     return out
@@ -52,7 +55,7 @@ def _output_pitch_classes_to_midi(output_pcs: Sequence[int], *, base_octave: int
         notes.append(note)
         previous = note
 
-    return _fit_chord_range(notes)
+    return _fit_initial_chord_window(notes)
 
 
 def generate_voicing_candidates(chord_symbol: str, base_octave: int = 3) -> List[List[int]]:

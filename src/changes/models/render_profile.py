@@ -13,6 +13,10 @@ class RenderProfile:
     bass_enabled: bool
     bass_strategy: str
     hold_repeated_same_pitch: str
+    chord_min_midi: int
+    chord_max_midi: int
+    bass_min_midi: int
+    bass_max_midi: int
 
 
 def default_render_profile() -> RenderProfile:
@@ -21,8 +25,12 @@ def default_render_profile() -> RenderProfile:
         voices=6,
         voice_leading_strategy="minimum_motion",
         bass_enabled=True,
-        bass_strategy="existing_behavior",
+        bass_strategy="slash_or_root_in_window",
         hold_repeated_same_pitch="hold_until_change",
+        chord_min_midi=48,
+        chord_max_midi=69,
+        bass_min_midi=31,
+        bass_max_midi=42,
     )
 
 
@@ -32,7 +40,16 @@ def render_profile_to_dict(profile: RenderProfile) -> dict:
         "type": "render_profile",
         "name": profile.name,
         "voicing": {"voices": profile.voices},
-        "voice_leading": {"strategy": profile.voice_leading_strategy},
-        "bass": {"enabled": profile.bass_enabled, "strategy": profile.bass_strategy},
+        "voice_leading": {
+            "strategy": profile.voice_leading_strategy,
+            "chord_min_midi": profile.chord_min_midi,
+            "chord_max_midi": profile.chord_max_midi,
+        },
+        "bass": {
+            "enabled": profile.bass_enabled,
+            "strategy": profile.bass_strategy,
+            "bass_min_midi": profile.bass_min_midi,
+            "bass_max_midi": profile.bass_max_midi,
+        },
         "hold": {"repeated_same_pitch": profile.hold_repeated_same_pitch},
     }

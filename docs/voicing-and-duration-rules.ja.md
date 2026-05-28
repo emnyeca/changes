@@ -57,6 +57,53 @@
 - slash bass は chord signature root を置換しません。
 - 出力抽出の基準 root は常に左側 chord root です。
 - bass track の送信仕様は独立です（和声抽出規則とは分離）。
+- bass render の音源は次の優先順です。
+  - slash bass がある場合: slash bass pitch class
+  - slash bass がない場合: chord signature root pitch class
+
+## 4A. Register Policy and Bounded Voice Sliding
+
+### Bass
+
+Bass pitch source:
+
+- use slash bass if present
+- otherwise use chord signature root
+
+Bass register:
+
+- Digitone display G2-F#3
+- MIDI 31-42
+
+### Chord voices
+
+Chord target register:
+
+- Digitone display C4-A5
+- MIDI 48-69
+
+After harmony collection extraction, chord voices are realized by bounded minimum-motion voice sliding.
+
+Requirements:
+
+- preserve the Output Chord Tone Set pitch-class multiset
+- preserve six moving voice lanes
+- fit every final chord note inside the configured range
+- minimize movement by voice-lane index
+- permit voice crossing
+- do not sort final track/lane assignment by pitch
+- raise an explicit error if no valid in-range realization exists
+
+Concrete examples:
+
+- `B3 E4 G4 A4 D4 C5 -> C4 E4 G4 A4 D4 B4`
+- `E4 G4 C5 D5 A5 B5 -> E4 G4 B4 C5 D5 A5`
+
+### Velocity-layer interpretation
+
+Track Default Velocity represents voice-layer balance, not fixed chord-degree balance.
+
+Because voice leading and bounded register sliding may reassign chord degrees between moving voice lanes, quieter tracks may sound different chord degrees over time. This behavior is currently intentional and will be evaluated by hardware listening validation.
 
 ## 5. Normalized harmonic identity
 

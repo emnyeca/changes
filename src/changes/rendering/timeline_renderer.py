@@ -4,24 +4,28 @@ from __future__ import annotations
 
 from fractions import Fraction
 
+from changes.chord_parser import parse_chord_core
 from changes.models.render_profile import RenderProfile
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.models.song_model import SongModel
-from changes.note import pitch_class_to_semitone
 from changes.voicing import progression_to_voicings
 from changes.voice_leading import generate_voice_leading
 
 
-def _root_from_symbol(symbol: str) -> str:
-    head = symbol.split("/", 1)[0].strip()
-    if len(head) >= 2 and head[1] in ("#", "b"):
-        return head[:2]
-    return head[:1]
+def _note_for_pitch_class_in_window(pc: int, min_midi: int, max_midi: int) -> int:
+    candidates = [note for note in range(min_midi, max_midi + 1) if note % 12 == int(pc)]
+    if not candidates:
+        raise ValueError(
+            f"No pitch-class realization in requested window: pc={pc} range={min_midi}..{max_midi}"
+        )
+    # Bass window is intended as a single-octave mapping. If wider, choose lowest for determinism.
+    return min(candidates)
 
 
-def _root_bass_note(symbol: str) -> int:
-    root = _root_from_symbol(symbol)
-    return 36 + pitch_class_to_semitone(root)
+def _bass_note(symbol: str, *, min_midi: int, max_midi: int) -> int:
+    core = parse_chord_core(symbol)
+    source_pc = core.slash_bass_pc if core.slash_bass_pc is not None else core.root_pc
+    return _note_for_pitch_class_in_window(source_pc, min_midi, max_midi)
 
 
 def _to_bars(song: SongModel) -> list[list[str]]:
@@ -31,7 +35,11 @@ def _to_bars(song: SongModel) -> list[list[str]]:
 def render_timeline(song: SongModel, profile: RenderProfile) -> RenderedTimeline:
     bars = _to_bars(song)
     raw_voicings = progression_to_voicings(bars)
-    voiced = generate_voice_leading(raw_voicings)
+    voiced = generate_voice_leading(
+        raw_voicings,
+        min_midi=profile.chord_min_midi,
+        max_midi=profile.chord_max_midi,
+    )
 
     harmony_events = []
     for measure in song.measures:
@@ -64,7 +72,11 @@ def render_timeline(song: SongModel, profile: RenderProfile) -> RenderedTimeline
                     id=f"ev{idx}_bass",
                     voice_id="bass",
                     role="bass",
-                    note_midi=_root_bass_note(h.symbol),
+                    note_midi=_bass_note(
+                        h.symbol,
+                        min_midi=profile.bass_min_midi,
+                        max_midi=profile.bass_max_midi,
+                    ),
                     onset_quarters=onset,
                     duration_quarters=duration,
                     source_harmony_id=h.id,

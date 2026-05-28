@@ -7,6 +7,10 @@ from pathlib import Path
 import pytest
 
 from changes import cli
+from changes.importers.musicxml import imported_song_to_song_model, load_musicxml_song
+from changes.models.render_profile import default_render_profile
+from changes.pipeline_digitone import compile_digitone_bundle_pipeline
+from changes.rendering.timeline_renderer import render_timeline
 
 
 def _musicxml_path(variant: str) -> Path:
@@ -224,3 +228,35 @@ def test_unresolved_context_fails_with_actionable_message(tmp_path: Path, monkey
     assert "event=1" in msg
     assert "symbol=Cmaj9/C#" in msg
     assert "local_pitch_collection" in msg
+
+
+@pytest.mark.parametrize("variant", ["direct", "converted"])
+def test_musicxml_500_miles_high_rendered_timeline_register_bounds(variant: str):
+    imported = load_musicxml_song(_musicxml_path(variant))
+    song = imported_song_to_song_model(imported, tempo=120)
+    rp = default_render_profile()
+    timeline = render_timeline(song, rp)
+
+    for event in timeline.events:
+        if event.role == "chord":
+            assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
+        if event.role == "bass":
+            assert rp.bass_min_midi <= event.note_midi <= rp.bass_max_midi
+
+
+def test_minor_ii_v_altered_fixture_rendered_timeline_register_bounds():
+    payload = {
+        "name": "MINOR II V E7#9",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Bm7b5"], ["E7#9"], ["Am7"]]}],
+    }
+    song, timeline, _bundle_plan = compile_digitone_bundle_pipeline(payload)
+    rp = default_render_profile()
+
+    assert song.title == "MINOR II V E7#9"
+    for event in timeline.events:
+        if event.role == "chord":
+            assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
+        if event.role == "bass":
+            assert rp.bass_min_midi <= event.note_midi <= rp.bass_max_midi

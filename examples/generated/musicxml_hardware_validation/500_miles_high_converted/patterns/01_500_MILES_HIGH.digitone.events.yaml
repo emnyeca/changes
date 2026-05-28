@@ -23,24 +23,34 @@ events:
   length_code: '0x5E'
 - step: 5
   track: 1
-  note: D4
+  note: F4
   velocity: inherit
   length_code: '0x5E'
 - step: 9
   track: 1
-  note: A3
+  note: F#4
   velocity: inherit
   length_code: '0x5E'
 - step: 13
   track: 1
-  note: G#3
+  note: F4
   velocity: inherit
-  length_code: '0x66'
-- step: 19
+  length_code: '0x4E'
+- step: 15
   track: 1
-  note: G3
+  note: D#4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 17
+  track: 1
+  note: D4
   velocity: inherit
   length_code: '0x5E'
+- step: 21
+  track: 1
+  note: D#4
+  velocity: inherit
+  length_code: '0x4E'
 - step: 1
   track: 2
   note: G4
@@ -48,114 +58,119 @@ events:
   length_code: '0x6A'
 - step: 8
   track: 2
-  note: E4
-  velocity: inherit
-  length_code: '0x62'
-- step: 13
-  track: 2
-  note: D#4
-  velocity: inherit
-  length_code: '0x5E'
-- step: 17
-  track: 2
-  note: D4
-  velocity: inherit
-  length_code: '0x5E'
-- step: 21
-  track: 2
-  note: D#4
-  velocity: inherit
-  length_code: '0x4E'
-- step: 1
-  track: 3
-  note: B4
-  velocity: inherit
-  length_code: '0x4E'
-- step: 3
-  track: 3
-  note: A#4
-  velocity: inherit
-  length_code: '0x5E'
-- step: 7
-  track: 3
-  note: B4
-  velocity: inherit
-  length_code: '0x5E'
-- step: 11
-  track: 3
-  note: C5
-  velocity: inherit
-  length_code: '0x66'
-- step: 17
-  track: 3
-  note: B4
-  velocity: inherit
-  length_code: '0x4E'
-- step: 19
-  track: 3
-  note: A#4
-  velocity: inherit
-  length_code: '0x5E'
-- step: 1
-  track: 4
-  note: C#5
-  velocity: inherit
-  length_code: '0x4E'
-- step: 3
-  track: 4
-  note: A4
-  velocity: inherit
-  length_code: '0x62'
-- step: 8
-  track: 4
   note: G#4
   velocity: inherit
   length_code: '0x3E'
 - step: 9
-  track: 4
+  track: 2
   note: G4
   velocity: inherit
   length_code: '0x6E'
 - step: 17
-  track: 4
-  note: F4
+  track: 2
+  note: G#4
   velocity: inherit
   length_code: '0x4E'
 - step: 19
-  track: 4
-  note: D#4
-  velocity: inherit
-  length_code: '0x4E'
-- step: 21
-  track: 4
-  note: F4
-  velocity: inherit
-  length_code: '0x4E'
-- step: 1
-  track: 5
-  note: D5
+  track: 2
+  note: G4
   velocity: inherit
   length_code: '0x5E'
-- step: 5
-  track: 5
+- step: 1
+  track: 3
+  note: B4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 3
+  track: 3
+  note: A#4
+  velocity: inherit
+  length_code: '0x5E'
+- step: 7
+  track: 3
+  note: B4
+  velocity: inherit
+  length_code: '0x5E'
+- step: 11
+  track: 3
   note: C5
   velocity: inherit
+  length_code: '0x76'
+- step: 1
+  track: 4
+  note: C#5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 3
+  track: 4
+  note: D5
+  velocity: inherit
   length_code: '0x66'
+- step: 9
+  track: 4
+  note: C5
+  velocity: inherit
+  length_code: '0x4E'
 - step: 11
-  track: 5
+  track: 4
   note: D5
   velocity: inherit
   length_code: '0x5E'
 - step: 15
-  track: 5
+  track: 4
   note: C#5
   velocity: inherit
   length_code: '0x4E'
 - step: 17
-  track: 5
-  note: C5
+  track: 4
+  note: B4
   velocity: inherit
-  length_code: '0x66'
+  length_code: '0x4E'
+- step: 19
+  track: 4
+  note: A#4
+  velocity: inherit
+  length_code: '0x5E'
+- step: 1
+  track: 5
+  note: D5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 3
+  track: 5
+  note: F5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 5
+  track: 5
+  note: A5
+  velocity: inherit
+  length_code: '0x56'
+- step: 8
+  track: 5
+  note: E5
+  velocity: inherit
+  length_code: '0x62'
+- step: 13
+  track: 5
+  note: D#5
+  velocity: inherit
+  length_code: '0x4E'
+- step: 15
+  track: 5
+  note: A#4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 17
+  track: 5
+  note: A4
+  velocity: inherit
+  length_code: '0x5E'
+- step: 21
+  track: 5
+  note: G#4
+  velocity: inherit
+  length_code: '0x4E'
 - step: 1
   track: 6
   note: F#5
@@ -163,32 +178,37 @@ events:
   length_code: '0x4E'
 - step: 3
   track: 6
-  note: F5
+  note: A5
   velocity: inherit
-  length_code: '0x66'
+  length_code: '0x4E'
+- step: 5
+  track: 6
+  note: C5
+  velocity: inherit
+  length_code: '0x5E'
 - step: 9
   track: 6
-  note: F#5
+  note: A4
   velocity: inherit
   length_code: '0x5E'
 - step: 13
   track: 6
-  note: F5
-  velocity: inherit
-  length_code: '0x4E'
-- step: 15
-  track: 6
-  note: A#5
-  velocity: inherit
-  length_code: '0x4E'
-- step: 17
-  track: 6
-  note: A5
+  note: G#4
   velocity: inherit
   length_code: '0x5E'
+- step: 17
+  track: 6
+  note: F4
+  velocity: inherit
+  length_code: '0x4E'
+- step: 19
+  track: 6
+  note: D#4
+  velocity: inherit
+  length_code: '0x4E'
 - step: 21
   track: 6
-  note: G#5
+  note: F4
   velocity: inherit
   length_code: '0x4E'
 - step: 1
@@ -198,17 +218,17 @@ events:
   length_code: '0x4E'
 - step: 3
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x4E'
 - step: 5
   track: 7
-  note: A#3
+  note: A#2
   velocity: inherit
   length_code: '0x4E'
 - step: 7
   track: 7
-  note: B3
+  note: B2
   velocity: inherit
   length_code: '0x3E'
 - step: 8
@@ -218,7 +238,7 @@ events:
   length_code: '0x3E'
 - step: 9
   track: 7
-  note: A3
+  note: A2
   velocity: inherit
   length_code: '0x4E'
 - step: 11
@@ -238,7 +258,7 @@ events:
   length_code: '0x4E'
 - step: 17
   track: 7
-  note: B3
+  note: B2
   velocity: inherit
   length_code: '0x4E'
 - step: 19
@@ -248,6 +268,6 @@ events:
   length_code: '0x4E'
 - step: 21
   track: 7
-  note: G#3
+  note: G#2
   velocity: inherit
   length_code: '0x4E'

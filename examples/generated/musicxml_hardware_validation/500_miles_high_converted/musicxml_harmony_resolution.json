@@ -81,23 +81,21 @@
       "source_position_quarters": "0",
       "local_pitch_collection": [
         "D",
-        "E",
         "F",
         "G",
-        "A#",
-        "B"
+        "A#"
       ],
-      "selected_collection_name": "G_half_whole_diminished",
-      "selected_collection_family": "diminished",
+      "selected_collection_name": "G_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
       "output_chord_tone_set": [
         "G",
         "A#",
-        "C#",
+        "D",
         "E",
         "F",
-        "G#"
+        "A"
       ],
-      "retry_level": "current+previous"
+      "retry_level": "current_only"
     },
     {
       "global_event_index": 4,
@@ -114,23 +112,21 @@
       "source_position_quarters": "0",
       "local_pitch_collection": [
         "D",
-        "E",
         "F",
         "G",
-        "A#",
-        "B"
+        "A#"
       ],
-      "selected_collection_name": "G_half_whole_diminished",
-      "selected_collection_family": "diminished",
+      "selected_collection_name": "G_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
       "output_chord_tone_set": [
         "G",
         "A#",
-        "C#",
+        "D",
         "E",
         "F",
-        "G#"
+        "A"
       ],
-      "retry_level": "current+previous"
+      "retry_level": "current_only"
     },
     {
       "global_event_index": 5,

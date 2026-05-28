@@ -126,6 +126,34 @@ def test_direct_vs_converted_generate_semantically_identical_diagnostics_and_eve
     )
 
 
+def test_500_miles_high_measure3_gm7_uses_current_only_diatonic_after_restriction(tmp_path: Path, monkeypatch):
+    direct_xml = _musicxml_path("direct")
+    out_dir = tmp_path / "direct"
+
+    def _fake_build(events_yaml_path: str | Path, output_syx_path: str | Path):
+        Path(output_syx_path).write_bytes(b"\xF0\x7D\x01\xF7")
+
+    monkeypatch.setattr("changes.pipeline_digitone.build_digitone_syx_from_events_yaml", _fake_build)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["changes", "digitone-bundle", "--musicxml", str(direct_xml), "--output", str(out_dir), "--write-syx"],
+    )
+    cli.main()
+
+    diag = _read_json(out_dir / "musicxml_harmony_resolution.json")
+    gm7 = next(
+        o
+        for o in diag["occurrences"]
+        if o["measure_number"] == "3" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "Gm7"
+    )
+
+    assert gm7["retry_level"] == "current_only"
+    assert gm7["selected_collection_family"] == "diatonic_dorian"
+    assert gm7["selected_collection_name"].startswith("G_dorian")
+    assert gm7["output_chord_tone_set"] == ["G", "A#", "D", "E", "F", "A"]
+
+
 def test_unresolved_context_fails_with_actionable_message(tmp_path: Path, monkeypatch):
     xml = tmp_path / "unresolved.musicxml"
     xml.write_text(

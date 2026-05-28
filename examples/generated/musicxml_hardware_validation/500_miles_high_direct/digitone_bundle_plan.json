@@ -64,7 +64,7 @@
           "step": 1,
           "note": "C#5",
           "velocity": "inherit",
-          "length_code": "0x5E"
+          "length_code": "0x4E"
         },
         {
           "source_event_id": "ev1_v5",
@@ -72,7 +72,7 @@
           "step": 1,
           "note": "D5",
           "velocity": "inherit",
-          "length_code": "0x4E"
+          "length_code": "0x5E"
         },
         {
           "source_event_id": "ev1_v6",
@@ -99,20 +99,20 @@
           "length_code": "0x5E"
         },
         {
-          "source_event_id": "ev3_v5",
-          "track": 5,
+          "source_event_id": "ev3_v4",
+          "track": 4,
           "step": 3,
-          "note": "F5",
+          "note": "A4",
           "velocity": "inherit",
-          "length_code": "0x66"
+          "length_code": "0x62"
         },
         {
           "source_event_id": "ev3_v6",
           "track": 6,
           "step": 3,
-          "note": "G#5",
+          "note": "F5",
           "velocity": "inherit",
-          "length_code": "0x4E"
+          "length_code": "0x66"
         },
         {
           "source_event_id": "ev5_bass",
@@ -131,18 +131,10 @@
           "length_code": "0x56"
         },
         {
-          "source_event_id": "ev5_v4",
-          "track": 4,
+          "source_event_id": "ev5_v5",
+          "track": 5,
           "step": 5,
           "note": "C5",
-          "velocity": "inherit",
-          "length_code": "0x56"
-        },
-        {
-          "source_event_id": "ev5_v6",
-          "track": 6,
-          "step": 5,
-          "note": "A5",
           "velocity": "inherit",
           "length_code": "0x56"
         },
@@ -190,15 +182,15 @@
           "source_event_id": "ev8_v4",
           "track": 4,
           "step": 8,
-          "note": "D5",
+          "note": "A#4",
           "velocity": "inherit",
           "length_code": "0x3E"
         },
         {
-          "source_event_id": "ev8_v6",
-          "track": 6,
+          "source_event_id": "ev8_v5",
+          "track": 5,
           "step": 8,
-          "note": "A#5",
+          "note": "D5",
           "velocity": "inherit",
           "length_code": "0x3E"
         },
@@ -222,23 +214,23 @@
           "source_event_id": "ev9_v4",
           "track": 4,
           "step": 9,
-          "note": "B4",
+          "note": "A4",
           "velocity": "inherit",
-          "length_code": "0x4E"
+          "length_code": "0x5E"
         },
         {
           "source_event_id": "ev9_v5",
           "track": 5,
           "step": 9,
-          "note": "F#5",
+          "note": "B4",
           "velocity": "inherit",
-          "length_code": "0x5E"
+          "length_code": "0x4E"
         },
         {
           "source_event_id": "ev9_v6",
           "track": 6,
           "step": 9,
-          "note": "A5",
+          "note": "F#5",
           "velocity": "inherit",
           "length_code": "0x5E"
         },
@@ -251,8 +243,8 @@
           "length_code": "0x4E"
         },
         {
-          "source_event_id": "ev11_v4",
-          "track": 4,
+          "source_event_id": "ev11_v5",
+          "track": 5,
           "step": 11,
           "note": "D5",
           "velocity": "inherit",
@@ -275,18 +267,18 @@
           "length_code": "0x5E"
         },
         {
-          "source_event_id": "ev13_v5",
-          "track": 5,
+          "source_event_id": "ev13_v4",
+          "track": 4,
           "step": 13,
-          "note": "F5",
+          "note": "G#4",
           "velocity": "inherit",
-          "length_code": "0x4E"
+          "length_code": "0x66"
         },
         {
           "source_event_id": "ev13_v6",
           "track": 6,
           "step": 13,
-          "note": "G#5",
+          "note": "F5",
           "velocity": "inherit",
           "length_code": "0x4E"
         },
@@ -299,20 +291,12 @@
           "length_code": "0x4E"
         },
         {
-          "source_event_id": "ev15_v4",
-          "track": 4,
+          "source_event_id": "ev15_v5",
+          "track": 5,
           "step": 15,
           "note": "C#5",
           "velocity": "inherit",
           "length_code": "0x4E"
-        },
-        {
-          "source_event_id": "ev15_v5",
-          "track": 5,
-          "step": 15,
-          "note": "G#5",
-          "velocity": "inherit",
-          "length_code": "0x5E"
         },
         {
           "source_event_id": "ev15_v6",
@@ -355,8 +339,8 @@
           "length_code": "0x4E"
         },
         {
-          "source_event_id": "ev17_v4",
-          "track": 4,
+          "source_event_id": "ev17_v5",
+          "track": 5,
           "step": 17,
           "note": "C5",
           "velocity": "inherit",
@@ -395,10 +379,10 @@
           "length_code": "0x5E"
         },
         {
-          "source_event_id": "ev19_v5",
-          "track": 5,
+          "source_event_id": "ev19_v4",
+          "track": 4,
           "step": 19,
-          "note": "G5",
+          "note": "G4",
           "velocity": "inherit",
           "length_code": "0x5E"
         },

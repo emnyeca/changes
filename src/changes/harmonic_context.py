@@ -87,6 +87,37 @@ EXTRACTION_DIM_WHOLE_HALF = "dim_whole_half_1b3b5679"
 
 _HEPTATONIC_DEGREE_INDEXES = (0, 2, 4, 5, 6, 1)
 
+_SYMMETRIC_COLLECTION_FAMILIES = {"whole_tone", "diminished"}
+
+_SYMMETRIC_ELIGIBLE_QUALITIES = {
+    "dim",
+    "dim7",
+    "m7b5",
+    "7b9",
+    "7#9",
+    "7b5",
+    "7#5",
+    "7#11",
+    "7b13",
+    "7#9b5",
+    "7#5b9",
+    "7b5b9",
+    "13b9",
+    "alt",
+    "7b9sus4",
+}
+
+
+def allows_symmetric_collection_for_current_chord(core: ChordSymbolCore, family: str) -> bool:
+    """Return whether current chord semantics allow symmetric collection selection.
+
+    Plain major/minor tonal qualities remain eligible to contribute context tones,
+    but cannot *select* whole-tone or diminished as the current output collection.
+    """
+    if family not in _SYMMETRIC_COLLECTION_FAMILIES:
+        return True
+    return core.normalized_quality in _SYMMETRIC_ELIGIBLE_QUALITIES
+
 
 def _family_rank(family: str) -> int:
     if family == "diatonic_dorian":
@@ -413,6 +444,9 @@ def select_scale_collection(symbol: str, local_pitch_collection: set[int] | froz
             continue
         if core.root_pc not in pcs:
             continue
+        if candidate.family in _SYMMETRIC_COLLECTION_FAMILIES:
+            if not allows_symmetric_collection_for_current_chord(core, candidate.family):
+                continue
         if candidate.requires_signature_root_match and candidate.anchor_root_pc != core.root_pc:
             continue
         candidates.append(candidate)

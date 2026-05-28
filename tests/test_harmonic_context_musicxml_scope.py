@@ -5,6 +5,7 @@ from dataclasses import replace
 from changes.chord_parser import parse_chord_core
 from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
 from changes.harmonic_context import (
+    UnsupportedHarmonicContextError,
     build_local_pitch_collection,
     chord_tone_pitch_classes,
     extract_output_chord_tone_set,
@@ -95,10 +96,13 @@ def test_retry_attempt2_prefers_previous_plus_current_not_current_plus_next():
     assert set(local) != current_next
 
 
-def test_plain_major_can_resolve_to_diminished_when_context_demands_it():
+def test_plain_major_cannot_select_diminished_after_symmetric_eligibility_restriction():
     diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
-    selected = select_scale_collection("Cmaj7", diminished_only_local)
-    assert selected.family == "diminished"
+    try:
+        selected = select_scale_collection("Cmaj7", diminished_only_local)
+        assert selected.family != "diminished"
+    except UnsupportedHarmonicContextError:
+        pass
 
 
 def test_full_song_context_crosses_sections_and_occurrences_are_position_sensitive():

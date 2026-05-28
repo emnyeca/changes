@@ -9,6 +9,7 @@ from changes.harmonic_context import (
     extract_output_chord_tone_set,
     normalized_harmonic_identity,
     resolve_scale_collection_with_retry,
+    resolve_scale_collection_with_retry_details,
     select_scale_collection,
 )
 
@@ -144,7 +145,7 @@ def test_diminished_half_whole_wins_when_both_diminished_families_are_eligible()
 
     # Force priority stage 5 by using collection that only diminished families can satisfy.
     diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
-    selected2 = select_scale_collection("C7", diminished_only_local)
+    selected2 = select_scale_collection("C7b9", diminished_only_local)
     assert selected2.family == "diminished"
     assert selected2.extraction_rule == "dim_half_whole_1b3b56b7b9"
 
@@ -210,3 +211,40 @@ def test_repeated_section_occurrences_are_position_sensitive_not_template_reused
     local_1, _selected_1 = resolve_scale_collection_with_retry(progression, 0, circular=True)
     local_2, _selected_2 = resolve_scale_collection_with_retry(progression, 3, circular=True)
     assert local_1 != local_2
+
+
+def test_plain_gm7_in_500_miles_high_phrase_cannot_select_diminished_and_falls_back_to_current_only():
+    progression = ["Em7", "Em7", "Gm7", "Gm7", "A#maj7"]
+
+    resolved = resolve_scale_collection_with_retry_details(progression, 2, circular=True)
+    output = extract_output_chord_tone_set("Gm7", resolved.selected_collection)
+
+    assert resolved.retry_level == "current_only"
+    assert resolved.selected_collection.family == "diatonic_dorian"
+    assert "diminished" not in resolved.selected_collection.name
+    assert output == (7, 10, 2, 4, 5, 9)  # G, A#, D, E, F, A
+
+
+@pytest.mark.parametrize("symbol", ["Cmaj7", "Cm7", "Cm", "Cm9"])
+def test_plain_tonal_qualities_do_not_select_symmetric_collections(symbol: str):
+    diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
+
+    try:
+        selected = select_scale_collection(symbol, diminished_only_local)
+        assert selected.family != "diminished"
+        assert selected.family != "whole_tone"
+    except UnsupportedHarmonicContextError:
+        # Rejecting symmetric candidates may legitimately leave no eligible family.
+        pass
+
+
+def test_dim7_remains_eligible_for_diminished_when_no_higher_priority_family_fits():
+    diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
+    selected = select_scale_collection("Cdim7", diminished_only_local)
+    assert selected.family == "diminished"
+
+
+def test_altered_dominant_remains_eligible_for_symmetric_collection():
+    diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
+    selected = select_scale_collection("C7b9", diminished_only_local)
+    assert selected.family == "diminished"

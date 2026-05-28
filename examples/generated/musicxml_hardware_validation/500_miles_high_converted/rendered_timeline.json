@@ -48,7 +48,7 @@
       "role": "chord",
       "note_midi": 61,
       "onset_quarters": "0",
-      "duration_quarters": "16",
+      "duration_quarters": "8",
       "source_harmony_id": "m1_h1",
       "retrigger": true
     },
@@ -58,7 +58,7 @@
       "role": "chord",
       "note_midi": 62,
       "onset_quarters": "0",
-      "duration_quarters": "8",
+      "duration_quarters": "16",
       "source_harmony_id": "m1_h1",
       "retrigger": true
     },
@@ -93,12 +93,12 @@
       "retrigger": true
     },
     {
-      "id": "ev3_v5",
-      "voice_id": "chord_voice_5",
+      "id": "ev3_v4",
+      "voice_id": "chord_voice_4",
       "role": "chord",
-      "note_midi": 65,
+      "note_midi": 57,
       "onset_quarters": "8",
-      "duration_quarters": "24",
+      "duration_quarters": "20",
       "source_harmony_id": "m3_h1",
       "retrigger": true
     },
@@ -106,9 +106,9 @@
       "id": "ev3_v6",
       "voice_id": "chord_voice_6",
       "role": "chord",
-      "note_midi": 68,
+      "note_midi": 65,
       "onset_quarters": "8",
-      "duration_quarters": "8",
+      "duration_quarters": "24",
       "source_harmony_id": "m3_h1",
       "retrigger": true
     },
@@ -133,20 +133,10 @@
       "retrigger": true
     },
     {
-      "id": "ev5_v4",
-      "voice_id": "chord_voice_4",
+      "id": "ev5_v5",
+      "voice_id": "chord_voice_5",
       "role": "chord",
       "note_midi": 60,
-      "onset_quarters": "16",
-      "duration_quarters": "12",
-      "source_harmony_id": "m5_h1",
-      "retrigger": true
-    },
-    {
-      "id": "ev5_v6",
-      "voice_id": "chord_voice_6",
-      "role": "chord",
-      "note_midi": 69,
       "onset_quarters": "16",
       "duration_quarters": "12",
       "source_harmony_id": "m5_h1",
@@ -206,17 +196,17 @@
       "id": "ev8_v4",
       "voice_id": "chord_voice_4",
       "role": "chord",
-      "note_midi": 62,
+      "note_midi": 58,
       "onset_quarters": "28",
       "duration_quarters": "4",
       "source_harmony_id": "m8_h1",
       "retrigger": true
     },
     {
-      "id": "ev8_v6",
-      "voice_id": "chord_voice_6",
+      "id": "ev8_v5",
+      "voice_id": "chord_voice_5",
       "role": "chord",
-      "note_midi": 70,
+      "note_midi": 62,
       "onset_quarters": "28",
       "duration_quarters": "4",
       "source_harmony_id": "m8_h1",
@@ -246,9 +236,9 @@
       "id": "ev9_v4",
       "voice_id": "chord_voice_4",
       "role": "chord",
-      "note_midi": 59,
+      "note_midi": 57,
       "onset_quarters": "32",
-      "duration_quarters": "8",
+      "duration_quarters": "16",
       "source_harmony_id": "m9_h1",
       "retrigger": true
     },
@@ -256,9 +246,9 @@
       "id": "ev9_v5",
       "voice_id": "chord_voice_5",
       "role": "chord",
-      "note_midi": 66,
+      "note_midi": 59,
       "onset_quarters": "32",
-      "duration_quarters": "16",
+      "duration_quarters": "8",
       "source_harmony_id": "m9_h1",
       "retrigger": true
     },
@@ -266,7 +256,7 @@
       "id": "ev9_v6",
       "voice_id": "chord_voice_6",
       "role": "chord",
-      "note_midi": 69,
+      "note_midi": 66,
       "onset_quarters": "32",
       "duration_quarters": "16",
       "source_harmony_id": "m9_h1",
@@ -283,8 +273,8 @@
       "retrigger": true
     },
     {
-      "id": "ev11_v4",
-      "voice_id": "chord_voice_4",
+      "id": "ev11_v5",
+      "voice_id": "chord_voice_5",
       "role": "chord",
       "note_midi": 62,
       "onset_quarters": "40",
@@ -313,12 +303,12 @@
       "retrigger": true
     },
     {
-      "id": "ev13_v5",
-      "voice_id": "chord_voice_5",
+      "id": "ev13_v4",
+      "voice_id": "chord_voice_4",
       "role": "chord",
-      "note_midi": 65,
+      "note_midi": 56,
       "onset_quarters": "48",
-      "duration_quarters": "8",
+      "duration_quarters": "24",
       "source_harmony_id": "m13_h1",
       "retrigger": true
     },
@@ -326,7 +316,7 @@
       "id": "ev13_v6",
       "voice_id": "chord_voice_6",
       "role": "chord",
-      "note_midi": 68,
+      "note_midi": 65,
       "onset_quarters": "48",
       "duration_quarters": "8",
       "source_harmony_id": "m13_h1",
@@ -343,22 +333,12 @@
       "retrigger": true
     },
     {
-      "id": "ev15_v4",
-      "voice_id": "chord_voice_4",
+      "id": "ev15_v5",
+      "voice_id": "chord_voice_5",
       "role": "chord",
       "note_midi": 61,
       "onset_quarters": "56",
       "duration_quarters": "8",
-      "source_harmony_id": "m15_h1",
-      "retrigger": true
-    },
-    {
-      "id": "ev15_v5",
-      "voice_id": "chord_voice_5",
-      "role": "chord",
-      "note_midi": 68,
-      "onset_quarters": "56",
-      "duration_quarters": "16",
       "source_harmony_id": "m15_h1",
       "retrigger": true
     },
@@ -413,8 +393,8 @@
       "retrigger": true
     },
     {
-      "id": "ev17_v4",
-      "voice_id": "chord_voice_4",
+      "id": "ev17_v5",
+      "voice_id": "chord_voice_5",
       "role": "chord",
       "note_midi": 60,
       "onset_quarters": "64",
@@ -463,10 +443,10 @@
       "retrigger": true
     },
     {
-      "id": "ev19_v5",
-      "voice_id": "chord_voice_5",
+      "id": "ev19_v4",
+      "voice_id": "chord_voice_4",
       "role": "chord",
-      "note_midi": 67,
+      "note_midi": 55,
       "onset_quarters": "72",
       "duration_quarters": "16",
       "source_harmony_id": "m19_h1",

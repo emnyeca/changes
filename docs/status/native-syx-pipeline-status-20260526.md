@@ -62,11 +62,12 @@
   - pipeline path: MusicXML import -> SongModel -> timeline render -> Digitone bundle plan -> artifacts
   - emits `musicxml_harmony_resolution.json` for per-occurrence harmonic decision diagnostics
   - unresolved harmonic contexts fail conversion explicitly with measure/event/symbol/local-pitch-collection details
+- Symmetric collection eligibility restriction added after Digitone II listening validation of `500 Miles High`:
+  - plain major/minor qualities cannot select whole-tone/diminished as current output collection
+  - explicit altered/diminished qualities remain eligible for whole-tone/diminished selection
+  - prevents accidental recoloring such as plain `Gm7` resolving to diminished from surrounding context alone
 - Regression validation completed:
-  - `changes`: `116 passed, 2 skipped`
-    - skipped tests are pre-existing optional UI tests requiring `streamlit`:
-      - `tests/test_ui_yaml_schema.py`
-      - `tests/test_waltz_duration_schedule.py`
+  - `changes`: `133 passed`
   - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior

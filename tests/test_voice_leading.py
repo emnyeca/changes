@@ -6,7 +6,12 @@ from changes.harmonic_context import (
     select_scale_collection,
 )
 from changes.voicing import progression_to_voicings
-from changes.voice_leading import RegisterFitError, fit_bounded_voice_vector, generate_voice_leading
+from changes.voice_leading import (
+    RegisterFitError,
+    _assign_minimum_motion_target,
+    fit_bounded_voice_vector,
+    generate_voice_leading,
+)
 
 
 def _movement(a, b):
@@ -60,7 +65,8 @@ def test_bounded_voice_sliding_exact_example_1_preserves_lane_order():
 def test_bounded_voice_sliding_exact_example_2_preserves_lane_order():
     target = [52, 55, 60, 62, 69, 71]  # E4 G4 C5 D5 A5 B5
     fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
-    assert fitted == [52, 55, 60, 62, 69, 59]  # E4 G4 C5 D5 A5 B4
+    assert fitted == [52, 55, 59, 60, 62, 69]  # E4 G4 B4 C5 D5 A5
+    assert fitted != [52, 55, 60, 62, 69, 59]  # reject pure octave-fold lane relocation
 
 
 def test_bounded_voice_sliding_in_range_identity():
@@ -71,9 +77,8 @@ def test_bounded_voice_sliding_in_range_identity():
 
 def test_bounded_voice_sliding_multiple_out_of_range_notes_is_deterministic_and_preserves_multiset():
     target = [35, 74, 55, 80, 69, 40]
-    reference = [48, 52, 55, 57, 59, 62]
-    out1 = fit_bounded_voice_vector(target, reference, min_midi=48, max_midi=69)
-    out2 = fit_bounded_voice_vector(target, reference, min_midi=48, max_midi=69)
+    out1 = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
+    out2 = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
 
     assert out1 == out2
     assert all(48 <= n <= 69 for n in out1)
@@ -88,18 +93,46 @@ def test_bounded_voice_sliding_impossible_realization_raises_register_fit_error(
         fit_bounded_voice_vector(target, reference, min_midi=48, max_midi=52, context="unit_test")
 
 
+def test_bounded_voice_sliding_simultaneous_lower_and_upper_overflow():
+    target = [46, 52, 60, 62, 69, 71]
+    fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
+
+    assert all(48 <= n <= 69 for n in fitted)
+    assert len(set(fitted)) == 6
+    assert sorted(n % 12 for n in fitted) == sorted(n % 12 for n in target)
+
+
+def test_bounded_voice_sliding_deterministic_tie_break_matches_spec_cost_order():
+    target = [52, 55, 60, 62, 69, 71]
+    fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
+
+    # Candidate with same total movement and max movement but higher max note must lose.
+    alt = [52, 55, 59, 60, 69, 62]
+    assert fitted != alt
+
+
+def test_bounded_voice_sliding_keeps_unaffected_lanes_without_global_reassignment():
+    target = [52, 55, 60, 62, 69, 71]
+    fitted = fit_bounded_voice_vector(target, target, min_midi=48, max_midi=69)
+
+    # First two in-range lanes must remain untouched in this boundary repair case.
+    assert fitted[0] == 52
+    assert fitted[1] == 55
+
+
 def test_generate_voice_leading_uses_previous_bounded_output_as_next_reference_state():
     voicings = [
         [47, 52, 55, 57, 50, 60],
-        [44, 49, 52, 54, 57, 59],
+        [44, 52, 55, 58, 62, 71],
     ]
 
     bounded = generate_voice_leading(voicings, min_midi=48, max_midi=69)
     assert bounded[0] == [48, 52, 55, 57, 50, 59]
-    assert all(48 <= note <= 69 for note in bounded[1])
+    pre_fit = _assign_minimum_motion_target(bounded[0], voicings[1])
+    expected_from_pipeline = fit_bounded_voice_vector(pre_fit, pre_fit, min_midi=48, max_midi=69)
+    assert bounded[1] == expected_from_pipeline
 
-    # Regression guard: if a future refactor applies fitting only as a final postprocess,
-    # this sequence should diverge from bounded sequential generation.
+    # Regression guard: postprocess-only fitting on the raw target would yield a different result.
     postprocess_like = [
         fit_bounded_voice_vector(voicings[0], voicings[0], min_midi=48, max_midi=69),
         fit_bounded_voice_vector(voicings[1], voicings[1], min_midi=48, max_midi=69),

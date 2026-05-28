@@ -84,6 +84,16 @@ Chord target register:
 
 After harmony collection extraction, chord voices are realized by bounded minimum-motion voice sliding.
 
+Bounded voice sliding is a boundary-repair stage on an already voice-led six-lane vector.
+It is not an arbitrary bounded permutation search over all pitch-class lane assignments.
+
+Pipeline:
+
+- ordinary minimum-motion voice leading against previous audible bounded chord
+- pre-fit six-lane vector (can be out of range)
+- boundary slide repair (duplicate/missing-tone resolution)
+- bounded audible output for this chord and next-step reference
+
 Requirements:
 
 - preserve the Output Chord Tone Set pitch-class multiset

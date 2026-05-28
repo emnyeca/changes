@@ -62,6 +62,10 @@ class ImportedSong:
     warnings: tuple[str, ...]
 
 
+class UnsupportedMusicXMLHarmonyError(ValueError):
+    """Raised when a MusicXML harmony kind cannot be normalized safely."""
+
+
 def _strip_ns(tag: str) -> str:
     return tag.split("}", 1)[1] if "}" in tag else tag
 
@@ -136,6 +140,10 @@ def _classify_quality(
         return "alt"
 
     if kv == "suspended-fourth":
+        if _contains_text(kind_text, "7b9sus4") or dm.get(("add", 9)) == -1:
+            return "7b9sus4"
+        if _contains_text(kind_text, "9sus4") or dm.get(("add", 9)) == 0:
+            return "9sus4"
         return "7sus4"
 
     if kv == "minor" and dm.get(("add", 7)) == 1:
@@ -173,6 +181,8 @@ def _classify_quality(
         return "9sus4"
 
     if kv == "dominant":
+        if dm.get(("add", 9)) == 1 and dm.get(("alter", 5)) == -1:
+            return "7#9b5"
         if dm.get(("add", 9)) == -1 and dm.get(("alter", 5)) == 1:
             return "7#5b9"
         if dm.get(("add", 9)) == -1 and dm.get(("alter", 5)) == -1:
@@ -199,13 +209,19 @@ def _classify_quality(
         "major-sixth": "6",
         "minor-sixth": "m6",
         "major-seventh": "maj7",
+        "major-ninth": "maj9",
         "minor-seventh": "m7",
         "minor-ninth": "m9",
         "dominant": "7",
         "dominant-ninth": "9",
         "dominant-13th": "13",
     }
-    return base_map.get(kv, "7")
+    normalized = base_map.get(kv)
+    if normalized is None:
+        raise UnsupportedMusicXMLHarmonyError(
+            f"Unsupported MusicXML harmony kind: {kind_value!r}, text={kind_text!r}, degrees={raw_degrees!r}"
+        )
+    return normalized
 
 
 def _build_chord_core(
@@ -284,15 +300,7 @@ def _build_chord_core(
     }
     spec = model.get(quality)
     if spec is None:
-        spec = {
-            "base_quality": "dominant",
-            "seventh_type": "b7",
-            "extensions": frozenset({"7"}),
-            "added_degrees": frozenset(),
-            "altered_degrees": frozenset(),
-            "omitted_degrees": frozenset(),
-            "special_semantic_tag": None,
-        }
+        raise UnsupportedMusicXMLHarmonyError(f"Unsupported canonical harmony quality: {quality}")
 
     return ChordSymbolCore(
         symbol=symbol,
@@ -358,7 +366,7 @@ def _parse_harmony_event(
     offset = _text(_first(harmony, "offset"))
     source_position_quarters = cursor_quarters
     if offset is not None:
-        source_position_quarters = Fraction(_parse_int(offset), divisions)
+        source_position_quarters = cursor_quarters + Fraction(_parse_int(offset), divisions)
 
     return ImportedHarmonyEvent(
         chord=chord,

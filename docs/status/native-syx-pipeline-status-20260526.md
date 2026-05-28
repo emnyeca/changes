@@ -48,13 +48,20 @@
   - sus heptatonic extraction rule added: `1-4-5-13-b7-9`
 - MusicXML importer normalization completed:
   - accepts both iReal Pro direct-export MusicXML and `@infojunkie/ireal-musicxml` output
-  - source-independent harmony normalization (`kind + degree + bass`) with compatibility overrides for `alt` and direct-export `7sus4`
+  - source-independent harmony normalization (`kind + degree + bass`) with compatibility overrides for `alt` and direct-export `7sus4` / `9sus4` / `7b9sus4`
   - normalized import-layer structured event model implemented with raw degree/form-marker diagnostics retained
   - phase-1 timing policy implemented: keep source positions as metadata, generate durations by equal subdivision per measure event count
+  - relative `harmony/offset` handling fixed (`cursor + offset/divisions`)
+  - unknown MusicXML harmony kind no longer degrades silently to dominant 7; explicit unsupported-kind error raised
   - form-marker policy implemented: preserve raw markers, default backward repeat without `times` to normalized `2`, no unfolding yet
-  - paired compatibility tests added for local 20-pair corpus (`examples/musicXML/iRealPro` vs `examples/musicXML/ireal-musicxml`)
+  - paired compatibility tests strengthened for local 20-pair corpus (`examples/musicXML/iRealPro` vs `examples/musicXML/ireal-musicxml`):
+    - structured semantic signature comparison
+    - importer -> harmony-core end-to-end resolution/output equivalence comparison
 - Regression validation completed:
-  - `changes`: `97 passed, 2 skipped`
+  - `changes`: `113 passed, 2 skipped`
+    - skipped tests are pre-existing optional UI tests requiring `streamlit`:
+      - `tests/test_ui_yaml_schema.py`
+      - `tests/test_waltz_duration_schedule.py`
   - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior

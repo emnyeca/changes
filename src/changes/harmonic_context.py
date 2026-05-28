@@ -35,6 +35,13 @@ class ScaleCollection:
     requires_signature_root_match: bool = False
 
 
+@dataclass(frozen=True)
+class RetryResolution:
+    local_pitch_collection: frozenset[int]
+    selected_collection: ScaleCollection
+    retry_level: str
+
+
 class UnsupportedHarmonicContextError(ValueError):
     """Raised when no implemented collection can resolve a chord context."""
 
@@ -438,6 +445,22 @@ def resolve_scale_collection_with_retry(
     circular: bool = True,
     include_slash_bass: bool = True,
 ) -> tuple[frozenset[int], ScaleCollection]:
+    resolved = resolve_scale_collection_with_retry_details(
+        progression,
+        index,
+        circular=circular,
+        include_slash_bass=include_slash_bass,
+    )
+    return resolved.local_pitch_collection, resolved.selected_collection
+
+
+def resolve_scale_collection_with_retry_details(
+    progression: Sequence[str | Sequence[str]],
+    index: int,
+    *,
+    circular: bool = True,
+    include_slash_bass: bool = True,
+) -> RetryResolution:
     symbols = _normalize_progression(progression)
     if not symbols:
         raise ValueError("progression must not be empty")
@@ -472,7 +495,11 @@ def resolve_scale_collection_with_retry(
         local_frozen = frozenset(local)
         try:
             selected = select_scale_collection(symbols[index], local_frozen)
-            return local_frozen, selected
+            return RetryResolution(
+                local_pitch_collection=local_frozen,
+                selected_collection=selected,
+                retry_level=_label,
+            )
         except UnsupportedHarmonicContextError as exc:
             last_error = exc
 

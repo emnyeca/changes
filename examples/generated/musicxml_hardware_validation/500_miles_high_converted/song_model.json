@@ -1,0 +1,359 @@
+{
+  "title": "500 Miles High",
+  "working_key": null,
+  "performance_tempo": "120",
+  "measures": [
+    {
+      "number": 1,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "0",
+      "harmony": [
+        {
+          "id": "m1_h1",
+          "symbol": "Em7",
+          "measure_number": 1,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "4",
+      "harmony": [
+        {
+          "id": "m2_h1",
+          "symbol": "Em7",
+          "measure_number": 2,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "8",
+      "harmony": [
+        {
+          "id": "m3_h1",
+          "symbol": "Gm7",
+          "measure_number": 3,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "12",
+      "harmony": [
+        {
+          "id": "m4_h1",
+          "symbol": "Gm7",
+          "measure_number": 4,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "16",
+      "harmony": [
+        {
+          "id": "m5_h1",
+          "symbol": "A#maj7",
+          "measure_number": 5,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "20",
+      "harmony": [
+        {
+          "id": "m6_h1",
+          "symbol": "A#maj7",
+          "measure_number": 6,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "24",
+      "harmony": [
+        {
+          "id": "m7_h1",
+          "symbol": "Bm7b5",
+          "measure_number": 7,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 8,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "28",
+      "harmony": [
+        {
+          "id": "m8_h1",
+          "symbol": "E7#9",
+          "measure_number": 8,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 9,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "32",
+      "harmony": [
+        {
+          "id": "m9_h1",
+          "symbol": "Am7",
+          "measure_number": 9,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "36",
+      "harmony": [
+        {
+          "id": "m10_h1",
+          "symbol": "Am7",
+          "measure_number": 10,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "40",
+      "harmony": [
+        {
+          "id": "m11_h1",
+          "symbol": "F#m7b5",
+          "measure_number": 11,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "44",
+      "harmony": [
+        {
+          "id": "m12_h1",
+          "symbol": "F#m7b5",
+          "measure_number": 12,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 13,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "48",
+      "harmony": [
+        {
+          "id": "m13_h1",
+          "symbol": "Fm7",
+          "measure_number": 13,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "52",
+      "harmony": [
+        {
+          "id": "m14_h1",
+          "symbol": "Fm7",
+          "measure_number": 14,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 15,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "56",
+      "harmony": [
+        {
+          "id": "m15_h1",
+          "symbol": "Cm7",
+          "measure_number": 15,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 16,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "60",
+      "harmony": [
+        {
+          "id": "m16_h1",
+          "symbol": "Cm7",
+          "measure_number": 16,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "64",
+      "harmony": [
+        {
+          "id": "m17_h1",
+          "symbol": "B7#9",
+          "measure_number": 17,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "68",
+      "harmony": [
+        {
+          "id": "m18_h1",
+          "symbol": "B7#9",
+          "measure_number": 18,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "72",
+      "harmony": [
+        {
+          "id": "m19_h1",
+          "symbol": "Cm7",
+          "measure_number": 19,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "76",
+      "harmony": [
+        {
+          "id": "m20_h1",
+          "symbol": "Cm7",
+          "measure_number": 20,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "80",
+      "harmony": [
+        {
+          "id": "m21_h1",
+          "symbol": "G#maj7",
+          "measure_number": 21,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "section_id": null,
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "84",
+      "harmony": [
+        {
+          "id": "m22_h1",
+          "symbol": "G#maj7",
+          "measure_number": 22,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    }
+  ]
+}

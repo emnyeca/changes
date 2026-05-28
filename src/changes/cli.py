@@ -2,11 +2,14 @@
 
 import argparse
 from pathlib import Path
+import sys
 
 import yaml
 
+from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
 from .pipeline_digitone import (
+    compile_musicxml_digitone_bundle_pipeline,
     compile_digitone_bundle_pipeline,
     compile_digitone_pipeline,
     save_digitone_bundle_artifacts,
@@ -19,6 +22,40 @@ from .midi_writer import write_midi
 
 def main() -> None:
     """Run the Changes CLI."""
+    if len(sys.argv) > 1 and sys.argv[1] == "digitone-bundle":
+        sub = argparse.ArgumentParser(description="MusicXML to Digitone bundle artifacts")
+        sub.add_argument("--musicxml", required=True, help="Path to MusicXML file")
+        sub.add_argument("--output", required=True, help="Output directory for artifacts")
+        sub.add_argument("--tempo", type=int, default=120, help="Performance BPM metadata")
+        sub.add_argument("--write-syx", action="store_true", help="Also emit per-pattern SYX and bundle SYX")
+        sub_args = sub.parse_args(sys.argv[2:])
+
+        try:
+            song, timeline, bundle_plan, diagnostics = compile_musicxml_digitone_bundle_pipeline(
+                musicxml_path=sub_args.musicxml,
+                tempo=sub_args.tempo,
+            )
+        except UnsupportedHarmonicContextError as exc:
+            raise SystemExit(f"MusicXML conversion failed: {exc}") from exc
+
+        artifacts = save_digitone_bundle_artifacts(
+            output_dir=sub_args.output,
+            song=song,
+            timeline=timeline,
+            bundle_plan=bundle_plan,
+            write_syx=bool(sub_args.write_syx),
+            harmony_resolution=diagnostics,
+        )
+
+        print(f"Wrote MusicXML bundle artifacts to: {sub_args.output}")
+        print(f"  source_title={bundle_plan.source_title}")
+        print(f"  pattern_count={len(bundle_plan.patterns)}")
+        print(f"  harmony_resolution: {artifacts['musicxml_harmony_resolution_json']}")
+        print(f"  manifest: {artifacts['bundle_manifest_json']}")
+        if "bundle_syx" in artifacts:
+            print(f"  bundle_syx: {artifacts['bundle_syx']}")
+        return
+
     parser = argparse.ArgumentParser(
         description="Generate six-voice chord clouds and export to generic MIDI"
     )

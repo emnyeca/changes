@@ -1,0 +1,743 @@
+{
+  "title": "500 Miles High",
+  "source_software": "iReal Pro 2026.5",
+  "source_musicxml_version": "3.1",
+  "occurrence_count": 22,
+  "occurrences": [
+    {
+      "global_event_index": 1,
+      "measure_number": "1",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Em7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "E",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
+      "selected_collection_name": "E_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "E",
+        "G",
+        "B",
+        "C#",
+        "D",
+        "F#"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 2,
+      "measure_number": "2",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Em7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "E",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
+      "selected_collection_name": "E_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "E",
+        "G",
+        "B",
+        "C#",
+        "D",
+        "F#"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 3,
+      "measure_number": "3",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Gm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "G",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "E",
+        "F",
+        "G",
+        "A#",
+        "B"
+      ],
+      "selected_collection_name": "G_half_whole_diminished",
+      "selected_collection_family": "diminished",
+      "output_chord_tone_set": [
+        "G",
+        "A#",
+        "C#",
+        "E",
+        "F",
+        "G#"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 4,
+      "measure_number": "4",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Gm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "G",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "E",
+        "F",
+        "G",
+        "A#",
+        "B"
+      ],
+      "selected_collection_name": "G_half_whole_diminished",
+      "selected_collection_family": "diminished",
+      "output_chord_tone_set": [
+        "G",
+        "A#",
+        "C#",
+        "E",
+        "F",
+        "G#"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 5,
+      "measure_number": "5",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "A#maj7",
+      "source": {
+        "raw_kind_value": "major-seventh",
+        "raw_kind_text": "maj7",
+        "raw_degrees": [],
+        "raw_root": "A#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
+      "selected_collection_name": "C_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "A#",
+        "D",
+        "F",
+        "G",
+        "A",
+        "C"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 6,
+      "measure_number": "6",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "A#maj7",
+      "source": {
+        "raw_kind_value": "major-seventh",
+        "raw_kind_text": "maj7",
+        "raw_degrees": [],
+        "raw_root": "A#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
+      "selected_collection_name": "C_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "A#",
+        "D",
+        "F",
+        "G",
+        "A",
+        "C"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 7,
+      "measure_number": "7",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Bm7b5",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [
+          {
+            "value": 5,
+            "alter": -1,
+            "degree_type": "alter"
+          }
+        ],
+        "raw_root": "B",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "F",
+        "A",
+        "B"
+      ],
+      "selected_collection_name": "D_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "B",
+        "D",
+        "F",
+        "G",
+        "A",
+        "C"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 8,
+      "measure_number": "8",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "E7#9",
+      "source": {
+        "raw_kind_value": "dominant",
+        "raw_kind_text": "7",
+        "raw_degrees": [
+          {
+            "value": 9,
+            "alter": 1,
+            "degree_type": "add"
+          }
+        ],
+        "raw_root": "E",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "E",
+        "G",
+        "G#",
+        "B"
+      ],
+      "selected_collection_name": "E_half_whole_diminished",
+      "selected_collection_family": "diminished",
+      "output_chord_tone_set": [
+        "E",
+        "G",
+        "A#",
+        "C#",
+        "D",
+        "F"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 9,
+      "measure_number": "9",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Am7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "A",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "selected_collection_name": "A_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "A",
+        "C",
+        "E",
+        "F#",
+        "G",
+        "B"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 10,
+      "measure_number": "10",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Am7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "A",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "selected_collection_name": "A_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "A",
+        "C",
+        "E",
+        "F#",
+        "G",
+        "B"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 11,
+      "measure_number": "11",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "F#m7b5",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [
+          {
+            "value": 5,
+            "alter": -1,
+            "degree_type": "alter"
+          }
+        ],
+        "raw_root": "F#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
+      "selected_collection_name": "A_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "F#",
+        "A",
+        "C",
+        "D",
+        "E",
+        "G"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 12,
+      "measure_number": "12",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "F#m7b5",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [
+          {
+            "value": 5,
+            "alter": -1,
+            "degree_type": "alter"
+          }
+        ],
+        "raw_root": "F#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
+      "selected_collection_name": "A_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "F#",
+        "A",
+        "C",
+        "D",
+        "E",
+        "G"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 13,
+      "measure_number": "13",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Fm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "F",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
+      "selected_collection_name": "F_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "F",
+        "G#",
+        "C",
+        "D",
+        "D#",
+        "G"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 14,
+      "measure_number": "14",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Fm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "F",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
+      "selected_collection_name": "F_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "F",
+        "G#",
+        "C",
+        "D",
+        "D#",
+        "G"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 15,
+      "measure_number": "15",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Cm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "C",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "selected_collection_name": "A#_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#",
+        "C#"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 16,
+      "measure_number": "16",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Cm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "C",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "selected_collection_name": "A#_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#",
+        "C#"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 17,
+      "measure_number": "17",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "B7#9",
+      "source": {
+        "raw_kind_value": "dominant",
+        "raw_kind_text": "7",
+        "raw_degrees": [
+          {
+            "value": 9,
+            "alter": 1,
+            "degree_type": "add"
+          }
+        ],
+        "raw_root": "B",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
+      "selected_collection_name": "B_half_whole_diminished",
+      "selected_collection_family": "diminished",
+      "output_chord_tone_set": [
+        "B",
+        "D",
+        "F",
+        "G#",
+        "A",
+        "C"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 18,
+      "measure_number": "18",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "B7#9",
+      "source": {
+        "raw_kind_value": "dominant",
+        "raw_kind_text": "7",
+        "raw_degrees": [
+          {
+            "value": 9,
+            "alter": 1,
+            "degree_type": "add"
+          }
+        ],
+        "raw_root": "B",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "D",
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
+      "selected_collection_name": "B_half_whole_diminished",
+      "selected_collection_family": "diminished",
+      "output_chord_tone_set": [
+        "B",
+        "D",
+        "F",
+        "G#",
+        "A",
+        "C"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 19,
+      "measure_number": "19",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Cm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "C",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
+      "selected_collection_name": "C_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "C",
+        "D#",
+        "G",
+        "A",
+        "A#",
+        "D"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 20,
+      "measure_number": "20",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "Cm7",
+      "source": {
+        "raw_kind_value": "minor-seventh",
+        "raw_kind_text": "m7",
+        "raw_degrees": [],
+        "raw_root": "C",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
+      "selected_collection_name": "C_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "C",
+        "D#",
+        "G",
+        "A",
+        "A#",
+        "D"
+      ],
+      "retry_level": "current_only"
+    },
+    {
+      "global_event_index": 21,
+      "measure_number": "21",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "G#maj7",
+      "source": {
+        "raw_kind_value": "major-seventh",
+        "raw_kind_text": "maj7",
+        "raw_degrees": [],
+        "raw_root": "G#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "selected_collection_name": "A#_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "G#",
+        "C",
+        "D#",
+        "F",
+        "G",
+        "A#"
+      ],
+      "retry_level": "current+previous"
+    },
+    {
+      "global_event_index": 22,
+      "measure_number": "22",
+      "event_order_in_measure": 1,
+      "canonical_chord_symbol": "G#maj7",
+      "source": {
+        "raw_kind_value": "major-seventh",
+        "raw_kind_text": "maj7",
+        "raw_degrees": [],
+        "raw_root": "G#",
+        "raw_bass": null
+      },
+      "source_position_quarters": "0",
+      "local_pitch_collection": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "selected_collection_name": "A#_dorian_diatonic",
+      "selected_collection_family": "diatonic_dorian",
+      "output_chord_tone_set": [
+        "G#",
+        "C",
+        "D#",
+        "F",
+        "G",
+        "A#"
+      ],
+      "retry_level": "current+previous"
+    }
+  ]
+}

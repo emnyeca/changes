@@ -37,8 +37,8 @@
   - verification mode: direct visual/aural confirmation on hardware (no screenshot/capture evidence recorded)
 - Harmonic context engine extension completed:
   - canonical qualities added:
-    - `major`, `m`, `6`, `m6`, `maj7`, `m7`, `mMaj7`, `m9`, `m7b5`, `dim7`
-    - `7`, `9`, `7b9`, `7#9`, `7b5`, `7#5`, `7#11`, `7b13`, `7#9b5`
+    - `major`, `m`, `6`, `m6`, `dim`, `maj7`, `maj9`, `maj7#5`, `m7`, `mMaj7`, `m9`, `m7b5`, `dim7`
+    - `7`, `9`, `13`, `13b9`, `7b9`, `7#9`, `7b5`, `7#5`, `7#5b9`, `7b5b9`, `7#11`, `7b13`, `7#9b5`
     - `7sus4`, `9sus4`, `7b9sus4`, `alt`, slash bass
   - structured internal chord model introduced (base quality / 7th / extensions / altered / added / omitted / slash / semantic tag)
   - prioritized collection families added: diatonic/dorian, harmonic minor, melodic minor/lydian dominant, whole-tone, diminished
@@ -57,8 +57,13 @@
   - paired compatibility tests strengthened for local 20-pair corpus (`examples/musicXML/iRealPro` vs `examples/musicXML/ireal-musicxml`):
     - structured semantic signature comparison
     - importer -> harmony-core end-to-end resolution/output equivalence comparison
+- MusicXML to Digitone vertical-slice CLI path completed:
+  - new command style: `changes digitone-bundle --musicxml <file.musicxml> --output <artifact-dir> [--write-syx]`
+  - pipeline path: MusicXML import -> SongModel -> timeline render -> Digitone bundle plan -> artifacts
+  - emits `musicxml_harmony_resolution.json` for per-occurrence harmonic decision diagnostics
+  - unresolved harmonic contexts fail conversion explicitly with measure/event/symbol/local-pitch-collection details
 - Regression validation completed:
-  - `changes`: `113 passed, 2 skipped`
+  - `changes`: `116 passed, 2 skipped`
     - skipped tests are pre-existing optional UI tests requiring `streamlit`:
       - `tests/test_ui_yaml_schema.py`
       - `tests/test_waltz_duration_schedule.py`

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from fractions import Fraction
 
 import yaml
 
@@ -19,6 +20,14 @@ from changes.models.digitone_bundle_plan import (
     digitone_pattern_bundle_plan_to_dict,
 )
 from changes.importers.compact_progression import compact_progression_to_song_model
+from changes.importers.musicxml import ImportedSong, load_musicxml_song, imported_song_to_song_model
+from changes.harmonic_context import (
+    UnsupportedHarmonicContextError,
+    chord_tone_pitch_classes,
+    extract_output_chord_tone_set,
+    resolve_scale_collection_with_retry_details,
+)
+from changes.note import semitone_to_pitch_class
 from changes.models.digitone_compile_plan import DigitoneCompilePlan, digitone_compile_plan_to_dict
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
 from changes.models.render_profile import RenderProfile, default_render_profile
@@ -29,6 +38,79 @@ from changes.rendering.timeline_renderer import render_timeline
 
 class DigitonePipelineArtifacts(dict):
     pass
+
+
+def _pc_names(pcs: tuple[int, ...] | frozenset[int]) -> list[str]:
+    return [semitone_to_pitch_class(pc) for pc in pcs]
+
+
+def build_musicxml_harmony_resolution_diagnostic(imported_song: ImportedSong) -> dict:
+    progression = [event.chord.symbol for bar in imported_song.bars for event in bar.events]
+
+    occurrences: list[dict] = []
+    cursor = 0
+
+    for bar in imported_song.bars:
+        for event in bar.events:
+            symbol = event.chord.symbol
+            try:
+                resolved = resolve_scale_collection_with_retry_details(
+                    progression,
+                    cursor,
+                    circular=True,
+                    include_slash_bass=True,
+                )
+                output = extract_output_chord_tone_set(symbol, resolved.selected_collection)
+            except UnsupportedHarmonicContextError as exc:
+                local_current_only = chord_tone_pitch_classes(symbol, include_bass=True)
+                pcs_names = ",".join(_pc_names(tuple(sorted(local_current_only))))
+                raise UnsupportedHarmonicContextError(
+                    "Unresolved MusicXML harmony context: "
+                    f"measure={bar.source_measure_number} event={event.source_order_in_measure} "
+                    f"symbol={symbol} local_pitch_collection=[{pcs_names}]"
+                ) from exc
+
+            occurrences.append(
+                {
+                    "global_event_index": cursor + 1,
+                    "measure_number": bar.source_measure_number,
+                    "event_order_in_measure": event.source_order_in_measure,
+                    "canonical_chord_symbol": symbol,
+                    "source": {
+                        "raw_kind_value": event.raw_kind_value,
+                        "raw_kind_text": event.raw_kind_text,
+                        "raw_degrees": [
+                            {
+                                "value": d.value,
+                                "alter": d.alter,
+                                "degree_type": d.degree_type,
+                            }
+                            for d in event.raw_degrees
+                        ],
+                        "raw_root": event.raw_root,
+                        "raw_bass": event.raw_bass,
+                    },
+                    "source_position_quarters": (
+                        None
+                        if event.source_position_quarters is None
+                        else str(event.source_position_quarters)
+                    ),
+                    "local_pitch_collection": _pc_names(tuple(sorted(resolved.local_pitch_collection))),
+                    "selected_collection_name": resolved.selected_collection.name,
+                    "selected_collection_family": resolved.selected_collection.family,
+                    "output_chord_tone_set": _pc_names(output),
+                    "retry_level": resolved.retry_level,
+                }
+            )
+            cursor += 1
+
+    return {
+        "title": imported_song.title,
+        "source_software": imported_song.source_software,
+        "source_musicxml_version": imported_song.source_musicxml_version,
+        "occurrence_count": len(occurrences),
+        "occurrences": occurrences,
+    }
 
 
 def _safe_ascii_slug(text: str, fallback: str = "UNTITLED") -> str:
@@ -120,6 +202,24 @@ def compile_digitone_bundle_pipeline(
     return song, timeline, bundle_plan
 
 
+def compile_musicxml_digitone_bundle_pipeline(
+    musicxml_path: str | Path,
+    *,
+    tempo: Fraction | int | str = 120,
+    render_profile: RenderProfile | None = None,
+    target_profile: DigitoneTargetProfile | None = None,
+) -> tuple[SongModel, RenderedTimeline, DigitonePatternBundlePlan, dict]:
+    rp = render_profile or default_render_profile()
+    tp = target_profile or default_digitone_target_profile()
+
+    imported = load_musicxml_song(musicxml_path)
+    diagnostics = build_musicxml_harmony_resolution_diagnostic(imported)
+    song = imported_song_to_song_model(imported, tempo=tempo)
+    timeline = render_timeline(song, rp)
+    bundle_plan = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
+    return song, timeline, bundle_plan, diagnostics
+
+
 def save_digitone_pipeline_artifacts(
     output_dir: str | Path,
     song: SongModel,
@@ -169,6 +269,7 @@ def save_digitone_bundle_artifacts(
     bundle_plan: DigitonePatternBundlePlan,
     write_syx: bool = False,
     bundle_syx_filename: str | None = None,
+    harmony_resolution: dict | None = None,
 ) -> DigitonePipelineArtifacts:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -180,6 +281,7 @@ def save_digitone_bundle_artifacts(
     timeline_json = out / "rendered_timeline.json"
     bundle_plan_json = out / "digitone_bundle_plan.json"
     bundle_manifest_json = out / "bundle_manifest.json"
+    harmony_resolution_json = out / "musicxml_harmony_resolution.json"
 
     song_json.write_text(json.dumps(song_model_to_dict(song), indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
     timeline_json.write_text(
@@ -254,6 +356,12 @@ def save_digitone_bundle_artifacts(
 
     bundle_manifest_json.write_text(json.dumps(bundle_manifest, indent=2, ensure_ascii=True) + "\n", encoding="utf-8")
 
+    if harmony_resolution is not None:
+        harmony_resolution_json.write_text(
+            json.dumps(harmony_resolution, indent=2, ensure_ascii=True) + "\n",
+            encoding="utf-8",
+        )
+
     artifacts: DigitonePipelineArtifacts = DigitonePipelineArtifacts(
         {
             "song_model_json": song_json,
@@ -263,6 +371,9 @@ def save_digitone_bundle_artifacts(
             "patterns_dir": patterns_dir,
         }
     )
+
+    if harmony_resolution is not None:
+        artifacts["musicxml_harmony_resolution_json"] = harmony_resolution_json
 
     if bundle_file is not None:
         artifacts["bundle_syx"] = bundle_file

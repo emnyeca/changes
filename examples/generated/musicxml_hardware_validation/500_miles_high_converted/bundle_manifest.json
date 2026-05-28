@@ -1,0 +1,36 @@
+{
+  "source_title": "500 Miles High",
+  "pattern_count": 1,
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "4",
+    "device_tempo": "60"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "index": 1,
+      "segment_index": 1,
+      "pattern_name": "500 MILES HIGH",
+      "pattern_name_source": "auto",
+      "section_id": null,
+      "section_label": null,
+      "section_token": null,
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "global_step_start": 1,
+      "global_step_end": 22,
+      "total_steps": 22,
+      "warnings": [],
+      "events_yaml": "patterns/01_500_MILES_HIGH.digitone.events.yaml",
+      "events_yaml_path": "patterns/01_500_MILES_HIGH.digitone.events.yaml",
+      "syx": "patterns/01_500_MILES_HIGH.syx",
+      "syx_path": "patterns/01_500_MILES_HIGH.syx"
+    }
+  ],
+  "bundle_syx": "500_MILES_HIGH.bundle.syx"
+}

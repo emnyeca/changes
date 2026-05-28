@@ -1,0 +1,108 @@
+{
+  "progression": [
+    "Bm7b5",
+    "E7#9",
+    "Am7"
+  ],
+  "occurrences": [
+    {
+      "event_index": 1,
+      "canonical_chord_symbol": "Bm7b5",
+      "retry_level": "current+previous",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "A",
+        "B"
+      ],
+      "selected_collection_family": "diatonic_dorian",
+      "selected_collection_name": "D_dorian_diatonic",
+      "output_chord_tone_set": [
+        "B",
+        "D",
+        "F",
+        "G",
+        "A",
+        "C"
+      ]
+    },
+    {
+      "event_index": 2,
+      "canonical_chord_symbol": "E7#9",
+      "retry_level": "current+previous",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "E",
+        "F",
+        "G#",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [
+        "G"
+      ],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "E",
+        "F",
+        "G#",
+        "A",
+        "B"
+      ],
+      "selected_collection_family": "harmonic_minor",
+      "selected_collection_name": "A_harmonic_minor",
+      "output_chord_tone_set": [
+        "E",
+        "G#",
+        "B",
+        "C",
+        "D",
+        "F"
+      ]
+    },
+    {
+      "event_index": 3,
+      "canonical_chord_symbol": "Am7",
+      "retry_level": "current_only",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "selected_collection_family": "diatonic_dorian",
+      "selected_collection_name": "A_dorian_diatonic",
+      "output_chord_tone_set": [
+        "A",
+        "C",
+        "E",
+        "F#",
+        "G",
+        "B"
+      ]
+    }
+  ]
+}

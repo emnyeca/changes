@@ -1,0 +1,55 @@
+{
+  "title": "MINOR II V E7#9",
+  "working_key": null,
+  "performance_tempo": "120",
+  "measures": [
+    {
+      "number": 1,
+      "section_id": "A__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "0",
+      "harmony": [
+        {
+          "id": "m1_h1",
+          "symbol": "Bm7b5",
+          "measure_number": 1,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section_id": "A__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "4",
+      "harmony": [
+        {
+          "id": "m2_h1",
+          "symbol": "E7#9",
+          "measure_number": 2,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "section_id": "A__OCC1",
+      "meter_numerator": 4,
+      "meter_denominator": 4,
+      "absolute_start_quarters": "8",
+      "harmony": [
+        {
+          "id": "m3_h1",
+          "symbol": "Am7",
+          "measure_number": 3,
+          "offset_quarters": "0",
+          "duration_quarters": "4"
+        }
+      ]
+    }
+  ]
+}

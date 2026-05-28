@@ -1,0 +1,176 @@
+{
+  "title": "MINOR II V E7#9",
+  "performance_tempo": "120",
+  "events": [
+    {
+      "id": "ev1_bass",
+      "voice_id": "bass",
+      "role": "bass",
+      "note_midi": 47,
+      "onset_quarters": "0",
+      "duration_quarters": "4",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 59,
+      "onset_quarters": "0",
+      "duration_quarters": "8",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v2",
+      "voice_id": "chord_voice_2",
+      "role": "chord",
+      "note_midi": 62,
+      "onset_quarters": "0",
+      "duration_quarters": "8",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v3",
+      "voice_id": "chord_voice_3",
+      "role": "chord",
+      "note_midi": 65,
+      "onset_quarters": "0",
+      "duration_quarters": "4",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v4",
+      "voice_id": "chord_voice_4",
+      "role": "chord",
+      "note_midi": 67,
+      "onset_quarters": "0",
+      "duration_quarters": "4",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v5",
+      "voice_id": "chord_voice_5",
+      "role": "chord",
+      "note_midi": 69,
+      "onset_quarters": "0",
+      "duration_quarters": "4",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev1_v6",
+      "voice_id": "chord_voice_6",
+      "role": "chord",
+      "note_midi": 72,
+      "onset_quarters": "0",
+      "duration_quarters": "8",
+      "source_harmony_id": "m1_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev2_bass",
+      "voice_id": "bass",
+      "role": "bass",
+      "note_midi": 40,
+      "onset_quarters": "4",
+      "duration_quarters": "4",
+      "source_harmony_id": "m2_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev2_v3",
+      "voice_id": "chord_voice_3",
+      "role": "chord",
+      "note_midi": 64,
+      "onset_quarters": "4",
+      "duration_quarters": "8",
+      "source_harmony_id": "m2_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev2_v4",
+      "voice_id": "chord_voice_4",
+      "role": "chord",
+      "note_midi": 65,
+      "onset_quarters": "4",
+      "duration_quarters": "4",
+      "source_harmony_id": "m2_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev2_v5",
+      "voice_id": "chord_voice_5",
+      "role": "chord",
+      "note_midi": 68,
+      "onset_quarters": "4",
+      "duration_quarters": "4",
+      "source_harmony_id": "m2_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_bass",
+      "voice_id": "bass",
+      "role": "bass",
+      "note_midi": 45,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v1",
+      "voice_id": "chord_voice_1",
+      "role": "chord",
+      "note_midi": 57,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v2",
+      "voice_id": "chord_voice_2",
+      "role": "chord",
+      "note_midi": 60,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v4",
+      "voice_id": "chord_voice_4",
+      "role": "chord",
+      "note_midi": 66,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v5",
+      "voice_id": "chord_voice_5",
+      "role": "chord",
+      "note_midi": 67,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    },
+    {
+      "id": "ev3_v6",
+      "voice_id": "chord_voice_6",
+      "role": "chord",
+      "note_midi": 71,
+      "onset_quarters": "8",
+      "duration_quarters": "4",
+      "source_harmony_id": "m3_h1",
+      "retrigger": true
+    }
+  ]
+}

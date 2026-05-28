@@ -34,3 +34,29 @@ Expected/verified target for first `Gm7` in measure 3:
 - artifact regeneration: complete
 - by-ear resend on Digitone II: pending
 - do not mark as passed until the regenerated bundle SYX is resent and `Gm7` color is confirmed by ear
+
+## Additional Finding (Minor ii-V, E7#9)
+
+Listening validation also found an unnatural dominant interpretation in:
+
+- progression excerpt: `Bm7b5 | E7#9 | Am7`
+- issue: written `#9` on `E7#9` behaved as a hard context constraint in Attempt 2, which could block `A_harmonic_minor`
+
+Policy update applied:
+
+- split context constraints into hard constituents and color hints
+- dominant altered tensions (`b9`, `#9`, `#11`, `b13`) are excluded from Attempt 1/2 containment constraints
+- current-only Attempt 3 restores current chord color hints to preserve standalone altered color
+- `alt` remains hard semantic directive; `b5/#5` remain hard structural tones
+
+Post-fix expected/verified target for `E7#9` occurrence in measure 8:
+
+- retry_level: `current+previous`
+- selected_collection_family: `harmonic_minor`
+- selected_collection_name: `A_harmonic_minor`
+- output_chord_tone_set: `E G# B C D F`
+
+Additional listening status:
+
+- regenerated SYX has not yet been resent to Digitone II for this specific `E7#9` color change
+- keep validation status pending until by-ear confirmation on hardware

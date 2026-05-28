@@ -40,6 +40,10 @@ class RetryResolution:
     local_pitch_collection: frozenset[int]
     selected_collection: ScaleCollection
     retry_level: str
+    hard_context_pitch_classes_used: frozenset[int]
+    color_hint_pitch_classes: frozenset[int]
+    color_hints_applied_to_constraint_set: bool
+    final_local_pitch_collection_used_for_selection: frozenset[int]
 
 
 class UnsupportedHarmonicContextError(ValueError):
@@ -105,6 +109,51 @@ _SYMMETRIC_ELIGIBLE_QUALITIES = {
     "13b9",
     "alt",
     "7b9sus4",
+}
+
+_HARD_CONTEXT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
+    "": (0, 4, 7),
+    "dim": (0, 3, 6),
+    "maj7": (0, 4, 7, 11),
+    "maj9": (0, 4, 7, 11, 2),
+    "maj7#5": (0, 4, 8, 11),
+    "m7": (0, 3, 7, 10),
+    "7": (0, 4, 7, 10),
+    "m": (0, 3, 7),
+    "6": (0, 4, 7, 9),
+    "m6": (0, 3, 7, 9),
+    "mMaj7": (0, 3, 7, 11),
+    "m9": (0, 3, 7, 10, 2),
+    "m7b5": (0, 3, 6, 10),
+    "dim7": (0, 3, 6, 9),
+    "9": (0, 4, 7, 10, 2),
+    "13": (0, 4, 7, 10, 9),
+    "13b9": (0, 4, 7, 10, 9),
+    "7b9": (0, 4, 7, 10),
+    "7#9": (0, 4, 7, 10),
+    "7b5": (0, 4, 6, 10),
+    "7#5b9": (0, 4, 8, 10),
+    "7b5b9": (0, 4, 6, 10),
+    "7#11": (0, 4, 7, 10),
+    "7b13": (0, 4, 7, 10),
+    "7#9b5": (0, 4, 6, 10),
+    "7sus4": (0, 5, 7, 10),
+    "9sus4": (0, 5, 7, 10, 2),
+    "7b9sus4": (0, 5, 7, 10),
+    "7#5": (0, 4, 8, 10),
+    "alt": (0, 1, 4, 8),
+}
+
+_COLOR_HINT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
+    "7b9": (1,),
+    "7#9": (3,),
+    "7#11": (6,),
+    "7b13": (8,),
+    "7#9b5": (3,),
+    "7#5b9": (1,),
+    "7b5b9": (1,),
+    "13b9": (1,),
+    "7b9sus4": (1,),
 }
 
 
@@ -335,6 +384,40 @@ def chord_tone_pitch_classes(symbol: str, include_bass: bool = False) -> frozens
     return frozenset(pcs)
 
 
+def hard_context_pitch_classes(
+    symbol: str,
+    *,
+    include_slash_bass: bool = True,
+) -> frozenset[int]:
+    core = parse_chord_core(symbol)
+    intervals = _HARD_CONTEXT_INTERVALS_BY_QUALITY.get(core.normalized_quality)
+    if intervals is None:
+        raise ValueError(f"Unsupported chord quality: {core.quality}")
+
+    pcs = {(core.root_pc + i) % 12 for i in intervals}
+    if include_slash_bass and core.slash_bass_pc is not None:
+        pcs.add(core.slash_bass_pc)
+    return frozenset(pcs)
+
+
+def color_hint_pitch_classes(symbol: str) -> frozenset[int]:
+    core = parse_chord_core(symbol)
+    intervals = _COLOR_HINT_INTERVALS_BY_QUALITY.get(core.normalized_quality, ())
+    return frozenset((core.root_pc + i) % 12 for i in intervals)
+
+
+def contextual_constraint_pitch_classes(
+    symbol: str,
+    *,
+    include_color_hints: bool,
+    include_slash_bass: bool = True,
+) -> frozenset[int]:
+    pcs = set(hard_context_pitch_classes(symbol, include_slash_bass=include_slash_bass))
+    if include_color_hints:
+        pcs.update(color_hint_pitch_classes(symbol))
+    return frozenset(pcs)
+
+
 def _normalize_progression(progression: Sequence[str | Sequence[str]]) -> list[str]:
     out: list[str] = []
     for item in progression:
@@ -485,7 +568,7 @@ def resolve_scale_collection_with_retry(
         circular=circular,
         include_slash_bass=include_slash_bass,
     )
-    return resolved.local_pitch_collection, resolved.selected_collection
+    return resolved.final_local_pitch_collection_used_for_selection, resolved.selected_collection
 
 
 def resolve_scale_collection_with_retry_details(
@@ -505,27 +588,34 @@ def resolve_scale_collection_with_retry_details(
     prev_idx = _find_distinct_index(identities, index, -1, circular=circular)
     next_idx = _find_distinct_index(identities, index, +1, circular=circular)
 
-    attempts: list[tuple[str, tuple[int, ...]]] = []
+    attempts: list[tuple[str, tuple[int, ...], bool]] = []
 
-    attempt1_indexes = [index]
+    if prev_idx is not None or next_idx is not None:
+        attempt1_indexes = [index]
+        if prev_idx is not None:
+            attempt1_indexes.append(prev_idx)
+        if next_idx is not None:
+            attempt1_indexes.append(next_idx)
+        attempts.append(("current+previous+next", tuple(attempt1_indexes), False))
+
     if prev_idx is not None:
-        attempt1_indexes.append(prev_idx)
-    if next_idx is not None:
-        attempt1_indexes.append(next_idx)
-    attempts.append(("current+previous+next", tuple(attempt1_indexes)))
+        attempt2_indexes = [index, prev_idx]
+        attempts.append(("current+previous", tuple(attempt2_indexes), False))
 
-    attempt2_indexes = [index]
-    if prev_idx is not None:
-        attempt2_indexes.append(prev_idx)
-    attempts.append(("current+previous", tuple(attempt2_indexes)))
-
-    attempts.append(("current_only", (index,)))
+    attempts.append(("current_only", (index,), True))
 
     last_error: UnsupportedHarmonicContextError | None = None
-    for _label, indices in attempts:
+    current_color_hints = color_hint_pitch_classes(symbols[index])
+
+    for _label, indices, include_color_hints in attempts:
         local: set[int] = set()
+        hard_used: set[int] = set()
         for i in indices:
-            local.update(chord_tone_pitch_classes(symbols[i], include_bass=include_slash_bass))
+            hard = hard_context_pitch_classes(symbols[i], include_slash_bass=include_slash_bass)
+            hard_used.update(hard)
+            local.update(hard)
+        if include_color_hints:
+            local.update(current_color_hints)
         local_frozen = frozenset(local)
         try:
             selected = select_scale_collection(symbols[index], local_frozen)
@@ -533,6 +623,10 @@ def resolve_scale_collection_with_retry_details(
                 local_pitch_collection=local_frozen,
                 selected_collection=selected,
                 retry_level=_label,
+                hard_context_pitch_classes_used=frozenset(hard_used),
+                color_hint_pitch_classes=current_color_hints,
+                color_hints_applied_to_constraint_set=include_color_hints and bool(current_color_hints),
+                final_local_pitch_collection_used_for_selection=local_frozen,
             )
         except UnsupportedHarmonicContextError as exc:
             last_error = exc

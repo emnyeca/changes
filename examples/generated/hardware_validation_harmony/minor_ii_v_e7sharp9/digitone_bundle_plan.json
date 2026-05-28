@@ -1,0 +1,168 @@
+{
+  "source_title": "MINOR II V E7#9",
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "4",
+    "device_tempo": "60"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "source_title": "MINOR II V E7#9",
+      "pattern_name": "MINOR II V E7#9",
+      "pattern_name_source": "auto",
+      "section_id": "A__OCC1",
+      "section_label": "A",
+      "section_token": "A",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "segment_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "global_step_start": 1,
+      "global_step_end": 3,
+      "total_steps": 3,
+      "warnings": [],
+      "events": [
+        {
+          "source_event_id": "ev1_bass",
+          "track": 7,
+          "step": 1,
+          "note": "B3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev1_v1",
+          "track": 1,
+          "step": 1,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev1_v2",
+          "track": 2,
+          "step": 1,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev1_v3",
+          "track": 3,
+          "step": 1,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev1_v4",
+          "track": 4,
+          "step": 1,
+          "note": "G5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev1_v5",
+          "track": 5,
+          "step": 1,
+          "note": "A5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev1_v6",
+          "track": 6,
+          "step": 1,
+          "note": "C6",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev2_bass",
+          "track": 7,
+          "step": 2,
+          "note": "E3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev2_v3",
+          "track": 3,
+          "step": 2,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev2_v4",
+          "track": 4,
+          "step": 2,
+          "note": "F5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev2_v5",
+          "track": 5,
+          "step": 2,
+          "note": "G#5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_bass",
+          "track": 7,
+          "step": 3,
+          "note": "A3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v1",
+          "track": 1,
+          "step": 3,
+          "note": "A4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v2",
+          "track": 2,
+          "step": 3,
+          "note": "C5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v4",
+          "track": 4,
+          "step": 3,
+          "note": "F#5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v5",
+          "track": 5,
+          "step": 3,
+          "note": "G5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v6",
+          "track": 6,
+          "step": 3,
+          "note": "B5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        }
+      ]
+    }
+  ]
+}

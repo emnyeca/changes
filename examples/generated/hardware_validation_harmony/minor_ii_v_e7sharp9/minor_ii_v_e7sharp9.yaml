@@ -1,0 +1,9 @@
+name: MINOR II V E7#9
+tempo: 120
+time_signature: "4/4"
+sections:
+  - name: A
+    progression:
+      - ["Bm7b5"]
+      - ["E7#9"]
+      - ["Am7"]

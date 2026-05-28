@@ -6,7 +6,10 @@ from changes.harmonic_context import (
     UnsupportedHarmonicContextError,
     build_local_pitch_collection,
     chord_tone_pitch_classes,
+    color_hint_pitch_classes,
+    contextual_constraint_pitch_classes,
     extract_output_chord_tone_set,
+    hard_context_pitch_classes,
     normalized_harmonic_identity,
     resolve_scale_collection_with_retry,
     resolve_scale_collection_with_retry_details,
@@ -248,3 +251,67 @@ def test_altered_dominant_remains_eligible_for_symmetric_collection():
     diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
     selected = select_scale_collection("C7b9", diminished_only_local)
     assert selected.family == "diminished"
+
+
+def test_minor_ii_v_e7sharp9_prefers_harmonic_minor_on_current_plus_previous():
+    progression = ["Bm7b5", "E7#9", "Am7"]
+
+    resolved = resolve_scale_collection_with_retry_details(progression, 1, circular=True)
+    output = extract_output_chord_tone_set("E7#9", resolved.selected_collection)
+
+    assert resolved.retry_level == "current+previous"
+    assert resolved.selected_collection.family == "harmonic_minor"
+    assert resolved.selected_collection.name.startswith("A_")
+    assert resolved.selected_collection.family != "diminished"
+    assert _pcs_to_names(output) == ["B", "C", "D", "E", "F", "G#"]
+    assert _pcs_to_names(resolved.color_hint_pitch_classes) == ["G"]
+    assert resolved.color_hints_applied_to_constraint_set is False
+    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "D", "E", "F", "G#"]
+
+
+def test_standalone_e7sharp9_applies_color_hints_on_current_only_attempt():
+    resolved = resolve_scale_collection_with_retry_details(["E7#9"], 0, circular=True)
+    assert resolved.retry_level == "current_only"
+    assert resolved.color_hints_applied_to_constraint_set is True
+    assert _pcs_to_names(resolved.color_hint_pitch_classes) == ["G"]
+    assert 7 in resolved.final_local_pitch_collection_used_for_selection
+
+    plain = resolve_scale_collection_with_retry_details(["E7"], 0, circular=True)
+    out_altered = extract_output_chord_tone_set("E7#9", resolved.selected_collection)
+    out_plain = extract_output_chord_tone_set("E7", plain.selected_collection)
+    assert (resolved.selected_collection.name, out_altered) != (plain.selected_collection.name, out_plain)
+
+
+@pytest.mark.parametrize(
+    ("symbol", "hint_note"),
+    [("E7b9", "F"), ("E7#11", "A#"), ("E7b13", "C")],
+)
+def test_standalone_dominant_altered_color_hints_are_restored_on_current_only(symbol: str, hint_note: str):
+    resolved = resolve_scale_collection_with_retry_details([symbol], 0, circular=True)
+    assert resolved.retry_level == "current_only"
+    assert resolved.color_hints_applied_to_constraint_set is True
+    assert hint_note in _pcs_to_names(resolved.color_hint_pitch_classes)
+
+
+def test_altered_fifth_remains_hard_for_contextual_selection():
+    assert "C" in _pcs_to_names(hard_context_pitch_classes("E7#5"))
+    assert "C" not in _pcs_to_names(color_hint_pitch_classes("E7#5"))
+
+    assert "A#" in _pcs_to_names(hard_context_pitch_classes("E7b5"))
+    assert "A#" not in _pcs_to_names(color_hint_pitch_classes("E7b5"))
+
+    assert "A#" in _pcs_to_names(hard_context_pitch_classes("E7#9b5"))
+    assert "G" in _pcs_to_names(color_hint_pitch_classes("E7#9b5"))
+
+
+def test_alt_remains_hard_semantic_directive_without_soft_color_split():
+    assert _pcs_to_names(hard_context_pitch_classes("Galt")) == ["B", "D#", "G", "G#"]
+    assert color_hint_pitch_classes("Galt") == frozenset()
+
+
+def test_contextual_constraint_function_switches_color_hint_inclusion():
+    hard_only = contextual_constraint_pitch_classes("E7#9", include_color_hints=False)
+    with_color = contextual_constraint_pitch_classes("E7#9", include_color_hints=True)
+
+    assert _pcs_to_names(hard_only) == ["B", "D", "E", "G#"]
+    assert _pcs_to_names(with_color) == ["B", "D", "E", "G", "G#"]

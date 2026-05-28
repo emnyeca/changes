@@ -84,7 +84,10 @@ def test_cli_musicxml_bundle_generates_required_artifacts(tmp_path: Path, monkey
     assert diag["occurrence_count"] > 0
     first = diag["occurrences"][0]
     assert "retry_level" in first
-    assert "local_pitch_collection" in first
+    assert "hard_context_pitch_classes_used" in first
+    assert "color_hint_pitch_classes" in first
+    assert "color_hints_applied_to_constraint_set" in first
+    assert "final_local_pitch_collection_used_for_selection" in first
     assert "selected_collection_name" in first
     assert "output_chord_tone_set" in first
 
@@ -152,6 +155,37 @@ def test_500_miles_high_measure3_gm7_uses_current_only_diatonic_after_restrictio
     assert gm7["selected_collection_family"] == "diatonic_dorian"
     assert gm7["selected_collection_name"].startswith("G_dorian")
     assert gm7["output_chord_tone_set"] == ["G", "A#", "D", "E", "F", "A"]
+
+
+def test_500_miles_high_measure8_e7sharp9_prefers_harmonic_minor_with_soft_color_hint(tmp_path: Path, monkeypatch):
+    direct_xml = _musicxml_path("direct")
+    out_dir = tmp_path / "direct"
+
+    def _fake_build(events_yaml_path: str | Path, output_syx_path: str | Path):
+        Path(output_syx_path).write_bytes(b"\xF0\x7D\x01\xF7")
+
+    monkeypatch.setattr("changes.pipeline_digitone.build_digitone_syx_from_events_yaml", _fake_build)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["changes", "digitone-bundle", "--musicxml", str(direct_xml), "--output", str(out_dir), "--write-syx"],
+    )
+    cli.main()
+
+    diag = _read_json(out_dir / "musicxml_harmony_resolution.json")
+    e7s9 = next(
+        o
+        for o in diag["occurrences"]
+        if o["measure_number"] == "8" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "E7#9"
+    )
+
+    assert e7s9["retry_level"] == "current+previous"
+    assert e7s9["selected_collection_family"] == "harmonic_minor"
+    assert e7s9["selected_collection_name"].startswith("A_harmonic_minor")
+    assert e7s9["output_chord_tone_set"] == ["E", "G#", "B", "C", "D", "F"]
+    assert e7s9["color_hint_pitch_classes"] == ["G"]
+    assert e7s9["color_hints_applied_to_constraint_set"] is False
+    assert e7s9["final_local_pitch_collection_used_for_selection"] == ["D", "E", "F", "G#", "A", "B"]
 
 
 def test_unresolved_context_fails_with_actionable_message(tmp_path: Path, monkeypatch):

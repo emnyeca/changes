@@ -1,0 +1,36 @@
+{
+  "source_title": "MINOR II V E7#9",
+  "pattern_count": 1,
+  "timing": {
+    "performance_tempo": "120",
+    "speed": "1/8",
+    "speed_ratio": "1/8",
+    "q_step": "4",
+    "device_tempo": "60"
+  },
+  "warnings": [],
+  "patterns": [
+    {
+      "index": 1,
+      "segment_index": 1,
+      "pattern_name": "MINOR II V E7#9",
+      "pattern_name_source": "auto",
+      "section_id": "A__OCC1",
+      "section_label": "A",
+      "section_token": "A",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
+      "section_split_index": 1,
+      "section_split_count": 1,
+      "global_step_start": 1,
+      "global_step_end": 3,
+      "total_steps": 3,
+      "warnings": [],
+      "events_yaml": "patterns/01_MINOR_II_V_E7_9.digitone.events.yaml",
+      "events_yaml_path": "patterns/01_MINOR_II_V_E7_9.digitone.events.yaml",
+      "syx": "patterns/01_MINOR_II_V_E7_9.syx",
+      "syx_path": "patterns/01_MINOR_II_V_E7_9.syx"
+    }
+  ],
+  "bundle_syx": "MINOR_II_V_E7_9.bundle.syx"
+}

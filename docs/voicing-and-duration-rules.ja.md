@@ -192,6 +192,40 @@ Whole-tone および Diminished collection は、current chord が symmetric / a
 - 制限後: plain `Gm7` は diminished を選べないため retry は `current_only` まで進み、`G_dorian_diatonic` を選択
 - 制限後出力: `G A# D E F A`
 
+## 14. Hard Constituents and Color Hints
+
+コード記号に含まれる音情報は、contextual collection selection において以下の二種類に分ける。
+
+Hard constituents:
+
+- chord の構造を定義する音
+- root, 3rd/b3, 5th または altered 5th, 7th, sus4, diminished / half-diminished structure, slash bass
+- Attempt 1 / Attempt 2 / Attempt 3 のすべてで collection containment を制約する
+
+Color hints:
+
+- ordinary dominant に明示された altered tension: `b9`, `#9`, `#11`, `b13`
+- chord symbol および診断情報として保持する
+- Attempt 1 / Attempt 2 では containment 制約に使わない
+- Attempt 3 current_only では current chord の表記色を保つため制約へ戻す
+
+Exception:
+
+- `alt` は semantic directive として、従来の canonical hard constituent `1, b9, 3, b13/#5` を維持する
+
+具体例:
+
+- `Bm7b5 | E7#9 | Am7`
+- 変更前: `#9 = G` が Attempt 2 の制約集合を塞ぎ、`A_harmonic_minor` への解決を阻害する場合がある
+- 変更前の代表挙動: `E_half_whole_diminished` -> `E G A# C# D F`
+- 変更後: Attempt 2 は `E7#9` の `#9` を hard 制約に含めない
+- 変更後の解決: `A_harmonic_minor` -> `E G# B C D F`
+
+補足:
+
+- 対称collection制限（plain `m7` / `maj7` などは whole-tone / diminished を current 出力として選べない）とは独立に有効。
+- plain chord の accidental symmetric recoloring を防ぎつつ、altered dominant の機能解決を優先できる。
+
 ## 12. Structured chord model（内部表現）
 
 和声コアは固定quality文字列の列挙に依存せず、以下の概念を分離した構造化モデルで扱う。

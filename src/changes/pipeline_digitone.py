@@ -95,6 +95,16 @@ def build_musicxml_harmony_resolution_diagnostic(imported_song: ImportedSong) ->
                         if event.source_position_quarters is None
                         else str(event.source_position_quarters)
                     ),
+                    "hard_context_pitch_classes_used": _pc_names(
+                        tuple(sorted(resolved.hard_context_pitch_classes_used))
+                    ),
+                    "color_hint_pitch_classes": _pc_names(
+                        tuple(sorted(resolved.color_hint_pitch_classes))
+                    ),
+                    "color_hints_applied_to_constraint_set": resolved.color_hints_applied_to_constraint_set,
+                    "final_local_pitch_collection_used_for_selection": _pc_names(
+                        tuple(sorted(resolved.final_local_pitch_collection_used_for_selection))
+                    ),
                     "local_pitch_collection": _pc_names(tuple(sorted(resolved.local_pitch_collection))),
                     "selected_collection_name": resolved.selected_collection.name,
                     "selected_collection_family": resolved.selected_collection.family,

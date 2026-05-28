@@ -17,6 +17,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "E",
@@ -48,6 +62,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "E",
+        "G",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "E",
@@ -79,6 +107,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "F",
+        "G",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "F",
+        "G",
+        "A#"
+      ],
       "local_pitch_collection": [
         "D",
         "F",
@@ -110,6 +152,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "F",
+        "G",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "F",
+        "G",
+        "A#"
+      ],
       "local_pitch_collection": [
         "D",
         "F",
@@ -141,6 +197,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
       "local_pitch_collection": [
         "D",
         "F",
@@ -173,6 +245,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "F",
+        "G",
+        "A",
+        "A#"
+      ],
       "local_pitch_collection": [
         "D",
         "F",
@@ -205,6 +293,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "F",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "F",
+        "A",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "F",
@@ -242,24 +344,45 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D",
+        "E",
+        "F",
+        "G#",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [
+        "G"
+      ],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "E",
+        "F",
+        "G#",
+        "A",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "E",
-        "G",
+        "F",
         "G#",
+        "A",
         "B"
       ],
-      "selected_collection_name": "E_half_whole_diminished",
-      "selected_collection_family": "diminished",
+      "selected_collection_name": "A_harmonic_minor",
+      "selected_collection_family": "harmonic_minor",
       "output_chord_tone_set": [
         "E",
-        "G",
-        "A#",
-        "C#",
+        "G#",
+        "B",
+        "C",
         "D",
         "F"
       ],
-      "retry_level": "current_only"
+      "retry_level": "current+previous"
     },
     {
       "global_event_index": 9,
@@ -274,6 +397,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
       "local_pitch_collection": [
         "C",
         "E",
@@ -305,6 +442,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "E",
+        "G",
+        "A"
+      ],
       "local_pitch_collection": [
         "C",
         "E",
@@ -336,6 +487,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
       "local_pitch_collection": [
         "C",
         "E",
@@ -368,6 +535,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "E",
+        "F#",
+        "G",
+        "A"
+      ],
       "local_pitch_collection": [
         "C",
         "E",
@@ -400,6 +583,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -431,6 +628,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "F",
+        "G#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -462,6 +673,24 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -495,6 +724,24 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "F",
+        "G",
+        "G#",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -534,6 +781,23 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [
+        "D"
+      ],
+      "color_hints_applied_to_constraint_set": true,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "D#",
@@ -572,6 +836,23 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
+      "color_hint_pitch_classes": [
+        "D"
+      ],
+      "color_hints_applied_to_constraint_set": true,
+      "final_local_pitch_collection_used_for_selection": [
+        "D",
+        "D#",
+        "F#",
+        "A",
+        "B"
+      ],
       "local_pitch_collection": [
         "D",
         "D#",
@@ -604,6 +885,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -635,6 +930,20 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "G",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -666,6 +975,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",
@@ -698,6 +1023,22 @@
         "raw_bass": null
       },
       "source_position_quarters": "0",
+      "hard_context_pitch_classes_used": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
+      "color_hint_pitch_classes": [],
+      "color_hints_applied_to_constraint_set": false,
+      "final_local_pitch_collection_used_for_selection": [
+        "C",
+        "D#",
+        "G",
+        "G#",
+        "A#"
+      ],
       "local_pitch_collection": [
         "C",
         "D#",

@@ -66,8 +66,15 @@
   - plain major/minor qualities cannot select whole-tone/diminished as current output collection
   - explicit altered/diminished qualities remain eligible for whole-tone/diminished selection
   - prevents accidental recoloring such as plain `Gm7` resolving to diminished from surrounding context alone
+- Dominant altered-tension hard/color split added after Digitone II listening validation:
+  - contextual selection now distinguishes hard structural constituents vs color hints
+  - dominant altered tensions (`b9`, `#9`, `#11`, `b13`) are treated as soft color hints in Attempt 1/2
+  - Attempt 3 (`current_only`) restores current chord color hints into constraint set
+  - preserves `alt` as a hard semantic directive (`1, b9, 3, b13/#5`)
+  - preserves structural altered-fifth tones (`b5`, `#5`) as hard constraints
+  - fixes minor ii-V case (`Bm7b5 | E7#9 | Am7`) to prefer `A_harmonic_minor` for `E7#9`
 - Regression validation completed:
-  - `changes`: `133 passed`
+  - `changes`: `142 passed`
   - `digitone-syx-toolkit`: `81 passed`
 
 ## Confirmed import behavior

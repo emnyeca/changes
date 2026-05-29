@@ -41,6 +41,7 @@ _QUALITY_PATTERNS = (
     "7b9",
     "7#5",
     "7b5",
+    "sus4",
     "9sus4",
     "7sus4",
     "m7b5",
@@ -343,6 +344,8 @@ def normalize_chord_quality(quality: str) -> str:
     q = str(quality)
     if q == "aug7":
         return "7#5"
+    if q == "sus4":
+        return "7sus4"
     return q
 
 

@@ -24,6 +24,7 @@ class ChordConstructionResult:
     selected_collection_pitch_classes: tuple[int, ...]
     mandatory_intervals: tuple[int, ...]
     mandatory_pitch_classes: tuple[int, ...]
+    automatic_excluded_intervals: tuple[int, ...]
     automatic_tension_intervals: tuple[int, ...]
     automatic_tension_pitch_classes: tuple[int, ...]
     final_pitch_classes: tuple[int, ...]
@@ -52,7 +53,6 @@ CHORD_MANDATORY_INTERVALS: dict[str, tuple[int, ...]] = {
     "13b9": (0, 4, 7, 10, 1, 9),
     "7b5": (0, 4, 6, 10),
     "7#5": (0, 4, 8, 10),
-    "aug7": (0, 4, 8, 10),
     "7#5b9": (0, 4, 8, 10, 1),
     "7b5b9": (0, 4, 6, 10, 1),
     "7#11": (0, 4, 7, 10, 6),
@@ -117,6 +117,18 @@ _QUALITY_TENSION_PREFERENCE_OVERRIDES: dict[str, tuple[int, ...]] = {
     "7#9": (8, 1, 6, 2, 9, 5),
 }
 
+_AUTOMATIC_TENSION_EXCLUSIONS_BY_QUALITY: dict[str, frozenset[int]] = {
+    "7b9": frozenset({2, 3}),
+    "7#9": frozenset({1, 2}),
+    "13b9": frozenset({2, 3}),
+    "7#5b9": frozenset({2, 3}),
+    "7b5b9": frozenset({2, 3}),
+    "7#9b5": frozenset({1, 2}),
+    "7b9sus4": frozenset({2, 3}),
+    "7#11": frozenset({5}),
+    "7b13": frozenset({9}),
+}
+
 
 def _unique_preserving_order(values: tuple[int, ...]) -> tuple[int, ...]:
     out: list[int] = []
@@ -172,6 +184,12 @@ def _preference_order_for_quality(normalized_quality: str) -> tuple[int, ...]:
     )
 
 
+def _automatic_exclusions_for_quality(normalized_quality: str) -> tuple[int, ...]:
+    if normalized_quality == "alt":
+        return ()
+    return tuple(sorted(_AUTOMATIC_TENSION_EXCLUSIONS_BY_QUALITY.get(normalized_quality, frozenset())))
+
+
 def _construction_error(
     *,
     source_symbol: str,
@@ -215,6 +233,7 @@ def construct_chord_pitch_classes(
 
     selected_set = set(normalized_selected)
     current = set(mandatory_pitch_classes)
+    automatic_excluded_intervals = _automatic_exclusions_for_quality(parsed_chord.normalized_quality)
     automatic_tension_intervals: list[int] = []
     automatic_tension_pitch_classes: list[int] = []
 
@@ -226,6 +245,7 @@ def construct_chord_pitch_classes(
             f"mandatory_intervals={_format_pitch_classes(mandatory_intervals)}",
             f"mandatory_pitch_classes={_format_pitch_classes(mandatory_pitch_classes)}",
             f"preference_family={preference_family}",
+            f"automatic_excluded_intervals={automatic_excluded_intervals}",
             "automatic_tension_intervals=[]",
             "automatic_tension_pitch_classes=[]",
             f"final_pitch_classes={_format_pitch_classes(mandatory_pitch_classes)}",
@@ -237,6 +257,7 @@ def construct_chord_pitch_classes(
             selected_collection_pitch_classes=normalized_selected,
             mandatory_intervals=mandatory_intervals,
             mandatory_pitch_classes=mandatory_pitch_classes,
+            automatic_excluded_intervals=automatic_excluded_intervals,
             automatic_tension_intervals=(),
             automatic_tension_pitch_classes=(),
             final_pitch_classes=mandatory_pitch_classes,
@@ -244,12 +265,15 @@ def construct_chord_pitch_classes(
         )
 
     for interval in _preference_order_for_quality(parsed_chord.normalized_quality):
-        pitch_class = (parsed_chord.root_pc + interval) % 12
+        normalized_interval = interval % 12
+        if normalized_interval in automatic_excluded_intervals:
+            continue
+        pitch_class = (parsed_chord.root_pc + normalized_interval) % 12
         if pitch_class in current:
             continue
         if pitch_class not in selected_set:
             continue
-        automatic_tension_intervals.append(interval % 12)
+        automatic_tension_intervals.append(normalized_interval)
         automatic_tension_pitch_classes.append(pitch_class)
         current.add(pitch_class)
         if len(current) == 6:
@@ -273,6 +297,7 @@ def construct_chord_pitch_classes(
         f"mandatory_intervals={_format_pitch_classes(mandatory_intervals)}",
         f"mandatory_pitch_classes={_format_pitch_classes(mandatory_pitch_classes)}",
         f"preference_family={preference_family}",
+        f"automatic_excluded_intervals={automatic_excluded_intervals}",
         f"automatic_tension_intervals={_format_pitch_classes(tuple(automatic_tension_intervals))}",
         f"automatic_tension_pitch_classes={_format_pitch_classes(tuple(automatic_tension_pitch_classes))}",
         f"final_pitch_classes={_format_pitch_classes(final_pitch_classes)}",
@@ -285,6 +310,7 @@ def construct_chord_pitch_classes(
         selected_collection_pitch_classes=normalized_selected,
         mandatory_intervals=mandatory_intervals,
         mandatory_pitch_classes=mandatory_pitch_classes,
+        automatic_excluded_intervals=automatic_excluded_intervals,
         automatic_tension_intervals=tuple(automatic_tension_intervals),
         automatic_tension_pitch_classes=tuple(automatic_tension_pitch_classes),
         final_pitch_classes=final_pitch_classes,

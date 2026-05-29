@@ -33,6 +33,20 @@ Chord construction follows three rules:
 
 Explicit alterations such as `b9` or `#9` are preserved as mandatory chord content.
 
+For symbol-faithful Chord output, a written `b9`/`#9`/`#11`/`b13` suppresses automatic addition of conflicting variants in the same extension family. The general `alt` quality remains exempt because it intentionally represents compound altered color.
+
+## Integration warning
+
+Chord automatic tension filling must consume the selected ScaleCollection pitch classes, not the local constraint pitch-class set used during scale selection.
+
+In the current harmonic context model:
+
+- use `RetryResolution.selected_collection.pitch_classes`
+- do not use `RetryResolution.local_pitch_collection`
+- do not use `RetryResolution.final_local_pitch_collection_used_for_selection`
+
+The local constraint set is used to choose a scale. It does not necessarily contain the available tensions needed to complete a six-note chord output.
+
 ## Plain sus4 convention
 
 Changes treats plain `sus4` as dominant-suspended harmony in the jazz-chart context.

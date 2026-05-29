@@ -222,8 +222,10 @@ def test_compile_plan_and_events_export_smoke():
     assert out["pattern"]["change"] == "OFF"
     assert out["pattern"]["reset"] == "INF"
     assert sorted(out["track_scale"]) == list(range(1, 17))
-    assert all(scale["length"] == plan.total_steps for scale in out["track_scale"].values())
-    assert all(scale["speed"] == plan.speed for scale in out["track_scale"].values())
+    assert all(out["track_scale"][track]["length"] == plan.total_steps for track in range(1, 9))
+    assert all(out["track_scale"][track]["speed"] == plan.speed for track in range(1, 9))
+    assert all(out["track_scale"][track]["length"] == 16 for track in range(9, 17))
+    assert all(out["track_scale"][track]["speed"] == "1" for track in range(9, 17))
     assert out["events"]
     assert out["events"][0]["length_code"].startswith("0x")
 
@@ -245,7 +247,8 @@ def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_veloci
         "reset": "INF",
     }
     assert len(events_payload["track_scale"]) == 16
-    assert events_payload["track_scale"][16] == {"length": plan.total_steps, "speed": plan.speed}
+    assert events_payload["track_scale"][8] == {"length": plan.total_steps, "speed": plan.speed}
+    assert events_payload["track_scale"][16] == {"length": 16, "speed": "1"}
     assert events_payload["events"]
     assert all(event["velocity"] == "inherit" for event in events_payload["events"])
 

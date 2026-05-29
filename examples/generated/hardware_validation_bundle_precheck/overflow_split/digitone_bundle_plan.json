@@ -30,7 +30,7 @@
           "source_event_id": "ev1_bass#chunk1",
           "track": 7,
           "step": 1,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -38,7 +38,7 @@
           "source_event_id": "ev1_bass#chunk2",
           "track": 7,
           "step": 17,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -46,7 +46,7 @@
           "source_event_id": "ev1_bass#chunk3",
           "track": 7,
           "step": 33,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -54,7 +54,7 @@
           "source_event_id": "ev1_bass#chunk4",
           "track": 7,
           "step": 49,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -62,7 +62,7 @@
           "source_event_id": "ev1_bass#chunk5",
           "track": 7,
           "step": 65,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -70,7 +70,7 @@
           "source_event_id": "ev1_bass#chunk6",
           "track": 7,
           "step": 81,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -78,7 +78,7 @@
           "source_event_id": "ev1_bass#chunk7",
           "track": 7,
           "step": 97,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -86,7 +86,7 @@
           "source_event_id": "ev1_bass#chunk8",
           "track": 7,
           "step": 113,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -497,7 +497,7 @@
           "source_event_id": "ev1_bass#chunk1",
           "track": 7,
           "step": 1,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x7E"
         },
@@ -505,7 +505,7 @@
           "source_event_id": "ev1_bass#chunk2",
           "track": 7,
           "step": 17,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x66"
         },

@@ -13,17 +13,19 @@ Validate that regenerated Digitone II Native SysEx artifacts from `changes` now 
 ## Expected on-device state
 
 - Imported pattern shows `Per Track` mode.
-- Track 1..16 LENGTH all match the exported segment `total_steps`.
-- Track 1..16 SPEED all match the exported segment `speed`.
+- Track 1..8 LENGTH match the exported segment `total_steps`.
+- Track 1..8 SPEED match the exported segment `speed`.
+- Track 9..16 LENGTH are fixed to `16`.
+- Track 9..16 SPEED are fixed to `1`.
 - CHANGE shows `OFF`.
 - RESET shows `INF`.
 - Existing trigger timing and note content remain unchanged relative to the pre-per-track export.
 
 ## Current exported values
 
-- `500_miles_high_direct`: LENGTH `22`, SPEED `1/8`
-- `500_miles_high_converted`: LENGTH `22`, SPEED `1/8`
-- `minor_ii_v_e7sharp9`: LENGTH `3`, SPEED `1/8`
+- `500_miles_high_direct`: Tracks 1..8 = LENGTH `22`, SPEED `1/8`; Tracks 9..16 = LENGTH `16`, SPEED `1`
+- `500_miles_high_converted`: Tracks 1..8 = LENGTH `22`, SPEED `1/8`; Tracks 9..16 = LENGTH `16`, SPEED `1`
+- `minor_ii_v_e7sharp9`: Tracks 1..8 = LENGTH `3`, SPEED `1/8`; Tracks 9..16 = LENGTH `16`, SPEED `1`
 
 ## Status
 

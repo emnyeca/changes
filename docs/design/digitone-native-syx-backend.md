@@ -14,8 +14,10 @@
 - Base Pattern speed policy for Native SysEx: `speed: "1/8"`.
 - Native SysEx output policy is now per-track scale mode by default:
   - `pattern.mode = per-track`
-  - Track 1..16 LENGTH = Changes-computed `total_steps`
-  - Track 1..16 SPEED = Changes-computed `speed`
+  - Track 1..8 LENGTH = Changes-computed `total_steps`
+  - Track 1..8 SPEED = Changes-computed `speed`
+  - Track 9..16 LENGTH = fixed `16`
+  - Track 9..16 SPEED = fixed `1`
   - pattern-shared CHANGE = `OFF`
   - pattern-shared RESET = `INF`
 

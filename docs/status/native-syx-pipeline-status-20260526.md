@@ -6,8 +6,10 @@
   - trigger / track / step / pitch / velocity / full length / tempo / speed / total steps / pattern name
 - Per-track scale mode output implemented across `changes` -> `digitone-syx-toolkit` integration:
   - emitted events YAML now defaults to `pattern.mode = per-track`
-  - Track 1..16 `track_scale.length` mirrors computed segment `total_steps`
-  - Track 1..16 `track_scale.speed` mirrors computed plan/segment `speed`
+  - Track 1..8 `track_scale.length` mirrors computed segment `total_steps`
+  - Track 1..8 `track_scale.speed` mirrors computed plan/segment `speed`
+  - Track 9..16 `track_scale.length` is fixed to `16`
+  - Track 9..16 `track_scale.speed` is fixed to `1`
   - pattern-shared CHANGE is fixed to `OFF`
   - pattern-shared RESET is fixed to `INF`
 - Simple ii-V-I end-to-end hardware validation

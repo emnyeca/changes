@@ -320,8 +320,10 @@ def test_bundle_events_yaml_uses_per_track_mode_and_segment_scale(tmp_path: Path
             "reset": "INF",
         }
         assert sorted(payload["track_scale"]) == list(range(1, 17))
-        assert all(scale["length"] == segment.total_steps for scale in payload["track_scale"].values())
-        assert all(scale["speed"] == bundle.timing.speed for scale in payload["track_scale"].values())
+        assert all(payload["track_scale"][track]["length"] == segment.total_steps for track in range(1, 9))
+        assert all(payload["track_scale"][track]["speed"] == bundle.timing.speed for track in range(1, 9))
+        assert all(payload["track_scale"][track]["length"] == 16 for track in range(9, 17))
+        assert all(payload["track_scale"][track]["speed"] == "1" for track in range(9, 17))
 
 
 def test_short_section_resolution_is_deterministic_and_reported():

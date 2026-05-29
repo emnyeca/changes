@@ -2,10 +2,68 @@ version: 1
 device: digitone2
 name: SOL1 BLUE MOON
 pattern:
-  mode: pattern-wide
+  mode: per-track
   tempo: 30.0
-  speed: 1/8
-  total_steps: 128
+  change: 'OFF'
+  reset: INF
+track_scale:
+  1:
+    length: 128
+    speed: 1/8
+  2:
+    length: 128
+    speed: 1/8
+  3:
+    length: 128
+    speed: 1/8
+  4:
+    length: 128
+    speed: 1/8
+  5:
+    length: 128
+    speed: 1/8
+  6:
+    length: 128
+    speed: 1/8
+  7:
+    length: 128
+    speed: 1/8
+  8:
+    length: 128
+    speed: 1/8
+  9:
+    length: 16
+    speed: '1'
+  10:
+    length: 16
+    speed: '1'
+  11:
+    length: 16
+    speed: '1'
+  12:
+    length: 16
+    speed: '1'
+  13:
+    length: 16
+    speed: '1'
+  14:
+    length: 16
+    speed: '1'
+  15:
+    length: 16
+    speed: '1'
+  16:
+    length: 16
+    speed: '1'
+track_defaults:
+  velocity:
+    1: 70
+    2: 70
+    3: 70
+    4: 50
+    5: 70
+    6: 50
+    7: 100
 events:
 - step: 1
   track: 1
@@ -249,41 +307,41 @@ events:
   length_code: '0x7E'
 - step: 1
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 17
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 33
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 49
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 65
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 81
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 97
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'
 - step: 113
   track: 7
-  note: G3
+  note: G2
   velocity: inherit
   length_code: '0x7E'

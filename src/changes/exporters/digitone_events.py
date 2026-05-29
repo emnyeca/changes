@@ -8,6 +8,12 @@ from changes.models.digitone_bundle_plan import DigitonePatternSegment, Digitone
 from changes.models.digitone_compile_plan import DigitoneCompilePlan
 
 
+TRACK_SCALE_COMPUTED_RANGE = range(1, 9)
+TRACK_SCALE_FIXED_RANGE = range(9, 17)
+TRACK_SCALE_FIXED_LENGTH = 16
+TRACK_SCALE_FIXED_SPEED = "1"
+
+
 def _compiled_events_to_yaml_rows(events: Iterable) -> list[dict]:
     rows: list[dict] = []
     for e in sorted(events, key=lambda x: (x.track, x.step, x.source_event_id)):
@@ -31,10 +37,17 @@ def _track_defaults_payload(track_default_velocity: dict[int, int] | None) -> di
 
 
 def _track_scale_payload(*, length: int, speed: str) -> dict[int, dict[str, int | str]]:
-    return {
+    payload = {
         track: {"length": int(length), "speed": str(speed)}
-        for track in range(1, 17)
+        for track in TRACK_SCALE_COMPUTED_RANGE
     }
+    payload.update(
+        {
+            track: {"length": TRACK_SCALE_FIXED_LENGTH, "speed": TRACK_SCALE_FIXED_SPEED}
+            for track in TRACK_SCALE_FIXED_RANGE
+        }
+    )
+    return payload
 
 
 def digitone_compile_plan_to_events_yaml_payload(

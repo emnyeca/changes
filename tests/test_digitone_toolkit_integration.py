@@ -65,7 +65,9 @@ def test_events_yaml_matches_toolkit_schema_and_validates(tmp_path: Path):
     assert assignment.pattern.reset == "INF"
     assert len(assignment.track_scale) == 16
     assert assignment.track_scale[1].length == plan.total_steps
-    assert assignment.track_scale[16].speed == plan.speed
+    assert assignment.track_scale[8].speed == plan.speed
+    assert assignment.track_scale[16].length == 16
+    assert assignment.track_scale[16].speed == "1"
     assert assignment.name == "SIMPLE II-V-I"
     assert len(assignment.events) == len(plan.events)
 
@@ -167,7 +169,8 @@ def test_e2e_simple_ii_v_i_to_syx_and_round_trip(tmp_path: Path):
     assignment = load_event_assignment_yaml(out["events_yaml"])
     assert len(assignment.events) == len(plan.events)
     assert assignment.pattern.mode == "per-track"
-    assert assignment.track_scale[16].length == plan.total_steps
+    assert assignment.track_scale[8].length == plan.total_steps
+    assert assignment.track_scale[16].length == 16
 
     midi_by_pair = {(e.track, e.step): e.note_midi for e in assignment.events}
     for event in plan.events:

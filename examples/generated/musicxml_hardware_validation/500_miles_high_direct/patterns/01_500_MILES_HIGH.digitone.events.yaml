@@ -32,29 +32,29 @@ track_scale:
     length: 22
     speed: 1/8
   9:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   10:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   11:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   12:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   13:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   14:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   15:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
   16:
-    length: 22
-    speed: 1/8
+    length: 16
+    speed: '1'
 track_defaults:
   velocity:
     1: 70

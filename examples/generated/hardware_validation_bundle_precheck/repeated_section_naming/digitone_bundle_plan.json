@@ -177,14 +177,6 @@
       "warnings": [],
       "events": [
         {
-          "source_event_id": "ev1_v2",
-          "track": 2,
-          "step": 1,
-          "note": "E4",
-          "velocity": "inherit",
-          "length_code": "0x6E"
-        },
-        {
           "source_event_id": "ev1_v4",
           "track": 4,
           "step": 1,
@@ -209,18 +201,10 @@
           "length_code": "0x6E"
         },
         {
-          "source_event_id": "ev17_v3",
-          "track": 3,
-          "step": 1,
-          "note": "F4",
-          "velocity": "inherit",
-          "length_code": "0x6E"
-        },
-        {
           "source_event_id": "ev33_bass",
           "track": 7,
           "step": 1,
-          "note": "G3",
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x6E"
         },
@@ -228,7 +212,23 @@
           "source_event_id": "ev33_v1",
           "track": 1,
           "step": 1,
-          "note": "G3",
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x6E"
+        },
+        {
+          "source_event_id": "ev33_v2",
+          "track": 2,
+          "step": 1,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x6E"
+        },
+        {
+          "source_event_id": "ev33_v3",
+          "track": 3,
+          "step": 1,
+          "note": "G4",
           "velocity": "inherit",
           "length_code": "0x6E"
         }

@@ -49,7 +49,8 @@ def test_pipeline_artifacts_written(tmp_path: Path):
         "change": "OFF",
         "reset": "INF",
     }
-    assert loaded["track_scale"][16] == {"length": plan.total_steps, "speed": plan.speed}
+    assert loaded["track_scale"][8] == {"length": plan.total_steps, "speed": plan.speed}
+    assert loaded["track_scale"][16] == {"length": 16, "speed": "1"}
     assert loaded["track_defaults"]["velocity"] == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
     assert all(event["velocity"] == "inherit" for event in loaded["events"])
 
@@ -96,7 +97,8 @@ def test_bundle_artifacts_written_with_manifest_and_order(tmp_path: Path):
         assert payload_loaded["name"] == entry["pattern_name"]
         assert payload_loaded["pattern"]["mode"] == "per-track"
         assert len(payload_loaded["track_scale"]) == 16
-        assert all(scale["length"] == int(entry["total_steps"]) for scale in payload_loaded["track_scale"].values())
+        assert all(payload_loaded["track_scale"][track]["length"] == int(entry["total_steps"]) for track in range(1, 9))
+        assert all(payload_loaded["track_scale"][track]["length"] == 16 for track in range(9, 17))
         assert payload_loaded["track_defaults"]["velocity"] == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
         assert all(event["velocity"] == "inherit" for event in payload_loaded["events"])
 

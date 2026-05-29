@@ -6,7 +6,7 @@
       "id": "ev1_bass",
       "voice_id": "bass",
       "role": "bass",
-      "note_midi": 43,
+      "note_midi": 31,
       "onset_quarters": "0",
       "duration_quarters": "1200",
       "source_harmony_id": "m1_h1",

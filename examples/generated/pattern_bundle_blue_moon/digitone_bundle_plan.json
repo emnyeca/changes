@@ -1,135 +1,577 @@
 {
-  "source_title": "BLUE MOON",
+  "source_title": "Blue Moon",
   "timing": {
-    "performance_tempo": "120",
+    "performance_tempo": "124",
     "speed": "1/8",
     "speed_ratio": "1/8",
-    "q_step": "4",
-    "device_tempo": "60"
+    "q_step": "1",
+    "device_tempo": "248"
   },
   "warnings": [],
   "patterns": [
     {
-      "source_title": "BLUE MOON",
-      "pattern_name": "INT BLUE MOON",
+      "source_title": "Blue Moon",
+      "pattern_name": "A BLUE MOON",
       "pattern_name_source": "auto",
-      "section_id": "Intro",
-      "section_label": "Intro",
-      "section_token": "INT",
+      "section_id": "A__OCC1",
+      "section_label": "A",
+      "section_token": "A",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 1,
       "segment_index": 1,
       "section_split_index": 1,
       "section_split_count": 1,
-      "total_steps": 2,
+      "global_step_start": 1,
+      "global_step_end": 8,
+      "total_steps": 8,
       "warnings": [],
       "events": [
+        {
+          "source_event_id": "ev1_bass",
+          "track": 7,
+          "step": 1,
+          "note": "C3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
         {
           "source_event_id": "ev1_v1",
           "track": 1,
           "step": 1,
           "note": "C4",
           "velocity": "inherit",
+          "length_code": "0x56"
+        },
+        {
+          "source_event_id": "ev1_v2",
+          "track": 2,
+          "step": 1,
+          "note": "E4",
+          "velocity": "inherit",
           "length_code": "0x3E"
         },
         {
-          "source_event_id": "ev2_v1",
-          "track": 1,
-          "step": 2,
-          "note": "C4",
+          "source_event_id": "ev1_v3",
+          "track": 3,
+          "step": 1,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev1_v4",
+          "track": 4,
+          "step": 1,
+          "note": "A4",
+          "velocity": "inherit",
+          "length_code": "0x6A"
+        },
+        {
+          "source_event_id": "ev1_v5",
+          "track": 5,
+          "step": 1,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x6A"
+        },
+        {
+          "source_event_id": "ev1_v6",
+          "track": 6,
+          "step": 1,
+          "note": "D5",
           "velocity": "inherit",
           "length_code": "0x3E"
-        }
-      ]
-    },
-    {
-      "source_title": "BLUE MOON",
-      "pattern_name": "A BLUE MOON",
-      "pattern_name_source": "auto",
-      "section_id": "A",
-      "section_label": "A",
-      "section_token": "A",
-      "segment_index": 2,
-      "section_split_index": 1,
-      "section_split_count": 1,
-      "total_steps": 2,
-      "warnings": [],
-      "events": [
+        },
         {
-          "source_event_id": "ev3_v1",
-          "track": 1,
-          "step": 1,
-          "note": "B3",
+          "source_event_id": "ev2_bass",
+          "track": 7,
+          "step": 2,
+          "note": "A2",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev2_v2",
+          "track": 2,
+          "step": 2,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev2_v6",
+          "track": 6,
+          "step": 2,
+          "note": "E5",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_bass",
+          "track": 7,
+          "step": 3,
+          "note": "D3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v2",
+          "track": 2,
+          "step": 3,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v3",
+          "track": 3,
+          "step": 3,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev3_v6",
+          "track": 6,
+          "step": 3,
+          "note": "D5",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev4_bass",
+          "track": 7,
+          "step": 4,
+          "note": "G2",
           "velocity": "inherit",
           "length_code": "0x3E"
         },
         {
           "source_event_id": "ev4_v1",
           "track": 1,
-          "step": 2,
-          "note": "B3",
+          "step": 4,
+          "note": "E4",
           "velocity": "inherit",
           "length_code": "0x3E"
-        }
-      ]
-    },
-    {
-      "source_title": "BLUE MOON",
-      "pattern_name": "SOL BLUE MOON",
-      "pattern_name_source": "auto",
-      "section_id": "Solo",
-      "section_label": "Solo",
-      "section_token": "SOL",
-      "segment_index": 3,
-      "section_split_index": 1,
-      "section_split_count": 1,
-      "total_steps": 2,
-      "warnings": [],
-      "events": [
+        },
+        {
+          "source_event_id": "ev4_v2",
+          "track": 2,
+          "step": 4,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev4_v3",
+          "track": 3,
+          "step": 4,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x56"
+        },
+        {
+          "source_event_id": "ev5_bass",
+          "track": 7,
+          "step": 5,
+          "note": "C3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
         {
           "source_event_id": "ev5_v1",
           "track": 1,
-          "step": 1,
-          "note": "B3",
+          "step": 5,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev5_v2",
+          "track": 2,
+          "step": 5,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev5_v6",
+          "track": 6,
+          "step": 5,
+          "note": "C5",
+          "velocity": "inherit",
+          "length_code": "0x56"
+        },
+        {
+          "source_event_id": "ev6_bass",
+          "track": 7,
+          "step": 6,
+          "note": "A2",
           "velocity": "inherit",
           "length_code": "0x3E"
         },
         {
           "source_event_id": "ev6_v1",
           "track": 1,
-          "step": 2,
-          "note": "B3",
+          "step": 6,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev6_v2",
+          "track": 2,
+          "step": 6,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev7_bass",
+          "track": 7,
+          "step": 7,
+          "note": "D3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev7_v1",
+          "track": 1,
+          "step": 7,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev7_v2",
+          "track": 2,
+          "step": 7,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev7_v3",
+          "track": 3,
+          "step": 7,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev8_bass",
+          "track": 7,
+          "step": 8,
+          "note": "G2",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev8_v4",
+          "track": 4,
+          "step": 8,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev8_v5",
+          "track": 5,
+          "step": 8,
+          "note": "A4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev8_v6",
+          "track": 6,
+          "step": 8,
+          "note": "B4",
           "velocity": "inherit",
           "length_code": "0x3E"
         }
       ]
     },
     {
-      "source_title": "BLUE MOON",
-      "pattern_name": "OUT BLUE MOON",
+      "source_title": "Blue Moon",
+      "pattern_name": "B BLUE MOON",
       "pattern_name_source": "auto",
-      "section_id": "Outro",
-      "section_label": "Outro",
-      "section_token": "OUT",
-      "segment_index": 4,
+      "section_id": "B__OCC1",
+      "section_label": "B",
+      "section_token": "B",
+      "section_occurrence_index": 1,
+      "section_global_order_index": 2,
+      "segment_index": 2,
       "section_split_index": 1,
       "section_split_count": 1,
-      "total_steps": 2,
+      "global_step_start": 9,
+      "global_step_end": 16,
+      "total_steps": 8,
       "warnings": [],
       "events": [
         {
           "source_event_id": "ev7_v1",
           "track": 1,
           "step": 1,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev7_v2",
+          "track": 2,
+          "step": 1,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev7_v3",
+          "track": 3,
+          "step": 1,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev8_v4",
+          "track": 4,
+          "step": 1,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x5E"
+        },
+        {
+          "source_event_id": "ev8_v5",
+          "track": 5,
+          "step": 1,
+          "note": "A4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev9_bass",
+          "track": 7,
+          "step": 1,
+          "note": "F3",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev9_v6",
+          "track": 6,
+          "step": 1,
+          "note": "C5",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev10_v2",
+          "track": 2,
+          "step": 2,
+          "note": "D#4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev10_v5",
+          "track": 5,
+          "step": 2,
+          "note": "G#4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev11_bass",
+          "track": 7,
+          "step": 3,
+          "note": "C3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev11_v1",
+          "track": 1,
+          "step": 3,
           "note": "C4",
           "velocity": "inherit",
           "length_code": "0x3E"
         },
         {
-          "source_event_id": "ev8_v1",
+          "source_event_id": "ev11_v2",
+          "track": 2,
+          "step": 3,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev11_v3",
+          "track": 3,
+          "step": 3,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev11_v5",
+          "track": 5,
+          "step": 3,
+          "note": "A4",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev11_v6",
+          "track": 6,
+          "step": 3,
+          "note": "B4",
+          "velocity": "inherit",
+          "length_code": "0x66"
+        },
+        {
+          "source_event_id": "ev12_bass",
+          "track": 7,
+          "step": 4,
+          "note": "A2",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev12_v1",
           "track": 1,
-          "step": 2,
+          "step": 4,
+          "note": "C#4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev12_v2",
+          "track": 2,
+          "step": 4,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev12_v3",
+          "track": 3,
+          "step": 4,
+          "note": "F#4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev13_bass",
+          "track": 7,
+          "step": 5,
+          "note": "D3",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev13_v1",
+          "track": 1,
+          "step": 5,
           "note": "C4",
           "velocity": "inherit",
           "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev13_v2",
+          "track": 2,
+          "step": 5,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev13_v3",
+          "track": 3,
+          "step": 5,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev13_v4",
+          "track": 4,
+          "step": 5,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev14_bass",
+          "track": 7,
+          "step": 6,
+          "note": "G2",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev14_v1",
+          "track": 1,
+          "step": 6,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev14_v2",
+          "track": 2,
+          "step": 6,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev14_v3",
+          "track": 3,
+          "step": 6,
+          "note": "F4",
+          "velocity": "inherit",
+          "length_code": "0x3E"
+        },
+        {
+          "source_event_id": "ev14_v4",
+          "track": 4,
+          "step": 6,
+          "note": "G4",
+          "velocity": "inherit",
+          "length_code": "0x56"
+        },
+        {
+          "source_event_id": "ev15_bass",
+          "track": 7,
+          "step": 7,
+          "note": "C3",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev15_v1",
+          "track": 1,
+          "step": 7,
+          "note": "C4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev15_v2",
+          "track": 2,
+          "step": 7,
+          "note": "D4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
+        },
+        {
+          "source_event_id": "ev15_v3",
+          "track": 3,
+          "step": 7,
+          "note": "E4",
+          "velocity": "inherit",
+          "length_code": "0x4E"
         }
       ]
     }

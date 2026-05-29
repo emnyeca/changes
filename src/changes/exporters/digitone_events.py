@@ -30,6 +30,13 @@ def _track_defaults_payload(track_default_velocity: dict[int, int] | None) -> di
     return {"velocity": ordered}
 
 
+def _track_scale_payload(*, length: int, speed: str) -> dict[int, dict[str, int | str]]:
+    return {
+        track: {"length": int(length), "speed": str(speed)}
+        for track in range(1, 17)
+    }
+
+
 def digitone_compile_plan_to_events_yaml_payload(
     plan: DigitoneCompilePlan,
     *,
@@ -40,11 +47,12 @@ def digitone_compile_plan_to_events_yaml_payload(
         "device": "digitone2",
         "name": plan.pattern_name,
         "pattern": {
-            "mode": "pattern-wide",
+            "mode": "per-track",
             "tempo": float(plan.device_tempo),
-            "speed": plan.speed,
-            "total_steps": plan.total_steps,
+            "change": "OFF",
+            "reset": "INF",
         },
+        "track_scale": _track_scale_payload(length=plan.total_steps, speed=plan.speed),
     }
     track_defaults = _track_defaults_payload(track_default_velocity)
     if track_defaults is not None:
@@ -64,11 +72,12 @@ def digitone_pattern_segment_to_events_yaml_payload(
         "device": "digitone2",
         "name": segment.pattern_name,
         "pattern": {
-            "mode": "pattern-wide",
+            "mode": "per-track",
             "tempo": float(timing.device_tempo),
-            "speed": timing.speed,
-            "total_steps": segment.total_steps,
+            "change": "OFF",
+            "reset": "INF",
         },
+        "track_scale": _track_scale_payload(length=segment.total_steps, speed=timing.speed),
     }
     track_defaults = _track_defaults_payload(track_default_velocity)
     if track_defaults is not None:

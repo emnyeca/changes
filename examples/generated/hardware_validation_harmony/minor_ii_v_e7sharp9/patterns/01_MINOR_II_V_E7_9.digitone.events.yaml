@@ -2,10 +2,59 @@ version: 1
 device: digitone2
 name: MINOR II V E7#9
 pattern:
-  mode: pattern-wide
+  mode: per-track
   tempo: 60.0
-  speed: 1/8
-  total_steps: 3
+  change: 'OFF'
+  reset: INF
+track_scale:
+  1:
+    length: 3
+    speed: 1/8
+  2:
+    length: 3
+    speed: 1/8
+  3:
+    length: 3
+    speed: 1/8
+  4:
+    length: 3
+    speed: 1/8
+  5:
+    length: 3
+    speed: 1/8
+  6:
+    length: 3
+    speed: 1/8
+  7:
+    length: 3
+    speed: 1/8
+  8:
+    length: 3
+    speed: 1/8
+  9:
+    length: 3
+    speed: 1/8
+  10:
+    length: 3
+    speed: 1/8
+  11:
+    length: 3
+    speed: 1/8
+  12:
+    length: 3
+    speed: 1/8
+  13:
+    length: 3
+    speed: 1/8
+  14:
+    length: 3
+    speed: 1/8
+  15:
+    length: 3
+    speed: 1/8
+  16:
+    length: 3
+    speed: 1/8
 track_defaults:
   velocity:
     1: 70

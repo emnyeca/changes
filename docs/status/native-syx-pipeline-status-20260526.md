@@ -4,6 +4,12 @@
 
 - Digitone II Pattern SysEx analysis and encoder for:
   - trigger / track / step / pitch / velocity / full length / tempo / speed / total steps / pattern name
+- Per-track scale mode output implemented across `changes` -> `digitone-syx-toolkit` integration:
+  - emitted events YAML now defaults to `pattern.mode = per-track`
+  - Track 1..16 `track_scale.length` mirrors computed segment `total_steps`
+  - Track 1..16 `track_scale.speed` mirrors computed plan/segment `speed`
+  - pattern-shared CHANGE is fixed to `OFF`
+  - pattern-shared RESET is fixed to `INF`
 - Simple ii-V-I end-to-end hardware validation
 - Blue Moon end-to-end hardware validation
 - Pattern Name hardware validation completed and passed
@@ -74,8 +80,8 @@
   - preserves structural altered-fifth tones (`b5`, `#5`) as hard constraints
   - fixes minor ii-V case (`Bm7b5 | E7#9 | Am7`) to prefer `A_harmonic_minor` for `E7#9`
 - Regression validation completed:
-  - `changes`: `142 passed`
-  - `digitone-syx-toolkit`: `81 passed`
+  - `changes`: `168 passed`
+  - `digitone-syx-toolkit`: `97 passed`
 - Register policy rollout completed (render-layer):
   - chord voices now bounded to Digitone display `C4-A5` (MIDI `48..69`)
   - bass now bounded to Digitone display `G2-F#3` (MIDI `31..42`)
@@ -129,6 +135,20 @@ Execution note:
   - packet check: 3 individual `.syx` packets and 3 packets in `.bundle.syx`
 - Manual checklist document:
   - `docs/hardware-validation/digitone-bundle-pre-hardware-validation-2026-05-26.md`
+
+## Per-track scale validation artifacts (generated)
+
+- `examples/generated/musicxml_hardware_validation/500_miles_high_direct/`
+  - per-pattern events YAML now emits `pattern.mode = per-track`
+  - bundle SYX regenerated: `500_MILES_HIGH.bundle.syx`
+- `examples/generated/musicxml_hardware_validation/500_miles_high_converted/`
+  - per-pattern events YAML now emits `pattern.mode = per-track`
+  - bundle SYX regenerated: `500_MILES_HIGH.bundle.syx`
+- `examples/generated/hardware_validation_harmony/minor_ii_v_e7sharp9/`
+  - per-pattern events YAML now emits `pattern.mode = per-track`
+  - bundle SYX regenerated: `MINOR_II_V_E7_9.bundle.syx`
+- Manual checklist document:
+  - `docs/hardware-validation/per-track-scale-output-2026-05-29.md`
 
 ## Intentionally Unimplemented Scope (Current)
 

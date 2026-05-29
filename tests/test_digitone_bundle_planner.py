@@ -5,6 +5,7 @@ from dataclasses import replace
 
 import pytest
 import json
+import yaml
 
 from changes.digitone.bundle_planner import (
     _RawSegment,
@@ -293,6 +294,34 @@ def test_every_emitted_bundle_pattern_satisfies_total_steps_2_to_128():
 
     _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
     assert all(2 <= p.total_steps <= 128 for p in bundle.patterns)
+
+
+def test_bundle_events_yaml_uses_per_track_mode_and_segment_scale(tmp_path: Path):
+    payload = {
+        "name": "BLUE MOON",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [
+            {"name": "A", "progression": [["Cmaj7"] for _ in range(40)]},
+        ],
+    }
+
+    song, timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    out = save_digitone_bundle_artifacts(tmp_path, song, timeline, bundle, write_syx=False)
+    event_files = sorted(out["patterns_dir"].glob("*.digitone.events.yaml"))
+    assert event_files
+
+    for event_file, segment in zip(event_files, bundle.patterns, strict=True):
+        payload = yaml.safe_load(event_file.read_text(encoding="utf-8"))
+        assert payload["pattern"] == {
+            "mode": "per-track",
+            "tempo": float(bundle.timing.device_tempo),
+            "change": "OFF",
+            "reset": "INF",
+        }
+        assert sorted(payload["track_scale"]) == list(range(1, 17))
+        assert all(scale["length"] == segment.total_steps for scale in payload["track_scale"].values())
+        assert all(scale["speed"] == bundle.timing.speed for scale in payload["track_scale"].values())
 
 
 def test_short_section_resolution_is_deterministic_and_reported():

@@ -12,6 +12,12 @@
 - Dependency direction is one-way:
   - EUB Changes -> digitone-syx-toolkit
 - Base Pattern speed policy for Native SysEx: `speed: "1/8"`.
+- Native SysEx output policy is now per-track scale mode by default:
+  - `pattern.mode = per-track`
+  - Track 1..16 LENGTH = Changes-computed `total_steps`
+  - Track 1..16 SPEED = Changes-computed `speed`
+  - pattern-shared CHANGE = `OFF`
+  - pattern-shared RESET = `INF`
 
 ## Tempo Terms
 
@@ -45,7 +51,7 @@ Current artifact outputs:
 - `song_model.json` (Song Model, Fraction-as-string)
 - `rendered_timeline.json` (Rendered Timeline, Fraction-as-string)
 - `digitone_compile_plan.json` (Compile Plan, includes speed/q_step/device_tempo)
-- `digitone.events.yaml` (toolkit schema: version/device/name/pattern/events)
+- `digitone.events.yaml` (toolkit schema: version/device/name/pattern/track_scale/events)
 - `digitone_pattern.syx` (optional, generated from saved `digitone.events.yaml`)
 
 ## Open Questions (Not Implemented Here)

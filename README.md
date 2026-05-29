@@ -18,6 +18,8 @@ The core concept is to:
 
 This project prioritizes deterministic behavior, readable music‑theory logic, and performance‑safe MIDI output. It is intended to be used in Emnyeca/EMN Records machine‑jazz sessions and Embient events, but the code may be adapted for other live harmony generation setups.
 
+![EUB Changes GUI Concept](docs/assets/1x/GUI_Concept.png)
+
 ## Musical Output Change Notice
 
 - Older builds expanded each chord symbol independently with fixed mappings (for example m7 -> m6/9).

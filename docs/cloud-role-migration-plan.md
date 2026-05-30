@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-There is a semantic naming conflict between the legacy timeline renderer and the target architecture.
+legacy timeline renderer と target architecture の間に、semantic naming conflict があります。
 
 Current target architecture:
 
@@ -12,16 +12,16 @@ Current target architecture:
 
 ## 1. Current Legacy Behavior
 
-The existing legacy renderer `render_timeline()` emits the context-aware six-voice layer as:
+現行の legacy renderer `render_timeline()` は、context-aware six-voice layer を次の naming で出力します。
 
 - `role="chord"`
 - `voice_id="chord_voice_1" ... "chord_voice_6"`
 
-This is legacy naming. Semantically, these notes correspond to the old Cloud-like behavior, not the new Chord Engine output.
+これは legacy naming です。semantic 的には、新しい Chord Engine output ではなく、旧来の Cloud-like behavior に相当します。
 
 ## 2. Target Behavior
 
-Future timeline semantics should be:
+将来的な timeline semantics は次を想定します。
 
 - Cloud:
   - `role="cloud"`
@@ -35,18 +35,18 @@ Future timeline semantics should be:
 
 ## 3. Why Immediate Migration Is Risky
 
-Immediate renaming in `render_timeline()` is risky because existing behavior may be implicitly depended on by:
+`render_timeline()` で即時リネームすると、既存挙動への暗黙依存を壊すリスクがあります。主な依存先は以下です。
 
 - tests and serialized fixtures
 - exporters and downstream adapters
 - MIDI and Digitone-related planning logic
 - role/voice-id based mapping code
 
-A direct rename without compatibility staging can silently change outputs.
+compatibility staging なしの直接リネームは、気づきにくい output change を引き起こす可能性があります。
 
 ## 4. Recommended Staged Migration
 
-Recommended sequence:
+推奨シーケンスは次のとおりです。
 
 - Phase 3D: document and test current contracts
 - Phase 3E: add optional profile flag or new renderer entrypoint for cloud role naming
@@ -56,10 +56,10 @@ Recommended sequence:
 
 ## 5. Export Implications
 
-- Generic MIDI export may tolerate role-name changes if it only consumes note events.
-- Digitone export and bundle planning are more likely to depend on role/voice mappings.
-- Track 8 Chord export should not rely on legacy timeline `role="chord"` events.
-- Track 8 Chord export should consume `RenderedArrangement.chord` directly because it preserves grouping, per-note velocity, length mode, and diagnostics.
+- Generic MIDI export は note event のみを消費している場合、role-name change に耐えられる可能性があります。
+- Digitone export と bundle planning は role/voice mapping への依存が高い可能性があります。
+- Track 8 Chord export は legacy timeline の `role="chord"` event に依存すべきではありません。
+- Track 8 Chord export は grouping、per-note velocity、length mode、diagnostics を保持する `RenderedArrangement.chord` を直接消費すべきです。
 
 ## 6. Contract Table
 

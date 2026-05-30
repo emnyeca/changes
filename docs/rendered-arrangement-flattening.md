@@ -2,41 +2,41 @@
 
 ## Why This Adapter Exists
 
-The rendering pipeline now has a structured, layer-aware intermediate model:
+rendering pipeline には現在、structured かつ layer-aware な intermediate model があります。
 
 SongModel -> RenderedArrangement
 
-Most existing exporters currently depend on the flat event model:
+既存 exporter の多くは flat event model に依存しています。
 
 RenderedTimeline
 
-Phase 3C adds an explicit adapter so these two models can coexist safely:
+Phase 3C では、この 2 つの model を安全に共存させるため explicit adapter を追加します。
 
 RenderedArrangement -> RenderedTimeline
 
 ## Model Roles
 
-- RenderedArrangement: structured representation grouped by harmony occurrence and layer (cloud/chord/bass).
-- RenderedTimeline: flat sequence of note events for compatibility with existing export paths.
+- RenderedArrangement: harmony occurrence と layer（cloud/chord/bass）で group 化された structured representation
+- RenderedTimeline: 既存 export path 互換のための flat note event sequence
 
 ## Scope of This Phase
 
-This phase adds only a structural flatten adapter:
+このフェーズで追加するのは structural flatten adapter のみです。
 
 - changes.rendering.arrangement_flattener.flatten_arrangement_to_timeline
 
-It does not replace the existing timeline renderer.
-It does not change MIDI export, Digitone export, bundle planning, or UI behavior.
+既存 timeline renderer は置き換えません。
+MIDI export、Digitone export、bundle planning、UI behavior は変更しません。
 
 ## Flatten Semantics
 
-For each RenderedHarmonyOccurrence:
+各 RenderedHarmonyOccurrence について次を適用します。
 
 - Cloud notes map to role=cloud events.
 - Chord notes map to role=chord events.
 - Bass note maps to one role=bass event.
 
-Each generated event preserves:
+生成される各 event は次を保持します。
 
 - source_harmony_id
 - onset_quarters
@@ -45,7 +45,7 @@ Each generated event preserves:
 
 Events are emitted with retrigger=True.
 
-Deterministic sorting is applied by:
+deterministic sorting は次の順序で適用します。
 
 1. onset_quarters
 2. role order (cloud, chord, bass, unknown)
@@ -54,16 +54,16 @@ Deterministic sorting is applied by:
 
 ## Current Limitation
 
-RenderedTimeline does not currently carry the full per-note and per-layer payload from RenderedArrangement, including:
+RenderedTimeline は現時点で RenderedArrangement の per-note / per-layer payload 全体を保持しません。例:
 
 - velocity
 - length_mode
 - diagnostics
 - grouping metadata
 
-That metadata remains available in RenderedArrangement and is intentionally preserved there for later phases.
+これらの metadata は RenderedArrangement 側に保持され、後続フェーズで利用する前提です。
 
 ## Forward Compatibility
 
-- Future Track 8 export should prefer consuming RenderedArrangement directly because chord grouping and per-note policy data are preserved there.
-- Generic MIDI export can continue to consume RenderedTimeline via flattening, or move to richer models in later phases.
+- 将来の Track 8 export は chord grouping と per-note policy data が保持される RenderedArrangement の直接利用を優先すべきです。
+- Generic MIDI export は flattening 経由で RenderedTimeline を継続利用するか、後続フェーズで richer model へ移行できます。

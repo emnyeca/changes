@@ -1,38 +1,38 @@
 # Rendered Arrangement Model
 
-This document introduces `RenderedArrangement`, a structured intermediate representation for the Changes engine. Unlike the existing `RenderedTimeline`, which is a flat list of note events, a rendered arrangement is organised per harmony occurrence and groups the outputs of different rendering engines into layers.
+この文書では、Changes engine の構造化中間表現 `RenderedArrangement` を説明します。既存の `RenderedTimeline` は flat な note event 列ですが、RenderedArrangement は harmony occurrence 単位で整理され、複数 rendering engine の出力を layer ごとに保持します。
 
 ## Motivation
 
-The Changes engine now has three independent rendering engines: Cloud (context‑aware moving voices), Chord (symbol‑faithful six‑note chords) and Bass (root/slash bass). Flattening their outputs prematurely loses the relationship between notes that belong to the same chord trigger or harmony occurrence. In particular, the Track 8 export workflow needs to know that six notes belong to one chord event.
+Changes engine には Cloud（context-aware moving voices）、Chord（symbol-faithful six-note chord）、Bass（root/slash bass）の 3 つの独立 rendering engine があります。これらの出力を早い段階で flat 化すると、同じ chord trigger / harmony occurrence に属する note の関係が失われます。特に Track 8 export workflow では、6 note が 1 chord event に属することを保持する必要があります。
 
 ## Structure
 
-A rendered arrangement consists of a collection of `RenderedHarmonyOccurrence` objects. Each harmony occurrence carries:
+rendered arrangement は `RenderedHarmonyOccurrence` の集合で構成されます。各 harmony occurrence は次を持ちます。
 
 - The identifier of the source harmony from the song model.
 - The chord symbol and timing (onset and duration) as `Fraction` values in quarter notes.
 - Optional `RenderedCloudLayer`, `RenderedChordLayer` and `RenderedBassLayer` objects.
 - Optional diagnostic strings.
 
-Each layer groups notes from the corresponding engine:
+各 layer では対応する engine の note を group 化します。
 
-- **RenderedCloudLayer**: up to six moving voices from the Cloud engine, including lane identifiers (`cloud_voice_1`, etc.) and per‑note diagnostics.
-- **RenderedChordLayer**: the six notes produced by the chord engine, along with their pitch classes, stacked and realised MIDI values, velocity profile and length mode. These values come from `ChordRealizationResult` and are preserved for later Track 8 rendering.
-- **RenderedBassLayer**: a single bass note, its pitch class and optional diagnostics.
+- **RenderedCloudLayer**: Cloud engine の最大 6 moving voices。lane identifier（`cloud_voice_1` など）と per-note diagnostics を含みます。
+- **RenderedChordLayer**: chord engine が生成した 6 note。pitch class、stacked/realized MIDI value、velocity profile、length mode を保持します。これらは `ChordRealizationResult` 由来で、後続の Track 8 rendering に維持されます。
+- **RenderedBassLayer**: 単一 bass note、その pitch class、optional diagnostics。
 
-All note objects are instances of `RenderedLayerNote` and carry only stable attributes: `note_midi`, optional `velocity`, optional `lane_id`, optional `degree_label` and optional diagnostics. Fractions are used for temporal values to preserve exact durations.
+すべての note object は `RenderedLayerNote` で表され、`note_midi`、optional `velocity`、optional `lane_id`、optional `degree_label`、optional diagnostics という stable attribute のみを持ちます。時間値は正確な duration 保持のため Fraction を使用します。
 
 ## Comparison with `RenderedTimeline`
 
-`RenderedTimeline` is still used to flatten musical data into per‑note events for exporting to MIDI, the Digitone or other synthesizers. It does not encode group or engine information; it simply assigns each note a voice and role. By contrast, `RenderedArrangement` preserves higher‑level structure:
+`RenderedTimeline` は MIDI / Digitone / その他 synthesizer への export のために、音楽データを per-note event へ flat 化する用途で引き続き使います。group 情報や engine 情報は持たず、各 note に voice と role を割り当てるだけです。対して `RenderedArrangement` は上位構造を保持します。
 
 - Notes belonging to the same chord trigger stay together in the chord layer.
 - Cloud and chord outputs are kept separate, avoiding confusion over the meaning of `role="chord"` in the existing timeline.
 - Future exporters and renderers can decide how to handle each layer appropriately without guessing.
 
-The arrangement model is not a MIDI or Digitone file. It is an intermediate representation that can be converted to a `RenderedTimeline` or directly to a hardware-specific format in later phases.
+arrangement model は MIDI file や Digitone file そのものではありません。後続フェーズで `RenderedTimeline` または hardware-specific format に変換するための intermediate representation です。
 
 ## Future phases
 
-Phase 3B will implement an arrangement renderer that builds a `RenderedArrangement` from a `SongModel` and the outputs of the Cloud, Chord and Bass engines. Phase 3C will provide functions to flatten a rendered arrangement into a `RenderedTimeline` or other event-specific representations. Phase 4 will handle the Track 8/Digitone export, using the grouping information preserved in the chord layer. The existing renderer and export modules remain unchanged in Phase 3A.
+Phase 3B では `SongModel` と Cloud/Chord/Bass engine 出力から `RenderedArrangement` を構築する arrangement renderer を実装します。Phase 3C では rendered arrangement を `RenderedTimeline` や event-specific representation に変換する関数を提供します。Phase 4 では chord layer に保持された grouping 情報を利用して Track 8 / Digitone export を扱います。Phase 3A では既存 renderer / export module は変更しません。

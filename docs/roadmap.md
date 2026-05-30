@@ -1,29 +1,29 @@
 # Roadmap
 
-This roadmap outlines the planned development stages for Changes. Dates are estimates and may shift depending on testing and feedback.
+この roadmap は Changes の開発ステージ計画を示します。日付は目安であり、testing と feedback に応じて変更される可能性があります。
 
 ## Phase 1: Core Engine (Q2 2026)
-- Build a chord parser to read progressions from common formats (YAML, iRealPro exports).
-- Implement voicing rules to expand chords into six-note textures with tensions.
-- Create a voice-leading module to minimize motion between voicings.
-- Provide a command-line interface to generate MIDI files or send real-time MIDI to Digitone II.
+- common format（YAML、iRealPro export）から progression を読む chord parser を構築する。
+- chord を tension 付き six-note texture に展開する voicing rule を実装する。
+- voicing 間の motion を最小化する voice-leading module を実装する。
+- MIDI file 生成または Digitone II への realtime MIDI 送信を行う command-line interface を提供する。
 
 ## Phase 2: Performance Integration (Q3 2026)
-- Add a high-tempo recording utility to automate the record-to-Digitone II workflow.
-- Develop a quick-selection script or minimal GUI for choosing songs and exporting voicings.
-- Offer preset templates for different song forms (blues, rhythm changes, ballads).
-- Include track assignment profiles for various performance setups.
+- record-to-Digitone II workflow を自動化する high-tempo recording utility を追加する。
+- 曲選択と voicing export のための quick-selection script または minimal GUI を開発する。
+- blues、rhythm changes、ballad など song form 別の preset template を用意する。
+- performance setup 別の track assignment profile を用意する。
 
 ## Phase 3: Extended Features (Q4 2026)
-- Introduce user-configurable voicing preferences and tension sets.
-- Support additional synthesizers and samplers via multi-port MIDI.
-- Integrate effects automation such as dynamic filter sweeps or LFOs into generated sequences.
-- Add a library of example progressions with curated voicings.
+- user-configurable な voicing preference と tension set を導入する。
+- multi-port MIDI により追加の synthesizer / sampler をサポートする。
+- dynamic filter sweep や LFO などの effects automation を generated sequence に統合する。
+- curated voicing 付きの example progression library を追加する。
 
 ## Phase 4: Polishing and Community (2027)
-- Improve documentation and tutorials, including video demonstrations.
-- Provide integration with DAWs and plugin formats.
-- Gather feedback from performers and incorporate feature requests.
-- Explore live-coding or generative variations for extended improvisation.
+- video demonstration を含む documentation / tutorial を改善する。
+- DAW や plugin format との integration を提供する。
+- 演奏者の feedback を取り込み、feature request を反映する。
+- 拡張 improvisation に向けた live-coding / generative variation を検討する。
 
-Contributions from the community are welcome at each stage. Please feel free to open issues or pull requests as you experiment with the toolkit.
+各ステージで community からの contribution を歓迎します。toolkit を試しながら issue や pull request を送ってください。

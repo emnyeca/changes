@@ -12,7 +12,11 @@ Only the II-V-I fixture has been manually validated on Digitone II.
 
 ### SongModel coverage is limited
 
-The current workflow is validated primarily against the demo II-V-I input and related Track 8 tests.
+Broader software fixtures now include multi-bar and multi-section examples.
+
+Hardware validation is still limited to the II-V-I fixture.
+
+The current workflow still does not imply that all SongModel inputs are supported.
 
 ### Manifest validation is metadata-level
 

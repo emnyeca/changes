@@ -16,6 +16,8 @@ from changes.models.song_model_yaml import load_song_model_yaml
 
 
 EXAMPLE_PATH = Path("examples/song_models/demo_ii_v_i.changes.yaml")
+MULTIBAR_PATH = Path("examples/song_models/demo_multibar_turnaround.changes.yaml")
+MULTISECTION_PATH = Path("examples/song_models/demo_multisection_form.changes.yaml")
 
 
 def test_multichord_example_file_loads():
@@ -140,3 +142,45 @@ def test_manifest_includes_multichord_counts(tmp_path: Path):
 
     assert chord_count == 3
     assert row_count > 6
+
+
+@pytest.mark.parametrize(
+    ("fixture_path", "expected_title", "expected_chord_events", "expected_note_rows"),
+    [
+        (MULTIBAR_PATH, "Demo Multibar Turnaround", 4, 24),
+        (MULTISECTION_PATH, "Demo Multisection Form", 8, 48),
+    ],
+)
+def test_broader_songmodel_fixtures_export_and_manifest_counts(
+    fixture_path: Path,
+    expected_title: str,
+    expected_chord_events: int,
+    expected_note_rows: int,
+    tmp_path: Path,
+):
+    song = load_song_model_yaml(fixture_path)
+
+    assert song.title == expected_title
+
+    paths = export_track8_artifacts_from_song(
+        song,
+        tmp_path,
+        name=song.title,
+        include_sysex=False,
+        overwrite=True,
+    )
+
+    payload = yaml.safe_load(paths.events_yaml_path.read_text(encoding="utf-8"))
+    assert payload["name"] == expected_title
+    assert len(payload["events"]) == expected_note_rows
+
+    text = paths.manifest_path.read_text(encoding="utf-8")
+    lines = [line.strip() for line in text.splitlines()]
+    chord_line = next(line for line in lines if line.startswith("- Track 8 chord event count:"))
+    row_line = next(line for line in lines if line.startswith("- Track 8 note row count:"))
+
+    chord_count = int(chord_line.split(":", 1)[1].strip())
+    row_count = int(row_line.split(":", 1)[1].strip())
+
+    assert chord_count == expected_chord_events
+    assert row_count == expected_note_rows

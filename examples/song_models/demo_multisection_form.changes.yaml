@@ -1,0 +1,78 @@
+version: 1
+type: changes.song
+title: Demo Multisection Form
+working_key: F
+performance_tempo: 120
+measures:
+  - number: 1
+    section_id: A
+    meter: 4/4
+    absolute_start_quarters: 0
+    harmony:
+      - id: a1
+        symbol: Fmaj7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 2
+    section_id: A
+    meter: 4/4
+    absolute_start_quarters: 4
+    harmony:
+      - id: a2
+        symbol: Gm7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 3
+    section_id: A
+    meter: 4/4
+    absolute_start_quarters: 8
+    harmony:
+      - id: a3
+        symbol: C7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 4
+    section_id: A
+    meter: 4/4
+    absolute_start_quarters: 12
+    harmony:
+      - id: a4
+        symbol: Fmaj7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 5
+    section_id: B
+    meter: 4/4
+    absolute_start_quarters: 16
+    harmony:
+      - id: b1
+        symbol: Am7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 6
+    section_id: B
+    meter: 4/4
+    absolute_start_quarters: 20
+    harmony:
+      - id: b2
+        symbol: D7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 7
+    section_id: B
+    meter: 4/4
+    absolute_start_quarters: 24
+    harmony:
+      - id: b3
+        symbol: Gm7
+        offset_quarters: 0
+        duration_quarters: 4
+  - number: 8
+    section_id: B
+    meter: 4/4
+    absolute_start_quarters: 28
+    harmony:
+      - id: b4
+        symbol: C7
+        offset_quarters: 0
+        duration_quarters: 4

@@ -1,0 +1,32 @@
+version: 1
+type: changes.song
+title: Demo Multibar Turnaround
+working_key: C
+performance_tempo: 120
+measures:
+  - number: 1
+    section_id: A
+    meter: 2/4
+    absolute_start_quarters: 0
+    harmony:
+      - id: h1
+        symbol: Cmaj7
+        offset_quarters: 0
+        duration_quarters: 1
+      - id: h2
+        symbol: A7
+        offset_quarters: 1
+        duration_quarters: 1
+  - number: 2
+    section_id: A
+    meter: 2/4
+    absolute_start_quarters: 2
+    harmony:
+      - id: h3
+        symbol: Dm7
+        offset_quarters: 0
+        duration_quarters: 1
+      - id: h4
+        symbol: G7
+        offset_quarters: 1
+        duration_quarters: 1

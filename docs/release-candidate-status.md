@@ -39,11 +39,14 @@ SongModel YAML
 - [x] mido remains optional.
 - [x] Export does not send.
 - [x] Check does not send.
-- [ ] Broader SongModel coverage.
+- [x] Broader SongModel software fixture coverage.
 - [ ] Multiple hardware/device validation.
 - [ ] Full Track 8 parameter mapping validation.
 - [ ] Public-facing installer/app packaging.
 - [ ] GUI workflow.
+
+Additional software fixtures are currently validated through export/check/dry-run only.
+Hardware validation remains limited to the first II-V-I fixture.
 
 ## Release-candidate meaning
 

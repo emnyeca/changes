@@ -76,6 +76,17 @@ Current validated fixture:
 - Cmaj7 at step9
 - validated on Digitone II firmware 1.10D
 
+## Additional software fixtures
+
+Additional SongModel fixtures are available for software validation and regression coverage:
+
+- `examples/song_models/demo_multibar_turnaround.changes.yaml`
+- `examples/song_models/demo_multisection_form.changes.yaml`
+
+Use the II-V-I fixture for the known hardware-validated path.
+
+Use broader fixtures for export/check/dry-run software validation only.
+
 ## Requirements
 
 For export/check/dry-run:

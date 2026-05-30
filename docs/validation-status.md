@@ -27,6 +27,12 @@ Covered by tests:
 - dry-run send
 - guarded real-send safety checks using fake backend
 - CLI help / dispatch
+- broader SongModel fixture coverage:
+  - `examples/song_models/demo_multibar_turnaround.changes.yaml`
+  - `examples/song_models/demo_multisection_form.changes.yaml`
+- broader fixtures validated through export -> check --manifest -> dry-run (software path only)
+
+Additional software fixtures now cover broader SongModel shapes, including multi-bar and multi-section examples. These fixtures are validated through export, manifest-aware check, and dry-run only. They have not yet been manually validated on Digitone II hardware.
 
 ## Not yet validated
 

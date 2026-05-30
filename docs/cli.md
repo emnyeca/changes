@@ -81,6 +81,11 @@ Notes:
 - does not require `mido`
 - does not send
 
+For broader software fixture coverage, run the same export/check/dry-run flow with:
+
+- `examples/song_models/demo_multibar_turnaround.changes.yaml`
+- `examples/song_models/demo_multisection_form.changes.yaml`
+
 ## Legacy commands
 
 Generic MIDI export:

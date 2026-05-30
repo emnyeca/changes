@@ -15,13 +15,13 @@ Implemented:
 - dry-run transport protocol
 - dry-run transport implementation
 - no-hardware-send tests
+- dry-run send CLI for validating .syx bytes against a fake output port
 
 Not implemented:
 
 - real MIDI backend
 - MIDI port discovery
 - hardware send
-- CLI send command
 - export `--send`
 - retry logic
 - device identity confirmation
@@ -57,12 +57,15 @@ Sending must remain explicit.
 
 Do not send from export by default.
 
+Phase 6B requires `--dry-run` for the send CLI and refuses hardware send.
+
 Preferred future CLI shape:
 
 ```bash
 changes send digitone-syx \
   --syx out/digitone-track8/changes_track8_export.syx \
-  --port "Digitone II"
+  --port "Digitone II" \
+  --dry-run
 ```
 
 Avoid implicit send during:
@@ -76,6 +79,8 @@ unless a future explicit `--send` design is separately reviewed.
 ## Dry-run transport
 
 Phase 6A provides `DryRunSysexTransport`.
+
+Phase 6B adds a dry-run send CLI that reads `.syx` bytes from disk and routes them through the fake transport.
 
 It validates:
 
@@ -96,6 +101,8 @@ Candidate backends:
 - python-rtmidi
 
 Backend choice is not made in Phase 6A.
+
+Phase 6B recommends `mido` with `python-rtmidi` backend first, unless Windows install or SysEx behavior proves unreliable.
 
 Future implementation must include:
 
@@ -118,7 +125,7 @@ Transport support will consume `.syx` files or bytes after export.
 
 Recommend:
 
-Phase 6B: MIDI backend selection and fake-backend send command design
+Phase 6C: real MIDI backend selection after dry-run CLI review
 
 or, if preferred:
 

@@ -11,6 +11,7 @@ from .digitone.track8_export_api import (
     DEFAULT_TRACK8_EXPORT_BASENAME,
     export_track8_artifacts_from_song,
 )
+from .digitone.transport import DryRunSysexTransport, MidiPortInfo
 from .models.song_model_yaml import load_song_model_yaml
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
@@ -24,6 +25,36 @@ from .pipeline_digitone import (
 from .voicing import progression_to_voicings
 from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
+
+
+def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser(description="Dry-run validate a Digitone II SysEx file")
+    parser.add_argument("--syx", required=True, help="Path to a SysEx file")
+    parser.add_argument("--port", required=True, help="MIDI output port name to validate")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Required in Phase 6B; never send hardware",
+    )
+    args = parser.parse_args(argv)
+
+    if not args.dry_run:
+        raise SystemExit("Digitone SysEx send failed: --dry-run is required in Phase 6B")
+
+    syx_path = Path(args.syx)
+
+    try:
+        syx_bytes = syx_path.read_bytes()
+        transport = DryRunSysexTransport([MidiPortInfo(name=args.port)])
+        result = transport.send_sysex(syx_bytes, port_name=args.port, dry_run=True)
+    except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
+        raise SystemExit(f"SysEx send failed: {exc}") from exc
+
+    print("Dry-run SysEx send validated:")
+    print(f"  syx: {syx_path}")
+    print(f"  port: {result.port_name}")
+    print(f"  bytes: {result.byte_count}")
+    print("  hardware_send: no")
 
 
 def _run_track8_export_cli(argv: list[str]) -> None:
@@ -90,6 +121,10 @@ def _run_track8_export_cli(argv: list[str]) -> None:
 
 def main() -> None:
     """Run the Changes CLI."""
+    if len(sys.argv) > 2 and sys.argv[1] == "send" and sys.argv[2] == "digitone-syx":
+        _run_digitone_sysex_send_cli(sys.argv[3:])
+        return
+
     if len(sys.argv) > 2 and sys.argv[1] == "export" and sys.argv[2] == "digitone-track8":
         _run_track8_export_cli(sys.argv[3:])
         return

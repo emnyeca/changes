@@ -79,6 +79,10 @@ Real MIDI send is still not implemented.
 
 The Track 8 CLI remains artifact export only.
 
+Phase 6B adds a separate dry-run `changes send digitone-syx` command for validating existing `.syx` files.
+
+Export still does not send implicitly.
+
 ## User-facing readiness decision
 Status:
 

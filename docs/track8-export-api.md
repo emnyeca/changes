@@ -63,6 +63,8 @@ The Track 8 export API and CLI still do not send MIDI.
 
 See docs/midi-send-transport-boundary.md.
 
+Export continues to write `.syx` artifacts only; dry-run send validation lives in the separate send CLI.
+
 ## 7. Local example
 Use an in-memory SongModel (see tests/test_track8_export_api.py for concrete SongModel construction):
 

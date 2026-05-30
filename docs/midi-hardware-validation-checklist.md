@@ -29,6 +29,8 @@ That first validation now records a passed guarded real-send result for the II-V
 - Confirm port listing works
 - Confirm dry-run send works first
 - Confirm `.syx` file begins with `0xF0` and ends with `0xF7`
+- Prefer manifest-aware check first:
+  - `changes check digitone-syx --syx <file.syx> --manifest <file_manifest.md>`
 
 ## Manual validation steps
 

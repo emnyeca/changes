@@ -16,6 +16,10 @@ Recommended validation command for retained `.syx` artifacts:
 
 - `changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx`
 
+Recommended manifest-aware validation command for retained artifact sets:
+
+- `changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx --manifest out/digitone-track8/changes_track8_export_manifest.md`
+
 These artifacts are not the source of truth.
 
 Source of truth:

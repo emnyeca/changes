@@ -135,5 +135,6 @@ Current docs now describe implemented CLI behavior:
 - docs/cli.md
 - docs/generated-artifacts-policy.md
 - docs/index.md
+- docs/manifest-aware-validation.md
 
 Future CLI architecture cleanup may move early dispatch logic to full argparse subparsers, but this phase intentionally keeps the current small dispatch shape.

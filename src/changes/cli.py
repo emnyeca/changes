@@ -18,6 +18,7 @@ from .digitone.transport import (
     MidoMidiBackend,
 )
 from .digitone.sysex_file import read_and_validate_sysex_file
+from .digitone.manifest_check import parse_track8_manifest, validate_sysex_against_manifest
 from .models.song_model_yaml import load_song_model_yaml
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
@@ -112,6 +113,10 @@ def _build_digitone_sysex_check_parser() -> argparse.ArgumentParser:
         description="Validate a Digitone .syx file envelope without MIDI send or hardware access"
     )
     parser.add_argument("--syx", required=True, help="Path to a SysEx file")
+    parser.add_argument("--manifest", help="Optional Track 8 export manifest to cross-check .syx metadata")
+    parser.add_argument("--expect-source-title", help="Optional expected source title for manifest validation")
+    parser.add_argument("--expect-chord-events", type=int, help="Optional expected Track 8 chord event count")
+    parser.add_argument("--expect-note-rows", type=int, help="Optional expected Track 8 note row count")
     return parser
 
 
@@ -131,6 +136,40 @@ def _run_digitone_sysex_check_cli(argv: list[str]) -> None:
     print(f"  first_byte: 0x{info.first_byte:02x}")
     print(f"  last_byte: 0x{info.last_byte:02x}")
     print("  valid: yes")
+
+    if not args.manifest:
+        return
+
+    manifest_path = Path(args.manifest)
+    try:
+        manifest = parse_track8_manifest(manifest_path)
+        result = validate_sysex_against_manifest(
+            syx_byte_count=info.byte_count,
+            manifest=manifest,
+            expected_source_title=args.expect_source_title,
+            expected_chord_event_count=args.expect_chord_events,
+            expected_note_row_count=args.expect_note_rows,
+        )
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        raise SystemExit(f"Manifest validation failed: {exc}") from exc
+
+    print("Manifest validation:")
+    print(f"  manifest: {manifest.path}")
+    print(f"  source_title: {result.source_title if result.source_title is not None else 'n/a'}")
+    print(
+        "  track8_chord_event_count: "
+        f"{result.track8_chord_event_count if result.track8_chord_event_count is not None else 'n/a'}"
+    )
+    print(
+        "  track8_note_row_count: "
+        f"{result.track8_note_row_count if result.track8_note_row_count is not None else 'n/a'}"
+    )
+    print(f"  sysex_size: {result.manifest_sysex_size if result.manifest_sysex_size is not None else 'n/a'}")
+    print("  manifest_match: yes")
+    if result.warnings:
+        print("  warnings:")
+        for warning in result.warnings:
+            print(f"    - {warning}")
 
 
 def _build_digitone_sysex_send_parser() -> argparse.ArgumentParser:

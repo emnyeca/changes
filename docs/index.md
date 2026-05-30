@@ -15,6 +15,7 @@
 - MIDI hardware validation checklist: `midi-hardware-validation-checklist.md`
 - First Digitone real-send validation: `hardware-validation/digitone-syx-real-send-first-validation.md`
 - Generated artifacts policy: `generated-artifacts-policy.md`
+- Manifest-aware validation: `manifest-aware-validation.md`
 
 ## Current notes
 

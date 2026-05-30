@@ -12,6 +12,7 @@ DOC_ENTRYPOINTS = [
     Path("docs/index.md"),
     Path("docs/cli.md"),
     Path("docs/generated-artifacts-policy.md"),
+    Path("docs/manifest-aware-validation.md"),
 ]
 
 

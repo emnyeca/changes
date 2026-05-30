@@ -143,6 +143,8 @@ See docs/real-send-workflow.md for the stabilized user-facing real-send workflow
 
 See docs/cli.md for the consolidated CLI reference and docs/generated-artifacts-policy.md for retained validation artifacts.
 
+See docs/manifest-aware-validation.md for optional pre-send `.syx` to manifest consistency checks.
+
 ## Recommended next phase
 
 Recommend:

@@ -62,9 +62,21 @@ Notes:
 changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx
 ```
 
+Manifest-aware example:
+
+```powershell
+changes check digitone-syx `
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --manifest out/digitone-track8/changes_track8_export_manifest.md `
+  --expect-source-title "Demo II V I" `
+  --expect-chord-events 3 `
+  --expect-note-rows 18
+```
+
 Notes:
 
 - validates file envelope only
+- optionally validates `.syx` byte count and expected values against Track 8 manifest
 - does not require `mido`
 - does not send
 

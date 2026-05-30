@@ -59,7 +59,12 @@ python -c "from pathlib import Path; b=Path('out/digitone-track8/changes_track8_
 Equivalent command using the CLI helper:
 
 ```powershell
-changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx
+changes check digitone-syx `
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --manifest out/digitone-track8/changes_track8_export_manifest.md `
+  --expect-source-title "Demo II V I" `
+  --expect-chord-events 3 `
+  --expect-note-rows 18
 ```
 
 ### 5. List ports
@@ -116,4 +121,5 @@ This workflow does not:
 - `docs/index.md`
 - `docs/cli.md`
 - `docs/e2e-user-workflow.md`
+- `docs/manifest-aware-validation.md`
 - `docs/generated-artifacts-policy.md`

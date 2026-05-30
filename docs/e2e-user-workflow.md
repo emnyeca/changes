@@ -4,7 +4,7 @@
 
 This document describes the practical end-to-end workflow:
 
-SongModel YAML -> Track 8 export -> SysEx check -> dry-run -> guarded real-send.
+SongModel YAML -> Track 8 export -> manifest-aware SysEx check -> dry-run -> guarded real-send.
 
 ## Safety
 
@@ -32,7 +32,11 @@ changes export digitone-track8 `
 
 ```powershell
 changes check digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --manifest out/digitone-track8/changes_track8_export_manifest.md `
+  --expect-source-title "Demo II V I" `
+  --expect-chord-events 3 `
+  --expect-note-rows 18
 ```
 
 ### 3. List ports
@@ -100,3 +104,5 @@ Stop before real-send if:
 - port name is ambiguous
 - `.syx` is not the expected file
 - important Digitone data is not backed up
+
+See docs/manifest-aware-validation.md for manifest-aware check details and warning behavior.

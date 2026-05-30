@@ -49,11 +49,11 @@ Captured from manual validation run:
 ```text
 Date: 2026-05-30
 OS: Windows (PowerShell)
-Python: not recorded
-changes commit: not recorded
+Python: 3.14.5
+changes commit: c40c3fd
 mido version: 1.3.3
 python-rtmidi version: 1.5.8
-Digitone II firmware: not recorded
+Digitone II firmware: 1.10D
 Connection: not recorded
 Port selected: Elektron Digitone II 2
 SYX source: out/digitone-track8/changes_track8_export.syx
@@ -208,5 +208,5 @@ Mark as failed if:
 Status: Performed
 Passed/Failed/Not performed: Passed (with follow-up)
 Summary: Guarded real-send succeeded on Digitone II. Pattern A01 and Track 8 Dm7 -> G7 -> Cmaj7 progression were confirmed with trigger positions at step1, step5, and step9.
-Follow-up: Verify LEN interpretation (1/4, 1/4, 1,2) and record the exact confirmed values.
+Follow-up: Verify LEN interpretation (1/4, 1/4, 1/2) and record the exact confirmed values.
 ```

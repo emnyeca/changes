@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 from changes import cli
@@ -31,6 +32,8 @@ def _write_compact_progression(path: Path) -> Path:
 
 
 def test_cli_generic_midi_backend_still_works(tmp_path: Path, monkeypatch):
+    pytest.importorskip("mido")
+
     input_path = _write_generic_progression(tmp_path / "input_generic.yaml")
     output_path = tmp_path / "out.mid"
 

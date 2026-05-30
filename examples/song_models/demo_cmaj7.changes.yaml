@@ -1,0 +1,15 @@
+version: 1
+type: changes.song
+title: Demo Cmaj7
+working_key: C
+performance_tempo: 120
+measures:
+  - number: 1
+    section_id: A
+    meter: 4/4
+    absolute_start_quarters: 0
+    harmony:
+      - id: h1
+        symbol: Cmaj7
+        offset_quarters: 0
+        duration_quarters: 4

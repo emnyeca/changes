@@ -99,3 +99,11 @@ It does not send MIDI.
 SysEx generation is enabled by default and requires digitone-syx-toolkit.
 
 Use --events-yaml-only to avoid the toolkit dependency.
+
+## SongModel YAML input
+
+Phase 5D adds SongModel YAML v1 as the planned input format for future --input support.
+
+Current developer CLI still only supports --demo cmaj7.
+
+--input will be added in a later phase.

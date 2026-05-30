@@ -10,7 +10,7 @@ It provides generic MIDI output and prepares Digitone II output through a Native
 
 The core concept is to:
 
-- Parse jazz chord progressions (for example from an iRealPro export).  
+- Parse jazz chord progressions (including MusicXML converted from the iRealPro app and MusicXML converted via `ireal-musicxml`).  
 - Expand each chord into a six‑note voicing such as a 6/9, 9, 13, sus or altered variant with added tensions.  
 - Voice‑lead between chords with minimal melodic motion.  
 - Export Generic MIDI file or send Generic realtime MIDI for DAW/soft-synth/hardware checks.

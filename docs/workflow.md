@@ -3,7 +3,7 @@
 This document outlines a practical workflow for using Changes in a live machine-jazz session.
 
 1. **Prepare a Chord Progression**  
-   Export or write your progression in a supported format (for example YAML or JSON). For jazz standards, you can export from iRealPro and convert it if needed.
+   Export or write your progression in a supported format (for example YAML or JSON). For jazz standards, MusicXML from both sources is supported: iRealPro app-converted data and `ireal-musicxml`-converted data.
 
 2. **Run the Harmony Generator**  
    Use the command-line tool or script to parse the progression and produce a six-voice voicing sequence. The generator will:

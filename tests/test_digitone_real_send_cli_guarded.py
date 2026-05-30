@@ -46,7 +46,7 @@ def test_list_ports_missing_backend_shows_install_hint(monkeypatch: pytest.Monke
 
 
 def test_missing_mode_fails(monkeypatch: pytest.MonkeyPatch):
-    with pytest.raises(SystemExit, match="choose one of --dry-run, --real-send, or --list-ports"):
+    with pytest.raises(SystemExit, match="choose exactly one of --dry-run, --real-send, or --list-ports"):
         _run_send_cli(monkeypatch, [])
 
 

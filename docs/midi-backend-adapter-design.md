@@ -6,6 +6,8 @@ This document defines the backend abstraction for future real MIDI SysEx sending
 
 Phase 6E adds guarded real-send CLI integration but keeps explicit confirmation and optional dependencies.
 
+The first manual validation passed for the guarded II-V-I real-send workflow on Digitone II.
+
 ## Layers
 
 ### Export layer
@@ -70,6 +72,13 @@ Cons:
 Prefer `mido` with `python-rtmidi` backend first, unless Windows installation or SysEx sending proves unreliable.
 
 Do not make either dependency mandatory for normal install or normal tests.
+
+Use `importlib.metadata` for version checks:
+
+```powershell
+python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
+python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
+```
 
 ## Optional dependency policy
 

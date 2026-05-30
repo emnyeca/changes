@@ -4,6 +4,8 @@
 
 This document describes the guarded real-send path for `.syx` files.
 
+The first manual hardware validation for the II-V-I fixture has passed on Digitone II.
+
 ## Commands
 
 Dry run:
@@ -47,6 +49,13 @@ Real send requires optional MIDI dependencies:
 pip install .[midi]
 ```
 
+Recommended version checks:
+
+```powershell
+python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
+python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
+```
+
 ## Risks
 
 SysEx may write pattern/device data.
@@ -64,3 +73,5 @@ Back up important Digitone II data before testing.
 7. Record hardware validation result.
 
 Use docs/hardware-validation/digitone-syx-real-send-first-validation.md for the first manual validation checklist and status log.
+
+Use docs/real-send-workflow.md for the stabilized user-facing workflow.

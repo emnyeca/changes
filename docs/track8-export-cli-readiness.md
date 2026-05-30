@@ -89,6 +89,8 @@ Phase 6E adds guarded real-send and port listing to the separate send CLI, but T
 
 End-to-end user readiness for hardware operations still depends on manual hardware validation records.
 
+The first manual guarded real-send validation passed for the II-V-I fixture, while broader song coverage and UI/application workflow remain incomplete.
+
 ## User-facing readiness decision
 Status:
 
@@ -104,31 +106,23 @@ Ready:
 - product-like Track 8 fixture passed hardware validation
 - toolkit integration CI covers SysEx path
 - MIDI send is not implicit
+- guarded real-send succeeded for the validated II-V-I fixture on Digitone II
 
 Not yet complete:
 
 - no GUI
 - no broad project/editor serialization
-- no MIDI send flow
+- no broad validated MIDI send coverage beyond the first II-V-I fixture
 - limited but expanded coverage: single Cmaj7 and one-measure II-V-I examples
 - no full user documentation/tutorial yet
 
-## Recommended next phase
-Recommend one of:
+## Recommended next step
 
-Phase 5G: Multi-chord SongModel YAML export coverage
-
-or:
-
-Phase 6A: MIDI send transport design
-
-Recommendation:
-
-Prefer Phase 5G before MIDI send.
+Focus on broader export coverage, editor/application workflow, and additional hardware validation records.
 
 Reason:
 
-Before sending directly to hardware, the export path should be validated with more than a single Cmaj7 fixture.
+The first guarded real-send fixture is validated, but broader song coverage and user-facing workflow remain incomplete.
 
 ## Documentation cleanup
 

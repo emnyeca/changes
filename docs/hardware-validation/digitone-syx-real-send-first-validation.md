@@ -67,6 +67,13 @@ SYX source: out/digitone-track8/changes_track8_export.syx
 python -m pip install -e ".[midi]"
 ```
 
+### 1b. Confirm installed MIDI backend versions
+
+```powershell
+python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
+python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
+```
+
 ### 2. Confirm CLI is available
 
 ```powershell
@@ -177,7 +184,7 @@ Real-send result: success, hardware_send: yes, warning: hardware was written
 Digitone II observed behavior: いい感じ
 Pattern location: A01
 Track 8 behavior: Dm7 G7 Cmaj7 progression confirmed; trigger positions are step1, step5, step9
-Issues: Confirm LEN interpretation (1/4, 1/4, 1,2) is correct.
+Issues: LEN note: previous `1,2` notation was a typo for `1/2`; no further LEN validation required for the first II-V-I fixture.
 ```
 
 ## Pass criteria
@@ -206,7 +213,7 @@ Mark as failed if:
 
 ```text
 Status: Performed
-Passed/Failed/Not performed: Passed (with follow-up)
+Passed/Failed/Not performed: Passed (LEN typo corrected)
 Summary: Guarded real-send succeeded on Digitone II. Pattern A01 and Track 8 Dm7 -> G7 -> Cmaj7 progression were confirmed with trigger positions at step1, step5, and step9.
-Follow-up: Verify LEN interpretation (1/4, 1/4, 1/2) and record the exact confirmed values.
+Follow-up: LEN note corrected for this fixture. Broader LEN mapping remains outside the scope of this first hardware validation.
 ```

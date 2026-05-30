@@ -35,7 +35,7 @@ def test_missing_dry_run_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(sys, "argv", ["changes", "send", "digitone-syx", "--syx", str(syx_path), "--port", "Digitone II"])
 
-    with pytest.raises(SystemExit, match="choose one of --dry-run, --real-send, or --list-ports"):
+    with pytest.raises(SystemExit, match="choose exactly one of --dry-run, --real-send, or --list-ports"):
         cli.main()
 
 

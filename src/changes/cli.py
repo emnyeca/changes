@@ -37,22 +37,41 @@ def _create_mido_backend() -> MidoMidiBackend:
 
 
 def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
-    parser = argparse.ArgumentParser(description="Validate or guarded-send a Digitone II SysEx file")
+    parser = argparse.ArgumentParser(
+        description=(
+            "List MIDI ports, validate a .syx file with dry-run, or perform an explicitly confirmed "
+            "Digitone II real-send"
+        )
+    )
     parser.add_argument("--syx", help="Path to a SysEx file")
     parser.add_argument("--port", help="MIDI output port name")
     mode_group = parser.add_mutually_exclusive_group(required=False)
-    mode_group.add_argument("--list-ports", action="store_true", help="List MIDI output ports via optional mido backend")
-    mode_group.add_argument("--dry-run", action="store_true", help="Validate SysEx and port without hardware write")
-    mode_group.add_argument("--real-send", action="store_true", help="Guarded real send mode")
+    mode_group.add_argument(
+        "--list-ports",
+        action="store_true",
+        help="List MIDI output ports via the optional mido backend; does not read .syx or send hardware",
+    )
+    mode_group.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Validate SysEx bytes and the selected port name without hardware write",
+    )
+    mode_group.add_argument(
+        "--real-send",
+        action="store_true",
+        help="Perform guarded real-send after explicit confirmation; writes to hardware",
+    )
     parser.add_argument(
         "--yes-i-understand-this-writes-to-hardware",
         action="store_true",
-        help="Required with --real-send",
+        help="Required with --real-send; acknowledges that hardware will be written",
     )
     args = parser.parse_args(argv)
 
     if not (args.list_ports or args.dry_run or args.real_send):
-        raise SystemExit("SysEx send failed: choose one of --dry-run, --real-send, or --list-ports")
+        raise SystemExit(
+            "SysEx send failed: choose exactly one of --dry-run, --real-send, or --list-ports"
+        )
 
     if args.list_ports:
         try:
@@ -83,7 +102,7 @@ def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
         else:
             if not args.yes_i_understand_this_writes_to_hardware:
                 raise RuntimeError(
-                    "--yes-i-understand-this-writes-to-hardware is required with --real-send"
+                    "Real-send requires --yes-i-understand-this-writes-to-hardware to confirm hardware write"
                 )
             sender = GuardedSysexSender(_create_mido_backend())
             result = sender.send_confirmed_sysex(

@@ -35,6 +35,8 @@ The command does not:
 
 Phase 6E adds guarded real-send and port listing in the same CLI command family, but this dry-run mode remains available and safe by default.
 
+The first manual real-send validation passed for the II-V-I fixture while keeping dry-run as the recommended first step.
+
 ## Why --dry-run is required
 
 Phase 6B intentionally prevents accidental hardware writes.
@@ -85,3 +87,5 @@ changes send digitone-syx \
 - hardware validation
 
 For guarded real-send behavior, see docs/digitone-syx-real-send-guarded-cli.md.
+
+For the practical end-to-end workflow, see docs/real-send-workflow.md.

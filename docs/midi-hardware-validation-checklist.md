@@ -4,9 +4,9 @@
 
 This checklist is for future manual validation of real SysEx send to Digitone II.
 
-Phase 6D does not perform hardware validation.
-
 For the first manual run preparation, see docs/hardware-validation/digitone-syx-real-send-first-validation.md.
+
+That first validation now records a passed guarded real-send result for the II-V-I fixture.
 
 ## Preconditions
 
@@ -23,6 +23,9 @@ For the first manual run preparation, see docs/hardware-validation/digitone-syx-
 - Install optional MIDI dependencies:
   - `pip install .[midi]`
   - or `pip install mido python-rtmidi`
+- Check versions with:
+  - `python -c "import importlib.metadata as md; print('mido', md.version('mido'))"`
+  - `python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"`
 - Confirm port listing works
 - Confirm dry-run send works first
 - Confirm `.syx` file begins with `0xF0` and ends with `0xF7`

@@ -20,6 +20,7 @@ Implemented:
 - no-hardware-send tests
 - dry-run send CLI for validating .syx bytes against a fake output port
 - guarded real-send CLI mode with explicit safety flags
+- first manual guarded real-send validation passed for the II-V-I fixture
 
 Not implemented:
 
@@ -134,9 +135,13 @@ The current Track 8 CLI does not send MIDI.
 
 Transport support will consume `.syx` files or bytes after export.
 
+Generated `.syx` artifacts may be kept temporarily for validation reproducibility.
+
 See docs/midi-hardware-validation-checklist.md for future manual validation flow once a reviewed real-send mode exists.
 
 Use docs/hardware-validation/digitone-syx-real-send-template.md to record manual hardware validation results.
+
+See docs/real-send-workflow.md for the stabilized user-facing real-send workflow.
 
 ## Recommended next phase
 

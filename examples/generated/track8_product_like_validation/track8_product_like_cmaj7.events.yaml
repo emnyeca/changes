@@ -1,0 +1,103 @@
+version: 1
+device: digitone2
+name: T8 Product Like Cmaj7
+pattern:
+  mode: per-track
+  tempo: 120.0
+  change: 'OFF'
+  reset: INF
+track_scale:
+  1:
+    length: 16
+    speed: 1/8
+  2:
+    length: 16
+    speed: 1/8
+  3:
+    length: 16
+    speed: 1/8
+  4:
+    length: 16
+    speed: 1/8
+  5:
+    length: 16
+    speed: 1/8
+  6:
+    length: 16
+    speed: 1/8
+  7:
+    length: 16
+    speed: 1/8
+  8:
+    length: 16
+    speed: 1/8
+  9:
+    length: 16
+    speed: '1'
+  10:
+    length: 16
+    speed: '1'
+  11:
+    length: 16
+    speed: '1'
+  12:
+    length: 16
+    speed: '1'
+  13:
+    length: 16
+    speed: '1'
+  14:
+    length: 16
+    speed: '1'
+  15:
+    length: 16
+    speed: '1'
+  16:
+    length: 16
+    speed: '1'
+track_defaults:
+  velocity:
+    1: 70
+    2: 70
+    3: 70
+    4: 50
+    5: 70
+    6: 50
+    7: 100
+events:
+- step: 1
+  track: 8
+  note: C4
+  velocity: 70
+  time: 0
+  length_code: '0x4E'
+- step: 1
+  track: 8
+  note: E4
+  velocity: 70
+  time: 0
+  length_code: '0x4E'
+- step: 1
+  track: 8
+  note: G4
+  velocity: 70
+  time: 0
+  length_code: '0x4E'
+- step: 1
+  track: 8
+  note: B4
+  velocity: 50
+  time: 0
+  length_code: '0x4E'
+- step: 1
+  track: 8
+  note: D5
+  velocity: 70
+  time: 0
+  length_code: '0x4E'
+- step: 1
+  track: 8
+  note: A5
+  velocity: 50
+  time: 0
+  length_code: '0x4E'

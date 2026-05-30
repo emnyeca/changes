@@ -56,7 +56,7 @@ def _build_top_level_help_parser() -> argparse.ArgumentParser:
         epilog=(
             "Modern commands:\n"
             "  export digitone-track8   Export Digitone II Track 8 artifacts\n"
-            "  check digitone-syx       Validate an existing .syx envelope without sending\n"
+            "  check digitone-syx       Validate an existing .syx envelope or manifest metadata without sending\n"
             "  send digitone-syx        List ports, dry-run, or guarded-send an existing .syx\n\n"
             "Legacy commands:\n"
             "  digitone-bundle          Build Digitone bundle artifacts from MusicXML\n"
@@ -105,7 +105,7 @@ def _print_check_group_help() -> None:
     parser.print_help()
     print()
     print("Available check commands:")
-    print("  digitone-syx   Validate an existing .syx file envelope and basic file info")
+    print("  digitone-syx   Validate an existing .syx file envelope and optional manifest metadata")
 
 
 def _build_digitone_sysex_check_parser() -> argparse.ArgumentParser:

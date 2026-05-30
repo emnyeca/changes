@@ -4,6 +4,8 @@
 
 The Track 8 export CLI is now usable as a practical developer/user-facing export command for SongModel YAML v1 input.
 
+Track 8 export CLI: RC-ready for the controlled II-V-I workflow.
+
 Current command:
 
 ```bash

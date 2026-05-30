@@ -4,6 +4,8 @@
 
 Guarded real-send has been manually validated on Digitone II.
 
+For the full export -> check -> dry-run -> real-send flow, see docs/e2e-user-workflow.md.
+
 Validated fixture:
 
 - `examples/song_models/demo_ii_v_i.changes.yaml`
@@ -123,3 +125,5 @@ This workflow does not:
 - `docs/e2e-user-workflow.md`
 - `docs/manifest-aware-validation.md`
 - `docs/generated-artifacts-policy.md`
+- `docs/release-candidate-status.md`
+- `docs/validation-status.md`

@@ -1,10 +1,10 @@
 # Generated Artifacts Policy
 
-Generated validation artifacts under `out/digitone-track8/` are currently kept for review and reproducibility during active development.
+Generated validation artifacts under `out/digitone-track8/` are currently kept for review and reproducibility during active release-candidate development.
 
 This is intentional for now.
 
-They may be removed or relocated later when the workflow stabilizes.
+They may be removed or relocated later when the workflow stabilizes beyond the current RC phase.
 
 Current retained artifacts:
 

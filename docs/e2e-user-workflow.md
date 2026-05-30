@@ -16,6 +16,8 @@ Dry-run does not send.
 
 Guarded real-send requires explicit confirmation.
 
+`mido` and `python-rtmidi` are only required for `changes send digitone-syx --list-ports` and guarded real-send.
+
 ## Workflow
 
 ### 1. Export
@@ -81,11 +83,15 @@ For export/check/dry-run:
 - normal development install
 - digitone-syx-toolkit if generating `.syx`
 
+These steps do not require `mido`.
+
 For port listing / real-send:
 
 ```powershell
 python -m pip install -e ".[midi]"
 ```
+
+This keeps check and dry-run usable in environments without optional MIDI backends.
 
 ## Version checks
 
@@ -106,3 +112,5 @@ Stop before real-send if:
 - important Digitone data is not backed up
 
 See docs/manifest-aware-validation.md for manifest-aware check details and warning behavior.
+
+See docs/release-candidate-status.md and docs/validation-status.md for current RC scope and validated fixture status.

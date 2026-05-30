@@ -77,6 +77,7 @@ Notes:
 
 - validates file envelope only
 - optionally validates `.syx` byte count and expected values against Track 8 manifest
+- manifest-aware flags: `--manifest`, `--expect-source-title`, `--expect-chord-events`, `--expect-note-rows`
 - does not require `mido`
 - does not send
 

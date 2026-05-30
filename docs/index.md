@@ -8,6 +8,12 @@
 - Digitone SysEx real-send workflow: `real-send-workflow.md`
 - CLI reference: `cli.md`
 
+## Release candidate
+
+- Workflow RC status: `release-candidate-status.md`
+- Validation status: `validation-status.md`
+- Known limitations: `known-limitations.md`
+
 ## Safety and validation
 
 - MIDI send transport boundary: `midi-send-transport-boundary.md`

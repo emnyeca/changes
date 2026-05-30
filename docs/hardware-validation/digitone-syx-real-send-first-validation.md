@@ -1,0 +1,212 @@
+# Digitone SysEx Real-send First Hardware Validation
+
+## Status
+
+Not performed yet.
+
+This document prepares the first manual hardware validation of guarded SysEx real-send to Digitone II.
+
+Do not change this status to passed unless actual hardware validation has been performed and reported.
+
+## Branch
+
+feature/digitone-real-send-hardware-validation-log
+
+## Validation target
+
+Guarded real-send command:
+
+```powershell
+changes send digitone-syx `
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --port "Digitone II" `
+  --real-send `
+  --yes-i-understand-this-writes-to-hardware
+```
+
+One-line form:
+
+```powershell
+changes send digitone-syx --syx out/digitone-track8/changes_track8_export.syx --port "Digitone II" --real-send --yes-i-understand-this-writes-to-hardware
+```
+
+## Safety policy
+
+This validation may write pattern/device data to Digitone II.
+
+Before real-send:
+
+- back up important Digitone II data
+- confirm selected port is Digitone II
+- confirm .syx file is expected
+- confirm no live performance depends on the device state
+- confirm user explicitly accepts overwrite risk
+
+## Environment
+
+Fill during validation:
+
+```text
+Date:
+OS:
+Python:
+changes commit:
+mido version:
+python-rtmidi version:
+Digitone II firmware:
+Connection:
+Port selected:
+SYX source:
+```
+
+## Preparation commands
+
+### 1. Install optional MIDI dependencies
+
+```powershell
+python -m pip install -e ".[midi]"
+```
+
+### 2. Confirm CLI is available
+
+```powershell
+changes --help
+```
+
+If root help is not meaningful yet, this can fail or show legacy help. That is not a blocker.
+
+### 3. Generate a known-good Track 8 .syx
+
+Use the II-V-I example:
+
+```powershell
+changes export digitone-track8 `
+  --input examples/song_models/demo_ii_v_i.changes.yaml `
+  --output-dir out/digitone-track8 `
+  --basename changes_track8_export `
+  --overwrite
+```
+
+One-line form:
+
+```powershell
+changes export digitone-track8 --input examples/song_models/demo_ii_v_i.changes.yaml --output-dir out/digitone-track8 --basename changes_track8_export --overwrite
+```
+
+Expected artifacts:
+
+```text
+out/digitone-track8/changes_track8_export.events.yaml
+out/digitone-track8/changes_track8_export.syx
+out/digitone-track8/changes_track8_export_manifest.md
+```
+
+### 4. Dry-run send
+
+```powershell
+changes send digitone-syx `
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --port "Digitone II" `
+  --dry-run
+```
+
+One-line form:
+
+```powershell
+changes send digitone-syx --syx out/digitone-track8/changes_track8_export.syx --port "Digitone II" --dry-run
+```
+
+Expected:
+
+```text
+Dry-run SysEx send validated:
+hardware_send: no
+```
+
+### 5. List MIDI output ports
+
+```powershell
+changes send digitone-syx --list-ports
+```
+
+Expected:
+
+```text
+Available MIDI output ports:
+  - ...
+```
+
+Confirm the exact Digitone II port name.
+
+## Real-send command
+
+Only run after all safety checks pass.
+
+Replace the port name with the exact port from --list-ports.
+
+```powershell
+changes send digitone-syx `
+  --syx out/digitone-track8/changes_track8_export.syx `
+  --port "Digitone II" `
+  --real-send `
+  --yes-i-understand-this-writes-to-hardware
+```
+
+One-line form:
+
+```powershell
+changes send digitone-syx --syx out/digitone-track8/changes_track8_export.syx --port "Digitone II" --real-send --yes-i-understand-this-writes-to-hardware
+```
+
+Expected CLI output:
+
+```text
+Guarded real SysEx send completed:
+hardware_send: yes
+warning: hardware was written
+```
+
+## Observed results
+
+Fill after hardware validation:
+
+```text
+Dry-run result:
+Port list result:
+Real-send result:
+Digitone II observed behavior:
+Pattern location:
+Track 8 behavior:
+Issues:
+```
+
+## Pass criteria
+
+Mark as passed only if:
+
+- dry-run succeeds
+- correct Digitone II output port is identified
+- guarded real-send exits successfully
+- Digitone II receives/imports the SysEx as expected
+- Track 8 behavior matches expected export result
+- no unintended device or pattern corruption is observed
+
+## Fail criteria
+
+Mark as failed if:
+
+- port cannot be identified unambiguously
+- real-send command errors
+- Digitone II does not receive/import the SysEx
+- wrong device receives data
+- Track 8 behavior does not match expected output
+- any unexpected destructive behavior occurs
+
+## Final result
+
+```text
+Status:
+Passed/Failed/Not performed:
+Summary:
+Follow-up:
+```

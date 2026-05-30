@@ -6,6 +6,8 @@ This checklist is for future manual validation of real SysEx send to Digitone II
 
 Phase 6D does not perform hardware validation.
 
+For the first manual run preparation, see docs/hardware-validation/digitone-syx-real-send-first-validation.md.
+
 ## Preconditions
 
 - Digitone II connected by USB MIDI or MIDI interface

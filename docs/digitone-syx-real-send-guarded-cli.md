@@ -62,3 +62,5 @@ Back up important Digitone II data before testing.
 5. Confirm device backup.
 6. Run guarded real-send.
 7. Record hardware validation result.
+
+Use docs/hardware-validation/digitone-syx-real-send-first-validation.md for the first manual validation checklist and status log.

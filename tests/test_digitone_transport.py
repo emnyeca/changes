@@ -8,11 +8,14 @@ from changes.digitone.transport import (
     BackendSysexTransport,
     DryRunSysexTransport,
     FakeMidiBackend,
+    GuardedSysexSender,
+    HardwareSendConfirmationRequiredError,
     HardwareSendNotImplementedError,
     InvalidSysexDataError,
     MidoMidiBackend,
     MidiPortInfo,
     MidiPortNotFoundError,
+    MidiTransportError,
     select_output_port,
     validate_sysex_bytes,
 )
@@ -138,3 +141,76 @@ def test_backend_transport_dry_run_does_not_call_backend_send():
     assert result.dry_run is True
     assert result.byte_count == 4
     assert backend.sent_messages == []
+
+
+def test_guarded_sender_valid_send_records_backend_message():
+    backend = FakeMidiBackend([MidiPortInfo(name="Digitone II")])
+    sender = GuardedSysexSender(backend)
+
+    result = sender.send_confirmed_sysex(
+        bytes([0xF0, 0x7D, 0x00, 0xF7]),
+        port_name="Digitone II",
+        confirmation=True,
+    )
+
+    assert result.dry_run is False
+    assert result.byte_count == 4
+    assert len(backend.sent_messages) == 1
+
+
+def test_guarded_sender_requires_confirmation():
+    backend = FakeMidiBackend([MidiPortInfo(name="Digitone II")])
+    sender = GuardedSysexSender(backend)
+
+    with pytest.raises(HardwareSendConfirmationRequiredError):
+        sender.send_confirmed_sysex(
+            bytes([0xF0, 0x7D, 0x00, 0xF7]),
+            port_name="Digitone II",
+            confirmation=False,
+        )
+
+    assert backend.sent_messages == []
+
+
+def test_guarded_sender_rejects_invalid_sysex():
+    backend = FakeMidiBackend([MidiPortInfo(name="Digitone II")])
+    sender = GuardedSysexSender(backend)
+
+    with pytest.raises(InvalidSysexDataError):
+        sender.send_confirmed_sysex(
+            bytes([0x7D, 0x00, 0xF7]),
+            port_name="Digitone II",
+            confirmation=True,
+        )
+
+    assert backend.sent_messages == []
+
+
+def test_guarded_sender_rejects_missing_port():
+    backend = FakeMidiBackend([MidiPortInfo(name="Other Port")])
+    sender = GuardedSysexSender(backend)
+
+    with pytest.raises(MidiPortNotFoundError):
+        sender.send_confirmed_sysex(
+            bytes([0xF0, 0x7D, 0x00, 0xF7]),
+            port_name="Digitone II",
+            confirmation=True,
+        )
+
+    assert backend.sent_messages == []
+
+
+def test_guarded_sender_wraps_backend_send_errors():
+    class _BrokenBackend(FakeMidiBackend):
+        def send_sysex_bytes(self, data: bytes, *, port_name: str) -> None:  # noqa: ARG002
+            raise RuntimeError("backend write failed")
+
+    backend = _BrokenBackend([MidiPortInfo(name="Digitone II")])
+    sender = GuardedSysexSender(backend)
+
+    with pytest.raises(MidiTransportError, match="MIDI backend send failed"):
+        sender.send_confirmed_sysex(
+            bytes([0xF0, 0x7D, 0x00, 0xF7]),
+            port_name="Digitone II",
+            confirmation=True,
+        )

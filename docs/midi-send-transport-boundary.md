@@ -16,8 +16,10 @@ Implemented:
 - optional `MidoMidiBackend` prototype with lazy import
 - dry-run transport protocol
 - dry-run transport implementation
+- guarded real-send sender requiring explicit confirmation
 - no-hardware-send tests
 - dry-run send CLI for validating .syx bytes against a fake output port
+- guarded real-send CLI mode with explicit safety flags
 
 Not implemented:
 
@@ -58,9 +60,13 @@ Sending must remain explicit.
 
 Do not send from export by default.
 
-Phase 6B requires `--dry-run` for the send CLI and refuses hardware send.
+Phase 6E keeps safe defaults and requires explicit mode selection.
 
-Phase 6D keeps `--dry-run` mandatory and does not expose any real-send CLI mode.
+`--real-send` requires:
+
+- `--yes-i-understand-this-writes-to-hardware`
+- `--port`
+- `--syx`
 
 Preferred future CLI shape:
 
@@ -92,9 +98,9 @@ It validates:
 
 It returns a result but does not send hardware.
 
-If `dry_run=False`, it raises `HardwareSendNotImplementedError`.
+`BackendSysexTransport` remains dry-run-only and still raises `HardwareSendNotImplementedError` for `dry_run=False`.
 
-Phase 6D preserves this application-level block even when using backend abstractions.
+Real send is routed through a separate guarded sender requiring explicit confirmation.
 
 ## Future real transport
 
@@ -105,7 +111,7 @@ Candidate backends:
 - mido
 - python-rtmidi
 
-Phase 6D introduces optional backend prototype support for `mido` under explicit dependency guard.
+Phase 6E keeps optional backend prototype support for `mido` under explicit dependency guard.
 
 Backend dependencies remain optional; normal install/test paths do not require them.
 
@@ -129,6 +135,8 @@ The current Track 8 CLI does not send MIDI.
 Transport support will consume `.syx` files or bytes after export.
 
 See docs/midi-hardware-validation-checklist.md for future manual validation flow once a reviewed real-send mode exists.
+
+Use docs/hardware-validation/digitone-syx-real-send-template.md to record manual hardware validation results.
 
 ## Recommended next phase
 

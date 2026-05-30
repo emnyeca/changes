@@ -63,6 +63,10 @@ class MidiBackendUnavailableError(MidiTransportError):
     pass
 
 
+class HardwareSendConfirmationRequiredError(MidiTransportError):
+    pass
+
+
 def validate_sysex_bytes(data: bytes) -> None:
     if not data:
         raise InvalidSysexDataError("SysEx data must not be empty")
@@ -132,6 +136,40 @@ class BackendSysexTransport:
             byte_count=len(data),
             dry_run=True,
             message=f"Backend dry-run only: validated {len(data)} SysEx bytes for {port_name}; no hardware send occurred.",
+        )
+
+
+class GuardedSysexSender:
+    def __init__(self, backend: MidiBackend) -> None:
+        self._backend = backend
+
+    def send_confirmed_sysex(
+        self,
+        data: bytes,
+        *,
+        port_name: str,
+        confirmation: bool,
+    ) -> SysexSendResult:
+        validate_sysex_bytes(data)
+        select_output_port(self._backend.list_output_ports(), port_name)
+
+        if not confirmation:
+            raise HardwareSendConfirmationRequiredError(
+                "Real SysEx send requires explicit confirmation"
+            )
+
+        try:
+            self._backend.send_sysex_bytes(data, port_name=port_name)
+        except MidiTransportError:
+            raise
+        except Exception as exc:
+            raise MidiTransportError(f"MIDI backend send failed: {exc}") from exc
+
+        return SysexSendResult(
+            port_name=port_name,
+            byte_count=len(data),
+            dry_run=False,
+            message=f"Guarded real send complete: wrote {len(data)} SysEx bytes to {port_name}.",
         )
 
 

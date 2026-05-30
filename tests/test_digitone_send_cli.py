@@ -35,7 +35,7 @@ def test_missing_dry_run_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
     monkeypatch.setattr(sys, "argv", ["changes", "send", "digitone-syx", "--syx", str(syx_path), "--port", "Digitone II"])
 
-    with pytest.raises(SystemExit, match="--dry-run is required"):
+    with pytest.raises(SystemExit, match="choose one of --dry-run, --real-send, or --list-ports"):
         cli.main()
 
 
@@ -108,3 +108,18 @@ def test_send_command_does_not_require_backend_dependencies(tmp_path: Path, monk
     assert "mido" not in sys.modules
     assert "rtmidi" not in sys.modules
     assert "python-rtmidi" not in sys.modules
+
+
+def test_dry_run_does_not_call_mido_backend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    syx_path = tmp_path / "test.syx"
+    syx_path.write_bytes(bytes([0xF0, 0x7D, 0x00, 0xF7]))
+
+    def _boom():
+        raise AssertionError("dry-run should not create mido backend")
+
+    monkeypatch.setattr(cli, "_create_mido_backend", _boom)
+
+    _run_send_cli(
+        monkeypatch,
+        ["--syx", str(syx_path), "--port", "Digitone II", "--dry-run"],
+    )

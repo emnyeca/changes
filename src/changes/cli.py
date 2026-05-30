@@ -11,7 +11,12 @@ from .digitone.track8_export_api import (
     DEFAULT_TRACK8_EXPORT_BASENAME,
     export_track8_artifacts_from_song,
 )
-from .digitone.transport import DryRunSysexTransport, MidiPortInfo
+from .digitone.transport import (
+    DryRunSysexTransport,
+    GuardedSysexSender,
+    MidiPortInfo,
+    MidoMidiBackend,
+)
 from .models.song_model_yaml import load_song_model_yaml
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
@@ -27,34 +32,78 @@ from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
 
 
+def _create_mido_backend() -> MidoMidiBackend:
+    return MidoMidiBackend()
+
+
 def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
-    parser = argparse.ArgumentParser(description="Dry-run validate a Digitone II SysEx file")
-    parser.add_argument("--syx", required=True, help="Path to a SysEx file")
-    parser.add_argument("--port", required=True, help="MIDI output port name to validate")
+    parser = argparse.ArgumentParser(description="Validate or guarded-send a Digitone II SysEx file")
+    parser.add_argument("--syx", help="Path to a SysEx file")
+    parser.add_argument("--port", help="MIDI output port name")
+    mode_group = parser.add_mutually_exclusive_group(required=False)
+    mode_group.add_argument("--list-ports", action="store_true", help="List MIDI output ports via optional mido backend")
+    mode_group.add_argument("--dry-run", action="store_true", help="Validate SysEx and port without hardware write")
+    mode_group.add_argument("--real-send", action="store_true", help="Guarded real send mode")
     parser.add_argument(
-        "--dry-run",
+        "--yes-i-understand-this-writes-to-hardware",
         action="store_true",
-        help="Required in Phase 6B; never send hardware",
+        help="Required with --real-send",
     )
     args = parser.parse_args(argv)
 
-    if not args.dry_run:
-        raise SystemExit("Digitone SysEx send failed: --dry-run is required in Phase 6B")
+    if not (args.list_ports or args.dry_run or args.real_send):
+        raise SystemExit("SysEx send failed: choose one of --dry-run, --real-send, or --list-ports")
+
+    if args.list_ports:
+        try:
+            backend = _create_mido_backend()
+            ports = backend.list_output_ports()
+        except (RuntimeError, ValueError, OSError) as exc:
+            raise SystemExit(f"SysEx send failed: {exc}") from exc
+
+        print("Available MIDI output ports:")
+        if not ports:
+            print("  (none)")
+        for port in ports:
+            print(f"  - {port.name}")
+        return
+
+    if not args.syx:
+        raise SystemExit("SysEx send failed: --syx is required for send mode")
+    if not args.port:
+        raise SystemExit("SysEx send failed: --port is required for send mode")
 
     syx_path = Path(args.syx)
 
     try:
         syx_bytes = syx_path.read_bytes()
-        transport = DryRunSysexTransport([MidiPortInfo(name=args.port)])
-        result = transport.send_sysex(syx_bytes, port_name=args.port, dry_run=True)
+        if args.dry_run:
+            transport = DryRunSysexTransport([MidiPortInfo(name=args.port)])
+            result = transport.send_sysex(syx_bytes, port_name=args.port, dry_run=True)
+        else:
+            if not args.yes_i_understand_this_writes_to_hardware:
+                raise RuntimeError(
+                    "--yes-i-understand-this-writes-to-hardware is required with --real-send"
+                )
+            sender = GuardedSysexSender(_create_mido_backend())
+            result = sender.send_confirmed_sysex(
+                syx_bytes,
+                port_name=args.port,
+                confirmation=True,
+            )
     except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
         raise SystemExit(f"SysEx send failed: {exc}") from exc
 
-    print("Dry-run SysEx send validated:")
+    if args.dry_run:
+        print("Dry-run SysEx send validated:")
+    else:
+        print("Guarded real SysEx send completed:")
     print(f"  syx: {syx_path}")
     print(f"  port: {result.port_name}")
     print(f"  bytes: {result.byte_count}")
-    print("  hardware_send: no")
+    print(f"  hardware_send: {'yes' if args.real_send else 'no'}")
+    if args.real_send:
+        print("  warning: hardware was written")
 
 
 def _run_track8_export_cli(argv: list[str]) -> None:

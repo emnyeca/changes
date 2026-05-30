@@ -4,6 +4,8 @@
 
 This document describes the Phase 6B dry-run-only send command.
 
+Phase 6E keeps this dry-run path valid while adding a separate guarded real-send mode.
+
 ## Command
 
 ```bash
@@ -31,7 +33,7 @@ The command does not:
 - require python-rtmidi
 - modify export behavior
 
-Phase 6D adds an optional `MidoMidiBackend` prototype in the transport module, but this command still uses dry-run-only behavior and does not switch to real send.
+Phase 6E adds guarded real-send and port listing in the same CLI command family, but this dry-run mode remains available and safe by default.
 
 ## Why --dry-run is required
 
@@ -81,4 +83,5 @@ changes send digitone-syx \
 - transfer progress
 - retry
 - hardware validation
-- real-send CLI mode
+
+For guarded real-send behavior, see docs/digitone-syx-real-send-guarded-cli.md.

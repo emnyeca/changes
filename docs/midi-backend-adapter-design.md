@@ -4,7 +4,7 @@
 
 This document defines the backend abstraction for future real MIDI SysEx sending.
 
-Phase 6D does not enable real send in the CLI and does not perform hardware validation.
+Phase 6E adds guarded real-send CLI integration but keeps explicit confirmation and optional dependencies.
 
 ## Layers
 
@@ -33,6 +33,7 @@ Phase 6D provides fake backend and optional mido backend prototype.
 - `MidoMidiBackend`
 - `BackendSysexTransport`
 - `DryRunSysexTransport`
+- `GuardedSysexSender`
 
 ## Real backend candidates
 
@@ -91,6 +92,8 @@ Real sending must remain disabled at application/CLI level until:
 - manual hardware validation checklist exists
 - user confirms testing on real Digitone II
 
+Phase 6E guarded send requires explicit confirmation flag and does not run implicitly from export.
+
 ## Future real backend shape
 
 A future phase may keep this backend class and expose a reviewed application-level real-send switch:
@@ -111,7 +114,7 @@ Expected responsibilities:
 
 ## Non-goals
 
-Phase 6D does not:
+Phase 6E does not:
 
 - make `mido` mandatory
 - make `python-rtmidi` mandatory
@@ -119,4 +122,5 @@ Phase 6D does not:
 - remove `--dry-run`
 - add export `--send`
 - discover ports automatically in user CLI
-- perform hardware validation
+- perform hardware validation automatically
+- claim completed hardware validation

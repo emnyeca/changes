@@ -50,6 +50,8 @@ Stop immediately if:
 
 ## Result log template
 
+Use docs/hardware-validation/digitone-syx-real-send-template.md as the recording template.
+
 ```text
 Date:
 Device:

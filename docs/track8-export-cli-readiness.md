@@ -85,6 +85,10 @@ Export still does not send implicitly.
 
 Phase 6D adds an optional backend prototype for future send work, but export CLI remains artifact-only and hardware validation is not yet performed.
 
+Phase 6E adds guarded real-send and port listing to the separate send CLI, but Track 8 export remains artifact-only and does not include `--send`.
+
+End-to-end user readiness for hardware operations still depends on manual hardware validation records.
+
 ## User-facing readiness decision
 Status:
 

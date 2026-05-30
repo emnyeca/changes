@@ -16,5 +16,5 @@ def test_readiness_doc_contains_required_statements():
     assert "SongModel YAML v1" in text
     assert "--input" in text
     assert "--demo cmaj7" in text
-    assert "Phase 5G" in text
-    assert "Prefer Phase 5G before MIDI send" in text
+    assert "RC-ready for the controlled II-V-I workflow" in text
+    assert "Prioritize validation breadth and documentation clarity" in text

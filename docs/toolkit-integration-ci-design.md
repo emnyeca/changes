@@ -318,6 +318,19 @@ This phase does not:
 - generate fixtures
 - change test behavior
 
+## Implementation status
+
+Phase R2B added a separate toolkit-integration job to .github/workflows/pytest.yml.
+
+The job:
+
+- checks out changes
+- checks out emnyeca/digitone-syx-toolkit
+- installs both packages editable
+- runs Track 8 toolkit-dependent tests explicitly
+
+The normal core test job remains unchanged.
+
 ## Acceptance criteria
 This document is acceptable if:
 

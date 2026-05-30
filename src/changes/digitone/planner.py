@@ -112,23 +112,42 @@ def _find_exact_length_code_for_units(units: Fraction) -> int | None:
         from digitone_syx_toolkit.digitone2.length_codes import (
             find_exact_length_code_for_sixteenth_units,
         )
-    except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "digitone-syx-toolkit is required for Digitone compilation. "
-            "Install with: pip install -e ../digitone-syx-toolkit"
-        ) from exc
+    except ImportError:
+        target = Fraction(units)
+        for code in range(0x00, 0x7F):
+            if _explicit_length_code_to_sixteenth_units_fallback(code) == target:
+                return code
+        return None
 
     return find_exact_length_code_for_sixteenth_units(Fraction(units))
+
+
+def _explicit_length_code_to_sixteenth_units_fallback(code: int) -> Fraction:
+    if code < 0x00 or code > 0x7F:
+        raise ValueError(f"length code out of range: {code} (expected 0x00..0x7F)")
+    if code == 0x7F:
+        raise ValueError("INF (0x7F) does not map to finite sixteenth units")
+
+    if code <= 0x1E:
+        return Fraction(1, 8) + Fraction(code, 16)
+    if code <= 0x2E:
+        return Fraction(17, 8) + Fraction(code - 0x1F, 8)
+    if code <= 0x3E:
+        return Fraction(17, 4) + Fraction(code - 0x2F, 4)
+    if code <= 0x4E:
+        return Fraction(17, 2) + Fraction(code - 0x3F, 2)
+    if code <= 0x5E:
+        return Fraction(17, 1) + Fraction(code - 0x4F, 1)
+    if code <= 0x6E:
+        return Fraction(34, 1) + Fraction((code - 0x5F) * 2, 1)
+    return Fraction(68, 1) + Fraction((code - 0x6F) * 4, 1)
 
 
 def _length_step_candidates_for_speed(speed_ratio: Fraction) -> list[tuple[int, int]]:
     try:
         from digitone_syx_toolkit.digitone2.length_codes import explicit_length_code_to_sixteenth_units
-    except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "digitone-syx-toolkit is required for Digitone compilation. "
-            "Install with: pip install -e ../digitone-syx-toolkit"
-        ) from exc
+    except ImportError:
+        explicit_length_code_to_sixteenth_units = _explicit_length_code_to_sixteenth_units_fallback
 
     candidates: dict[int, int] = {}
     for code in range(0x00, 0x7F):

@@ -145,7 +145,11 @@ def test_bundle_artifacts_write_syx_and_concat_in_manifest_order(tmp_path: Path,
 
 
 def test_bundle_artifacts_write_syx_with_real_toolkit_end_to_end(tmp_path: Path):
-    if importlib.util.find_spec("digitone_syx_toolkit.syx") is None:
+    try:
+        spec = importlib.util.find_spec("digitone_syx_toolkit.syx")
+    except ModuleNotFoundError:
+        spec = None
+    if spec is None:
         pytest.skip("digitone-syx-toolkit is not installed")
 
     from digitone_syx_toolkit.syx import load_syx_file

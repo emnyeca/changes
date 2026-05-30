@@ -11,6 +11,7 @@ from .digitone.track8_export_api import (
     DEFAULT_TRACK8_EXPORT_BASENAME,
     export_track8_artifacts_from_song,
 )
+from .models.song_model_yaml import load_song_model_yaml
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
 from .pipeline_digitone import (
@@ -26,8 +27,10 @@ from .midi_writer import write_midi
 
 
 def _run_track8_export_cli(argv: list[str]) -> None:
-    parser = argparse.ArgumentParser(description="Export Track 8 demo artifacts")
-    parser.add_argument("--demo", required=True, help="Demo song id (currently only: cmaj7)")
+    parser = argparse.ArgumentParser(description="Export Track 8 artifacts from demo or SongModel YAML")
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--demo", help="Demo song id (currently only: cmaj7)")
+    source_group.add_argument("--input", help="Path to SongModel YAML v1 file")
     parser.add_argument("--output-dir", required=True, help="Output directory for Track 8 artifacts")
     parser.add_argument(
         "--basename",
@@ -47,12 +50,15 @@ def _run_track8_export_cli(argv: list[str]) -> None:
     )
     args = parser.parse_args(argv)
 
-    if args.demo != "cmaj7":
-        raise SystemExit(f"Unsupported demo: {args.demo}. Supported demos: cmaj7")
-
-    song = build_demo_cmaj7_song()
-
     try:
+        if args.demo is not None:
+            if args.demo != "cmaj7":
+                raise ValueError(f"Unsupported demo: {args.demo}. Supported demos: cmaj7")
+            song = build_demo_cmaj7_song()
+        else:
+            assert args.input is not None
+            song = load_song_model_yaml(args.input)
+
         paths = export_track8_artifacts_from_song(
             song,
             args.output_dir,
@@ -61,7 +67,7 @@ def _run_track8_export_cli(argv: list[str]) -> None:
             include_sysex=not bool(args.events_yaml_only),
             overwrite=bool(args.overwrite),
         )
-    except (RuntimeError, ValueError, FileExistsError) as exc:
+    except (RuntimeError, ValueError, FileExistsError, OSError, yaml.YAMLError) as exc:
         raise SystemExit(f"Track 8 export failed: {exc}") from exc
 
     print("Wrote Track 8 export artifacts:")

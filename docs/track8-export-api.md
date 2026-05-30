@@ -102,8 +102,17 @@ Use --events-yaml-only to avoid the toolkit dependency.
 
 ## SongModel YAML input
 
-Phase 5D adds SongModel YAML v1 as the planned input format for future --input support.
+Phase 5E adds SongModel YAML v1 input mode:
 
-Current developer CLI still only supports --demo cmaj7.
+```bash
+changes export digitone-track8 \
+    --input examples/song_models/demo_cmaj7.changes.yaml \
+    --output-dir out/digitone-track8 \
+    --events-yaml-only
+```
 
---input will be added in a later phase.
+--demo and --input are mutually exclusive.
+
+The input file must use SongModel YAML v1.
+
+This command still does not send MIDI or operate hardware.

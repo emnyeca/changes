@@ -9,6 +9,10 @@ import yaml
 from changes import cli
 
 
+def _demo_song_yaml_path() -> str:
+    return "examples/song_models/demo_cmaj7.changes.yaml"
+
+
 def test_demo_cmaj7_events_yaml_only_export_succeeds_without_toolkit(tmp_path: Path, monkeypatch, capsys):
     output_dir = tmp_path / "out"
     monkeypatch.setattr(
@@ -191,6 +195,195 @@ def test_optional_real_toolkit_cli_export(tmp_path: Path, monkeypatch):
             "digitone-track8",
             "--demo",
             "cmaj7",
+            "--output-dir",
+            str(output_dir),
+            "--overwrite",
+        ],
+    )
+
+    cli.main()
+
+    syx = output_dir / "changes_track8_export.syx"
+    assert syx.exists()
+    data = syx.read_bytes()
+    assert data[0] == 0xF0
+    assert data[-1] == 0xF7
+
+
+def test_input_yaml_events_yaml_only_export_succeeds_without_toolkit(tmp_path: Path, monkeypatch, capsys):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    cli.main()
+
+    events_yaml = output_dir / "changes_track8_export.events.yaml"
+    manifest = output_dir / "changes_track8_export_manifest.md"
+    syx = output_dir / "changes_track8_export.syx"
+
+    assert events_yaml.exists()
+    assert manifest.exists()
+    assert not syx.exists()
+
+    payload = yaml.safe_load(events_yaml.read_text(encoding="utf-8"))
+    assert payload["device"] == "digitone2"
+    assert payload["pattern"]["mode"] == "per-track"
+    assert payload["events"]
+    assert [event["note"] for event in payload["events"]] == ["C4", "E4", "G4", "B4", "D5", "A5"]
+
+    out = capsys.readouterr().out
+    assert str(events_yaml) in out
+    assert str(manifest) in out
+
+
+def test_demo_and_input_are_mutually_exclusive(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--demo",
+            "cmaj7",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+
+def test_missing_both_demo_and_input_fails(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+
+def test_invalid_input_file_fails_clearly(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    bad_input = tmp_path / "invalid.changes.yaml"
+    bad_input.write_text("version: 1\ntype: changes.song\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            str(bad_input),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="Track 8 export failed"):
+        cli.main()
+
+
+def test_input_yaml_overwrite_behavior(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+    cli.main()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+    with pytest.raises(SystemExit, match="Track 8 export failed"):
+        cli.main()
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+            "--overwrite",
+        ],
+    )
+    cli.main()
+
+    assert (output_dir / "changes_track8_export.events.yaml").exists()
+    assert (output_dir / "changes_track8_export_manifest.md").exists()
+
+
+def test_optional_real_toolkit_input_export(tmp_path: Path, monkeypatch):
+    pytest.importorskip("digitone_syx_toolkit.events_to_syx")
+
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
             "--output-dir",
             str(output_dir),
             "--overwrite",

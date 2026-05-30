@@ -129,3 +129,12 @@ This command still does not send MIDI or operate hardware.
 See docs/song-model-yaml-v1.md for the file format.
 
 See docs/track8-export-cli-readiness.md for current readiness status and boundaries.
+
+## Multi-chord coverage
+
+Track 8 export is covered by both:
+
+- examples/song_models/demo_cmaj7.changes.yaml
+- examples/song_models/demo_ii_v_i.changes.yaml
+
+The II-V-I example verifies that SongModel YAML input can generate multiple Track 8 chord events across different offsets.

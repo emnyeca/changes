@@ -92,7 +92,7 @@ Not yet complete:
 - no GUI
 - no broad project/editor serialization
 - no MIDI send flow
-- limited real-world song coverage
+- limited but expanded coverage: single Cmaj7 and one-measure II-V-I examples
 - no full user documentation/tutorial yet
 
 ## Recommended next phase

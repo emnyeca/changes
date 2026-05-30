@@ -95,6 +95,14 @@ changes export digitone-track8 --input examples/song_models/demo_cmaj7.changes.y
 
 The command still does not send MIDI.
 
+## Multi-chord example
+
+A small II-V-I example is available at:
+
+examples/song_models/demo_ii_v_i.changes.yaml
+
+It demonstrates multiple harmony events inside one measure with different offsets and durations.
+
 ## Compatibility policy
 Current format contract:
 

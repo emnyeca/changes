@@ -85,9 +85,15 @@ Floats are avoided in both input policy and dumped YAML.
 ## Relationship to Track 8 export
 SongModel YAML v1 can feed build_track8_export_yaml_payload_from_song.
 
-CLI --input support will be added later.
+Track 8 developer CLI accepts this format via --input.
 
-This phase does not add --input.
+Example:
+
+```bash
+changes export digitone-track8 --input examples/song_models/demo_cmaj7.changes.yaml --output-dir out/digitone-track8 --events-yaml-only
+```
+
+The command still does not send MIDI.
 
 ## Compatibility policy
 Current format contract:

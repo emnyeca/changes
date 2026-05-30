@@ -1,4 +1,4 @@
-"""Command-line interface for Changes generic MIDI export."""
+"""Command-line interface for Changes export tools."""
 
 import argparse
 from pathlib import Path
@@ -27,9 +27,14 @@ from .midi_writer import write_midi
 
 
 def _run_track8_export_cli(argv: list[str]) -> None:
-    parser = argparse.ArgumentParser(description="Export Track 8 artifacts from demo or SongModel YAML")
+    parser = argparse.ArgumentParser(
+        description="Export Digitone II Track 8 chord artifacts from demo or SongModel YAML"
+    )
     source_group = parser.add_mutually_exclusive_group(required=True)
-    source_group.add_argument("--demo", help="Demo song id (currently only: cmaj7)")
+    source_group.add_argument(
+        "--demo",
+        help="Built-in demo song id for development/testing (currently only: cmaj7)",
+    )
     source_group.add_argument("--input", help="Path to SongModel YAML v1 file")
     parser.add_argument("--output-dir", required=True, help="Output directory for Track 8 artifacts")
     parser.add_argument(
@@ -59,11 +64,15 @@ def _run_track8_export_cli(argv: list[str]) -> None:
             assert args.input is not None
             song = load_song_model_yaml(args.input)
 
+        export_name = args.name
+        if export_name is None:
+            export_name = song.title
+
         paths = export_track8_artifacts_from_song(
             song,
             args.output_dir,
             basename=args.basename,
-            name=args.name,
+            name=export_name,
             include_sysex=not bool(args.events_yaml_only),
             overwrite=bool(args.overwrite),
         )

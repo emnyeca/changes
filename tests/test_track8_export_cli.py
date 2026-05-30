@@ -397,3 +397,99 @@ def test_optional_real_toolkit_input_export(tmp_path: Path, monkeypatch):
     data = syx.read_bytes()
     assert data[0] == 0xF0
     assert data[-1] == 0xF7
+
+
+def test_input_yaml_default_name_uses_song_title(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    cli.main()
+
+    events_yaml = output_dir / "changes_track8_export.events.yaml"
+    payload = yaml.safe_load(events_yaml.read_text(encoding="utf-8"))
+    assert payload["name"] == "Demo Cmaj7"
+
+
+def test_demo_default_name_uses_song_title(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--demo",
+            "cmaj7",
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    cli.main()
+
+    events_yaml = output_dir / "changes_track8_export.events.yaml"
+    payload = yaml.safe_load(events_yaml.read_text(encoding="utf-8"))
+    assert payload["name"] == "Demo Cmaj7"
+
+
+def test_explicit_name_overrides_song_title(tmp_path: Path, monkeypatch):
+    output_dir = tmp_path / "out"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            _demo_song_yaml_path(),
+            "--output-dir",
+            str(output_dir),
+            "--name",
+            "Custom Pattern Name",
+            "--events-yaml-only",
+        ],
+    )
+
+    cli.main()
+
+    events_yaml = output_dir / "changes_track8_export.events.yaml"
+    payload = yaml.safe_load(events_yaml.read_text(encoding="utf-8"))
+    assert payload["name"] == "Custom Pattern Name"
+
+
+def test_help_mentions_songmodel_yaml_v1_and_track8_flags(monkeypatch, capsys):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--help",
+        ],
+    )
+
+    with pytest.raises(SystemExit):
+        cli.main()
+
+    out = capsys.readouterr().out
+    assert "SongModel YAML v1" in out
+    assert "--input" in out
+    assert "--demo" in out
+    assert "--events-yaml-only" in out

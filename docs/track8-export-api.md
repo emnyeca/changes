@@ -84,13 +84,22 @@ Rationale:
 
 ## Developer CLI wrapper
 
-Phase 5C adds a minimal developer CLI wrapper:
+Track 8 export currently provides a practical explicit CLI wrapper:
 
 ```bash
 changes export digitone-track8 --demo cmaj7 --output-dir out/digitone-track8 --events-yaml-only
 ```
 
-This CLI currently supports only the built-in cmaj7 demo input.
+SongModel YAML v1 input is also supported:
+
+```bash
+changes export digitone-track8 \
+    --input examples/song_models/demo_cmaj7.changes.yaml \
+    --output-dir out/digitone-track8 \
+    --events-yaml-only
+```
+
+--demo and --input are mutually exclusive.
 
 It does not load arbitrary song/project files.
 
@@ -116,3 +125,7 @@ changes export digitone-track8 \
 The input file must use SongModel YAML v1.
 
 This command still does not send MIDI or operate hardware.
+
+See docs/song-model-yaml-v1.md for the file format.
+
+See docs/track8-export-cli-readiness.md for current readiness status and boundaries.

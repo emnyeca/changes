@@ -1,5 +1,10 @@
 # Changes Documentation Index
 
+## Product framing
+
+- Product architecture: `product-architecture.md`
+- Current state: `current-state.md`
+
 ## Current practical workflows
 
 - Track 8 export: `track8-export-api.md`
@@ -27,6 +32,8 @@
 
 ## Current notes
 
+- Product priority remains Cloud > Bass > Chord.
+- The current RC emphasis on Track 8 reflects the stabilized subset, not the full product architecture.
 - Export and send remain separate.
 - Guarded real-send remains explicit and requires confirmation.
 - Optional MIDI dependencies remain optional and are only needed for port listing, real-send, and generic MIDI writing.

@@ -6,7 +6,11 @@ Release-candidate workflow: active development / v0.1 candidate.
 
 This is not a polished public release.
 
-## Current stable workflow
+This document describes the currently stabilized Track 8 subset.
+It does not define the full product priority order.
+The product architecture remains Cloud > Bass > Chord.
+
+## Current RC-stabilized workflow
 
 ```text
 SongModel YAML
@@ -16,6 +20,8 @@ SongModel YAML
   -> dry-run send
   -> guarded real-send
 ```
+
+This current stable path should be read as a validated subset, not as the entire intended product workflow.
 
 ## Current validated fixture
 

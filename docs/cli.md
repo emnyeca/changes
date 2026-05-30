@@ -1,5 +1,14 @@
 # Changes CLI Reference
 
+The current modern command surface is centered on Track 8 Chord export because that subset is currently stabilized.
+
+This does not change the product priority order:
+
+- Cloud > Bass > Chord
+- Track 1-6 > Track 7 > Track 8
+
+Future or target workflows include Track 1-6 Harmony Cloud and Track 7 Bass generation from MusicXML or iReal Pro-derived data. Those broader layers already have partial internal pipeline support, but they are not documented here as RC-stabilized commands.
+
 ## Modern commands
 
 ### Export Digitone Track 8 artifacts
@@ -93,6 +102,8 @@ See `docs/validation-matrix.md` for fixture-by-fixture validation depth.
 
 ## Legacy commands
 
+These commands expose older or partial broader-architecture paths. They are useful for internal development and software validation, but they are not the same thing as the current RC-stabilized Track 8 export/check/send workflow.
+
 Generic MIDI export:
 
 ```powershell
@@ -116,6 +127,8 @@ MusicXML to Digitone bundle artifacts:
 ```powershell
 changes digitone-bundle --musicxml input.musicxml --output out --write-syx
 ```
+
+The `digitone-bundle` path is the clearest existing bridge from MusicXML-derived data toward broader Digitone track material, but it should be treated as architecture-facing or partial rather than as the currently stabilized product workflow.
 
 ## Safety
 

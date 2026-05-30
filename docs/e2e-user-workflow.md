@@ -2,6 +2,11 @@
 
 ## Purpose
 
+This document describes the currently stabilized Track 8 RC workflow.
+It is not the full EUB Changes product workflow.
+
+For the higher-level product direction, see `docs/product-architecture.md` and `docs/current-state.md`.
+
 This document describes the practical end-to-end workflow:
 
 SongModel YAML -> Track 8 export -> manifest-aware SysEx check -> dry-run -> guarded real-send.

@@ -2,15 +2,48 @@
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
 
-EUB Changes is an experimental toolkit for converting musical progression data into MIDI and Digitone-oriented artifacts.
+EUB Changes is a machine-live harmony conversion toolkit.
+
+Its intended user experience is to turn iReal Pro / MusicXML song data into Digitone II performance material quickly.
 
 The repository name is `changes`, but the software name is intentionally branded as **EUB Changes**.
 
+The core musical priority is:
+
+- Cloud > Bass > Chord
+- Track 1-6 > Track 7 > Track 8
+
 ![EUB Changes UI concept](docs/assets/1x/GUI_Concept.png)
 
-## Current release-candidate workflow
+## Product architecture
 
-The current practical workflow focuses on Digitone II Track 8 SysEx export and guarded sending:
+EUB Changes targets a Digitone II machine-live workflow:
+
+| Digitone II Track | Role | Priority | Status |
+| --- | --- | --- | --- |
+| Track 1-6 | Harmony Cloud voices 1-6 | Primary | architecture target / partial implementation |
+| Track 7 | Bass | Secondary | architecture target / partial implementation |
+| Track 8 | Chord reference/helper | Additional | current RC-stabilized workflow |
+
+The intended end-to-end flow is:
+
+```text
+iReal Pro
+	-> MusicXML export
+	-> EUB Changes conversion
+	-> machine-live-friendly note data
+	-> Digitone II
+```
+
+The current Track 8 workflow remains important, but it is a stabilized subset rather than the full product architecture.
+
+See `docs/product-architecture.md` for the target layer model and `docs/current-state.md` for the distinction between product direction, current implementation, and current validation.
+
+## Current RC-stabilized subset
+
+The current practical workflow focuses on Digitone II Track 8 SysEx export and guarded sending.
+
+This is the currently stabilized subset, not the full product priority order:
 
 ```text
 SongModel YAML
@@ -21,7 +54,7 @@ SongModel YAML
 	-> guarded real-send
 ```
 
-## Quick start: Digitone II Track 8
+## Quick start: Digitone II Track 8 chord workflow
 
 ### 1. Export Track 8 artifacts
 
@@ -88,7 +121,7 @@ changes send digitone-syx `
 
 ## Validation status
 
-The II-V-I fixture has been manually validated on Digitone II.
+The II-V-I fixture has been manually validated on Digitone II for the Track 8 RC workflow.
 
 Additional SongModel fixtures are available under `examples/song_models/` for software validation.
 The hardware-validated fixture remains `examples/song_models/demo_ii_v_i.changes.yaml`.
@@ -102,6 +135,8 @@ See:
 
 - docs/validation-status.md
 - docs/hardware-validation/digitone-syx-real-send-first-validation.md
+- docs/product-architecture.md
+- docs/current-state.md
 
 ## Known limitations
 
@@ -109,4 +144,4 @@ See docs/known-limitations.md.
 
 ## Documentation index
 
-See docs/index.md for release-candidate status, workflow docs, and safety references.
+See docs/index.md for product architecture, current state, release-candidate status, workflow docs, and safety references.

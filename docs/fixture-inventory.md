@@ -4,6 +4,8 @@
 
 This inventory captures intended use and current validation scope for SongModel fixtures used by the Digitone II Track 8 RC workflow.
 
+It documents the current stabilized subset only. It does not describe the full product priority order, which remains Cloud > Bass > Chord.
+
 ## Fixtures
 
 ### Demo Cmaj7

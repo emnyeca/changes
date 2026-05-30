@@ -4,12 +4,23 @@
 
 This matrix tracks what is currently validated for each SongModel fixture in the v0.1 release-candidate workflow.
 
+The validation matrix currently emphasizes Track 8 because Track 8 is the stabilized RC subset.
+It is not the full product priority order.
+
 Validation levels:
 
 - hardware-validated: manually observed on Digitone II hardware
 - software E2E validated: automated export -> check --manifest -> dry-run coverage
 - export/manifest validated: automated export and manifest/count validation without full check/dry-run flow
 - not validated: no dedicated validation at this level yet
+
+## Product priority vs validation status
+
+| Layer | Tracks | Product priority | Current validation status |
+| --- | --- | --- | --- |
+| Harmony Cloud | 1-6 | primary | architecture target / partial implementation; not yet RC-stabilized |
+| Bass | 7 | secondary | architecture target / partial implementation; not yet RC-stabilized |
+| Chord | 8 | additional | RC-stabilized subset |
 
 ## Fixture Matrix
 
@@ -22,6 +33,7 @@ Validation levels:
 
 ## Current Summary
 
+- Product priority remains Cloud > Bass > Chord even though the current matrix is Track 8-focused.
 - Hardware-validated: `demo_ii_v_i`
 - Software E2E validated: `demo_ii_v_i`, `demo_multibar_turnaround`
 - Export/manifest validated: `demo_multisection_form` (and smoke export coverage for `demo_cmaj7`)

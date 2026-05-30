@@ -10,6 +10,8 @@ def _read(path: str) -> str:
 def test_rc_docs_exist():
     required = [
         Path("README.md"),
+        Path("docs/product-architecture.md"),
+        Path("docs/current-state.md"),
         Path("docs/release-candidate-status.md"),
         Path("docs/validation-status.md"),
         Path("docs/validation-matrix.md"),
@@ -29,6 +31,29 @@ def test_readme_mentions_safety_boundaries():
     assert "Export never sends MIDI" in text
     assert "Check never sends MIDI" in text
     assert "Real-send requires explicit confirmation" in text
+
+
+def test_readme_and_product_docs_frame_product_priority():
+    readme = _read("README.md")
+    architecture = _read("docs/product-architecture.md")
+    current_state = _read("docs/current-state.md")
+
+    assert "machine-live harmony conversion toolkit" in readme
+    assert "iReal Pro / MusicXML" in readme
+    assert "Cloud > Bass > Chord" in readme
+    assert "Track 1-6" in readme
+    assert "Track 7" in readme
+    assert "Track 8" in readme
+
+    assert "Cloud > Bass > Chord" in architecture
+    assert "Harmony Cloud" in architecture
+    assert "Bass" in architecture
+    assert "Chord" in architecture
+    assert "MusicXML" in architecture
+
+    assert "The currently stabilized RC path focuses on Track 8 Chord export/check/send." in current_state
+    assert "This does not mean Track 8 is the main feature." in current_state
+    assert "The main product target remains Cloud > Bass > Chord." in current_state
 
 
 def test_known_limitations_avoids_overclaiming():
@@ -68,6 +93,8 @@ def test_docs_do_not_overclaim_validation_or_consumer_readiness():
     text = "\n".join(
         [
             _read("README.md"),
+            _read("docs/product-architecture.md"),
+            _read("docs/current-state.md"),
             _read("docs/release-candidate-status.md"),
             _read("docs/validation-status.md"),
             _read("docs/known-limitations.md"),
@@ -80,6 +107,7 @@ def test_docs_do_not_overclaim_validation_or_consumer_readiness():
     assert "all duration / len mappings validated" not in text
     assert "all track 8 mappings validated" not in text
     assert "broad hardware validation" not in text
+    assert "track 8 is the main product feature" not in text
 
 
 def test_cli_docs_mention_manifest_aware_check_flags():

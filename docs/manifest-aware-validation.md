@@ -46,6 +46,8 @@ changes check digitone-syx `
 - actual hardware import
 - all note/parameter mappings
 
+For fixture-level validation depth (hardware/software E2E/export-manifest), see `docs/validation-matrix.md`.
+
 ## Safety
 
 Check does not send MIDI.

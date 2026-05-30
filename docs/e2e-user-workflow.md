@@ -85,7 +85,11 @@ Additional SongModel fixtures are available for software validation and regressi
 
 Use the II-V-I fixture for the known hardware-validated path.
 
-Use broader fixtures for export/check/dry-run software validation only.
+Use `demo_multibar_turnaround` for software E2E export/check/dry-run validation.
+
+Use `demo_multisection_form` for export/manifest regression coverage.
+
+See `docs/validation-matrix.md` for exact per-fixture validation scope.
 
 ## Requirements
 

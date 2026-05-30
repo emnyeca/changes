@@ -84,7 +84,12 @@ Notes:
 For broader software fixture coverage, run the same export/check/dry-run flow with:
 
 - `examples/song_models/demo_multibar_turnaround.changes.yaml`
+
+For multi-section regression coverage, use:
+
 - `examples/song_models/demo_multisection_form.changes.yaml`
+
+See `docs/validation-matrix.md` for fixture-by-fixture validation depth.
 
 ## Legacy commands
 

@@ -93,6 +93,11 @@ The II-V-I fixture has been manually validated on Digitone II.
 Additional SongModel fixtures are available under `examples/song_models/` for software validation.
 The hardware-validated fixture remains `examples/song_models/demo_ii_v_i.changes.yaml`.
 
+Validation scope references:
+
+- `docs/validation-matrix.md`
+- `docs/fixture-inventory.md`
+
 See:
 
 - docs/validation-status.md

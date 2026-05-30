@@ -27,13 +27,20 @@ Covered by tests:
 - dry-run send
 - guarded real-send safety checks using fake backend
 - CLI help / dispatch
-- broader SongModel fixture coverage:
-  - `examples/song_models/demo_multibar_turnaround.changes.yaml`
-  - `examples/song_models/demo_multisection_form.changes.yaml`
-- broader fixtures are covered by export/manifest regression tests
-- `demo_multibar_turnaround.changes.yaml` is additionally validated through export -> check --manifest -> dry-run (software path only)
+
+Software E2E validated fixtures:
+
+- `examples/song_models/demo_ii_v_i.changes.yaml`
+- `examples/song_models/demo_multibar_turnaround.changes.yaml`
+
+Export/manifest validated fixtures:
+
+- `examples/song_models/demo_multisection_form.changes.yaml`
+- `examples/song_models/demo_cmaj7.changes.yaml` (smoke-level fixture)
 
 Additional software fixtures now cover broader SongModel shapes, including multi-bar and multi-section examples. Hardware validation is still limited to the II-V-I fixture.
+
+See `docs/validation-matrix.md` and `docs/fixture-inventory.md` for fixture-level details.
 
 ## Not yet validated
 

@@ -184,3 +184,39 @@ def test_broader_songmodel_fixtures_export_and_manifest_counts(
 
     assert chord_count == expected_chord_events
     assert row_count == expected_note_rows
+
+
+def test_multisection_fixture_export_manifest_only_path(tmp_path: Path, monkeypatch, capsys):
+    output_dir = tmp_path / "out"
+
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "changes",
+            "export",
+            "digitone-track8",
+            "--input",
+            str(MULTISECTION_PATH),
+            "--output-dir",
+            str(output_dir),
+            "--events-yaml-only",
+        ],
+    )
+
+    cli.main()
+
+    events_yaml = output_dir / "changes_track8_export.events.yaml"
+    manifest = output_dir / "changes_track8_export_manifest.md"
+    syx = output_dir / "changes_track8_export.syx"
+
+    assert events_yaml.exists()
+    assert manifest.exists()
+    assert not syx.exists()
+
+    text = manifest.read_text(encoding="utf-8")
+    assert "Track 8 chord event count: 8" in text
+    assert "Track 8 note row count: 48" in text
+
+    out = capsys.readouterr().out
+    assert "syx: not generated (--events-yaml-only)" in out

@@ -18,6 +18,8 @@ Hardware validation is still limited to the II-V-I fixture.
 
 The current workflow still does not imply that all SongModel inputs are supported.
 
+See `docs/validation-matrix.md` for exact fixture-by-fixture scope.
+
 ### Manifest validation is metadata-level
 
 `changes check digitone-syx --manifest` validates envelope and metadata consistency.

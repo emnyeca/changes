@@ -111,6 +111,52 @@ def test_validate_expected_source_title_mismatch_fails():
         )
 
 
+def test_validate_expected_chord_event_count_mismatch_fails():
+    manifest = Track8ManifestInfo(path=Path("manifest.md"), track8_chord_event_count=3)
+
+    with pytest.raises(ValueError, match="chord event count mismatch"):
+        validate_sysex_against_manifest(
+            syx_byte_count=1,
+            manifest=manifest,
+            expected_chord_event_count=4,
+        )
+
+
+def test_validate_expected_note_row_count_mismatch_fails():
+    manifest = Track8ManifestInfo(path=Path("manifest.md"), track8_note_row_count=18)
+
+    with pytest.raises(ValueError, match="note row count mismatch"):
+        validate_sysex_against_manifest(
+            syx_byte_count=1,
+            manifest=manifest,
+            expected_note_row_count=24,
+        )
+
+
+def test_validate_missing_expected_source_title_becomes_warning():
+    manifest = Track8ManifestInfo(path=Path("manifest.md"))
+
+    result = validate_sysex_against_manifest(
+        syx_byte_count=1,
+        manifest=manifest,
+        expected_source_title="Demo II V I",
+    )
+
+    assert "manifest did not include source title" in result.warnings
+
+
+def test_validate_missing_expected_chord_count_becomes_warning():
+    manifest = Track8ManifestInfo(path=Path("manifest.md"), source_title="Demo II V I")
+
+    result = validate_sysex_against_manifest(
+        syx_byte_count=1,
+        manifest=manifest,
+        expected_chord_event_count=3,
+    )
+
+    assert "manifest did not include Track 8 chord event count" in result.warnings
+
+
 def test_validate_missing_expected_count_becomes_warning():
     manifest = Track8ManifestInfo(path=Path("manifest.md"), source_title="Demo II V I")
 
@@ -121,3 +167,19 @@ def test_validate_missing_expected_count_becomes_warning():
     )
 
     assert "manifest did not include Track 8 note row count" in result.warnings
+
+
+def test_validate_without_optional_expectations_keeps_warnings_empty():
+    manifest = Track8ManifestInfo(
+        path=Path("manifest.md"),
+        source_title="Demo II V I",
+        track8_chord_event_count=3,
+        track8_note_row_count=18,
+    )
+
+    result = validate_sysex_against_manifest(
+        syx_byte_count=114118,
+        manifest=manifest,
+    )
+
+    assert result.warnings == ()

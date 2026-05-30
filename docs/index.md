@@ -12,6 +12,8 @@
 
 - Workflow RC status: `release-candidate-status.md`
 - Validation status: `validation-status.md`
+- Validation matrix: `validation-matrix.md`
+- Fixture inventory: `fixture-inventory.md`
 - Known limitations: `known-limitations.md`
 
 ## Safety and validation

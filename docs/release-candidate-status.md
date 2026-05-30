@@ -45,8 +45,14 @@ SongModel YAML
 - [ ] Public-facing installer/app packaging.
 - [ ] GUI workflow.
 
-Additional software fixtures are currently validated through export/check/dry-run only.
+Additional software fixtures currently include:
+
+- software E2E export/check/dry-run: `demo_multibar_turnaround`
+- export/manifest regression coverage: `demo_multisection_form`
+
 Hardware validation remains limited to the first II-V-I fixture.
+
+See `docs/validation-matrix.md` and `docs/fixture-inventory.md` for exact fixture coverage.
 
 ## Release-candidate meaning
 

@@ -5,9 +5,12 @@ import sys
 import pytest
 
 from changes.digitone.transport import (
+    BackendSysexTransport,
     DryRunSysexTransport,
+    FakeMidiBackend,
     HardwareSendNotImplementedError,
     InvalidSysexDataError,
+    MidoMidiBackend,
     MidiPortInfo,
     MidiPortNotFoundError,
     select_output_port,
@@ -99,7 +102,39 @@ def test_transport_import_does_not_require_midi_backend_dependencies():
     sys.modules.pop("python-rtmidi", None)
 
     from changes.digitone.transport import DryRunSysexTransport as ImportedDryRunSysexTransport
+    from changes.digitone.transport import FakeMidiBackend as ImportedFakeMidiBackend
+    from changes.digitone.transport import BackendSysexTransport as ImportedBackendSysexTransport
+    from changes.digitone.transport import MidoMidiBackend as ImportedMidoMidiBackend
 
     assert ImportedDryRunSysexTransport.__name__ == "DryRunSysexTransport"
+    assert ImportedFakeMidiBackend.__name__ == "FakeMidiBackend"
+    assert ImportedBackendSysexTransport.__name__ == "BackendSysexTransport"
+    assert ImportedMidoMidiBackend.__name__ == "MidoMidiBackend"
     assert "mido" not in sys.modules
     assert "rtmidi" not in sys.modules
+
+
+def test_fake_backend_records_send_data():
+    backend = FakeMidiBackend([MidiPortInfo(name="Digitone II")])
+
+    backend.send_sysex_bytes(bytes([0xF0, 0x7D, 0x00, 0xF7]), port_name="Digitone II")
+
+    sent = backend.sent_messages
+    assert len(sent) == 1
+    assert sent[0].port_name == "Digitone II"
+    assert sent[0].byte_count == 4
+
+
+def test_backend_transport_dry_run_does_not_call_backend_send():
+    backend = FakeMidiBackend([MidiPortInfo(name="Digitone II")])
+    transport = BackendSysexTransport(backend)
+
+    result = transport.send_sysex(
+        bytes([0xF0, 0x7D, 0x00, 0xF7]),
+        port_name="Digitone II",
+        dry_run=True,
+    )
+
+    assert result.dry_run is True
+    assert result.byte_count == 4
+    assert backend.sent_messages == []

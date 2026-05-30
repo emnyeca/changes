@@ -31,6 +31,8 @@ The command does not:
 - require python-rtmidi
 - modify export behavior
 
+Phase 6D adds an optional `MidoMidiBackend` prototype in the transport module, but this command still uses dry-run-only behavior and does not switch to real send.
+
 ## Why --dry-run is required
 
 Phase 6B intentionally prevents accidental hardware writes.
@@ -44,6 +46,14 @@ Future real backend recommendation:
 Prefer `mido` with `python-rtmidi` backend first, unless Windows install or SysEx behavior proves unreliable.
 
 Phase 6B does not add these dependencies.
+
+Phase 6D keeps these dependencies optional and behind lazy import.
+
+For backend experiments only:
+
+```bash
+pip install .[midi]
+```
 
 ## Relationship to Track 8 export
 
@@ -71,3 +81,4 @@ changes send digitone-syx \
 - transfer progress
 - retry
 - hardware validation
+- real-send CLI mode

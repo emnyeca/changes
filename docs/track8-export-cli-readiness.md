@@ -83,6 +83,8 @@ Phase 6B adds a separate dry-run `changes send digitone-syx` command for validat
 
 Export still does not send implicitly.
 
+Phase 6D adds an optional backend prototype for future send work, but export CLI remains artifact-only and hardware validation is not yet performed.
+
 ## User-facing readiness decision
 Status:
 

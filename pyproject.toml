@@ -8,13 +8,16 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "mido>=1.2.10",
     "PyYAML>=5.3.1",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest>=8.0",
+]
+midi = [
+    "mido>=1.2.10",
+    "python-rtmidi>=1.4.9",
 ]
 realtime = [
     "python-rtmidi>=1.4.9",

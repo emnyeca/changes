@@ -12,6 +12,8 @@ Implemented:
 
 - SysEx byte validation
 - MIDI output port data model
+- MIDI backend protocol and fake backend abstraction
+- optional `MidoMidiBackend` prototype with lazy import
 - dry-run transport protocol
 - dry-run transport implementation
 - no-hardware-send tests
@@ -19,7 +21,6 @@ Implemented:
 
 Not implemented:
 
-- real MIDI backend
 - MIDI port discovery
 - hardware send
 - export `--send`
@@ -59,6 +60,8 @@ Do not send from export by default.
 
 Phase 6B requires `--dry-run` for the send CLI and refuses hardware send.
 
+Phase 6D keeps `--dry-run` mandatory and does not expose any real-send CLI mode.
+
 Preferred future CLI shape:
 
 ```bash
@@ -91,6 +94,8 @@ It returns a result but does not send hardware.
 
 If `dry_run=False`, it raises `HardwareSendNotImplementedError`.
 
+Phase 6D preserves this application-level block even when using backend abstractions.
+
 ## Future real transport
 
 A future phase may add a real transport implementation using a MIDI backend.
@@ -100,9 +105,11 @@ Candidate backends:
 - mido
 - python-rtmidi
 
-Backend choice is not made in Phase 6A.
+Phase 6D introduces optional backend prototype support for `mido` under explicit dependency guard.
 
-Phase 6B recommends `mido` with `python-rtmidi` backend first, unless Windows install or SysEx behavior proves unreliable.
+Backend dependencies remain optional; normal install/test paths do not require them.
+
+`mido` with `python-rtmidi` remains the preferred candidate unless Windows install or SysEx behavior proves unreliable.
 
 Future implementation must include:
 
@@ -120,6 +127,8 @@ Track 8 export remains artifact-only.
 The current Track 8 CLI does not send MIDI.
 
 Transport support will consume `.syx` files or bytes after export.
+
+See docs/midi-hardware-validation-checklist.md for future manual validation flow once a reviewed real-send mode exists.
 
 ## Recommended next phase
 

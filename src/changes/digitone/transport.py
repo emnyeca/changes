@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import ModuleType
 from typing import Protocol
 
 
@@ -27,6 +28,21 @@ class SysexTransport(Protocol):
         ...
 
 
+class MidiBackend(Protocol):
+    def list_output_ports(self) -> list[MidiPortInfo]:
+        ...
+
+    def send_sysex_bytes(self, data: bytes, *, port_name: str) -> None:
+        ...
+
+
+@dataclass(frozen=True)
+class FakeSysexSend:
+    port_name: str
+    byte_count: int
+    data: bytes
+
+
 class MidiTransportError(RuntimeError):
     pass
 
@@ -40,6 +56,10 @@ class InvalidSysexDataError(MidiTransportError):
 
 
 class HardwareSendNotImplementedError(MidiTransportError):
+    pass
+
+
+class MidiBackendUnavailableError(MidiTransportError):
     pass
 
 
@@ -59,23 +79,95 @@ def select_output_port(ports: list[MidiPortInfo], port_name: str) -> MidiPortInf
     raise MidiPortNotFoundError(f'Output port not found: {port_name}')
 
 
-class DryRunSysexTransport:
+def _import_mido() -> ModuleType:
+    try:
+        import mido  # type: ignore
+    except ImportError as exc:
+        raise MidiBackendUnavailableError(
+            "Mido MIDI backend is unavailable. Install optional dependencies with "
+            "'pip install .[midi]' (mido + python-rtmidi)."
+        ) from exc
+    return mido
+
+
+class FakeMidiBackend:
     def __init__(self, ports: list[MidiPortInfo] | None = None) -> None:
         self._ports = list(ports or [])
+        self._sent_messages: list[FakeSysexSend] = []
 
     def list_output_ports(self) -> list[MidiPortInfo]:
         return list(self._ports)
 
-    def send_sysex(self, data: bytes, *, port_name: str, dry_run: bool = True) -> SysexSendResult:
-        if not dry_run:
-            raise HardwareSendNotImplementedError("Hardware SysEx sending is not implemented in Phase 6A")
+    @property
+    def sent_messages(self) -> list[FakeSysexSend]:
+        return list(self._sent_messages)
 
-        validate_sysex_bytes(data)
+    def send_sysex_bytes(self, data: bytes, *, port_name: str) -> None:
         select_output_port(self._ports, port_name)
+        self._sent_messages.append(
+            FakeSysexSend(
+                port_name=port_name,
+                byte_count=len(data),
+                data=bytes(data),
+            )
+        )
+
+
+class BackendSysexTransport:
+    def __init__(self, backend: MidiBackend) -> None:
+        self._backend = backend
+
+    def list_output_ports(self) -> list[MidiPortInfo]:
+        return self._backend.list_output_ports()
+
+    def send_sysex(self, data: bytes, *, port_name: str, dry_run: bool = True) -> SysexSendResult:
+        validate_sysex_bytes(data)
+        select_output_port(self._backend.list_output_ports(), port_name)
+
+        if not dry_run:
+            raise HardwareSendNotImplementedError("Hardware SysEx sending is not enabled at application level")
 
         return SysexSendResult(
             port_name=port_name,
             byte_count=len(data),
             dry_run=True,
-            message=f"Dry-run only: validated {len(data)} SysEx bytes for {port_name}; no hardware send occurred.",
+            message=f"Backend dry-run only: validated {len(data)} SysEx bytes for {port_name}; no hardware send occurred.",
         )
+
+
+class MidoMidiBackend:
+    def __init__(self) -> None:
+        # Keep import lazy so normal installs/tests do not require mido.
+        pass
+
+    def list_output_ports(self) -> list[MidiPortInfo]:
+        mido = _import_mido()
+        try:
+            names = mido.get_output_names()
+        except Exception as exc:
+            raise MidiTransportError(f"Mido backend failed to list output ports: {exc}") from exc
+        return [MidiPortInfo(name=str(name), backend="mido", is_output=True) for name in names]
+
+    def send_sysex_bytes(self, data: bytes, *, port_name: str) -> None:
+        validate_sysex_bytes(data)
+        mido = _import_mido()
+        select_output_port(self.list_output_ports(), port_name)
+        payload = list(data[1:-1])
+        try:
+            message = mido.Message("sysex", data=payload)
+            with mido.open_output(port_name) as output_port:
+                output_port.send(message)
+        except Exception as exc:
+            raise MidiTransportError(f"Mido backend failed to send SysEx on '{port_name}': {exc}") from exc
+
+
+class DryRunSysexTransport:
+    def __init__(self, ports: list[MidiPortInfo] | None = None) -> None:
+        self._backend = FakeMidiBackend(ports)
+        self._transport = BackendSysexTransport(self._backend)
+
+    def list_output_ports(self) -> list[MidiPortInfo]:
+        return self._transport.list_output_ports()
+
+    def send_sysex(self, data: bytes, *, port_name: str, dry_run: bool = True) -> SysexSendResult:
+        return self._transport.send_sysex(data, port_name=port_name, dry_run=dry_run)

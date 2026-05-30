@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Midi writer for Changes.
 
 This module provides functions for converting a sequence of chords or six-note voicings
@@ -11,7 +13,17 @@ Functions:
 """
 
 from typing import Dict, List, Sequence
-import mido
+
+
+def _import_mido():
+    try:
+        import mido
+    except ImportError as exc:
+        raise RuntimeError(
+            "MIDI writing requires optional dependency 'mido'. "
+            "Install with: pip install .[midi]"
+        ) from exc
+    return mido
 
 
 def write_midi(voicings: Sequence[Sequence[int]], filename: str, tempo: int = 120) -> None:
@@ -27,6 +39,7 @@ def write_midi(voicings: Sequence[Sequence[int]], filename: str, tempo: int = 12
         tempo: Tempo in BPM for the generated file.
 
     """
+    mido = _import_mido()
     mid = mido.MidiFile()
     # Create six tracks
     tracks = [mido.MidiTrack() for _ in range(6)]
@@ -63,6 +76,7 @@ def write_midi_with_events(
     Consecutive same-pitch notes on the same voice are merged into one long note,
     and note_on is emitted only when that voice pitch changes.
     """
+    mido = _import_mido()
     mid = mido.MidiFile()
     tracks = [mido.MidiTrack() for _ in range(6)]
     for track in tracks:
@@ -99,7 +113,7 @@ def write_midi_with_events(
 
         absolute_tick = 0
         active_note: int | None = None
-        voice_events: List[tuple[int, mido.Message]] = []
+        voice_events: List[tuple[int, object]] = []
         voice_hold = bool(hold_per_voice[voice_idx])
 
         for idx in range(count):

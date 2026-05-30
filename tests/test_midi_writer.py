@@ -1,4 +1,6 @@
-import mido
+import pytest
+
+mido = pytest.importorskip("mido")
 
 from changes.midi_writer import write_midi, write_midi_with_events
 

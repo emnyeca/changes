@@ -2,11 +2,11 @@
 
 ## Status
 
-Not performed yet.
+Performed (manual hardware validation run completed).
 
-This document prepares the first manual hardware validation of guarded SysEx real-send to Digitone II.
+This document records the first manual hardware validation of guarded SysEx real-send to Digitone II.
 
-Do not change this status to passed unless actual hardware validation has been performed and reported.
+Status in this document reflects user-reported observed hardware behavior.
 
 ## Branch
 
@@ -44,19 +44,19 @@ Before real-send:
 
 ## Environment
 
-Fill during validation:
+Captured from manual validation run:
 
 ```text
-Date:
-OS:
-Python:
-changes commit:
-mido version:
-python-rtmidi version:
-Digitone II firmware:
-Connection:
-Port selected:
-SYX source:
+Date: 2026-05-30
+OS: Windows (PowerShell)
+Python: not recorded
+changes commit: not recorded
+mido version: 1.3.3
+python-rtmidi version: 1.5.8
+Digitone II firmware: not recorded
+Connection: not recorded
+Port selected: Elektron Digitone II 2
+SYX source: out/digitone-track8/changes_track8_export.syx
 ```
 
 ## Preparation commands
@@ -168,16 +168,16 @@ warning: hardware was written
 
 ## Observed results
 
-Fill after hardware validation:
+Recorded from manual hardware validation:
 
 ```text
-Dry-run result:
-Port list result:
-Real-send result:
-Digitone II observed behavior:
-Pattern location:
-Track 8 behavior:
-Issues:
+Dry-run result: success, hardware_send: no (bytes: 114118)
+Port list result: Microsoft GS Wavetable Synth 0 / AIO Midi 1 / Elektron Digitone II 2
+Real-send result: success, hardware_send: yes, warning: hardware was written
+Digitone II observed behavior: いい感じ
+Pattern location: A01
+Track 8 behavior: Dm7 G7 Cmaj7 progression confirmed; trigger positions are step1, step5, step9
+Issues: Confirm LEN interpretation (1/4, 1/4, 1,2) is correct.
 ```
 
 ## Pass criteria
@@ -205,8 +205,8 @@ Mark as failed if:
 ## Final result
 
 ```text
-Status:
-Passed/Failed/Not performed:
-Summary:
-Follow-up:
+Status: Performed
+Passed/Failed/Not performed: Passed (with follow-up)
+Summary: Guarded real-send succeeded on Digitone II. Pattern A01 and Track 8 Dm7 -> G7 -> Cmaj7 progression were confirmed with trigger positions at step1, step5, and step9.
+Follow-up: Verify LEN interpretation (1/4, 1/4, 1,2) and record the exact confirmed values.
 ```

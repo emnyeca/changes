@@ -71,6 +71,14 @@ This CLI does not:
 - support non-SongModel YAML project formats
 - guarantee all chord qualities/keys/durations beyond tested paths
 
+## Transport boundary
+
+Phase 6A introduces a dry-run MIDI SysEx transport boundary for future send support.
+
+Real MIDI send is still not implemented.
+
+The Track 8 CLI remains artifact export only.
+
 ## User-facing readiness decision
 Status:
 

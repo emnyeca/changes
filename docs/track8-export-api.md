@@ -55,6 +55,14 @@ This API intentionally does not:
 - expose CLI command behavior
 - implement arbitrary input file loading
 
+## MIDI send boundary
+
+Phase 6A adds a dry-run transport boundary for future SysEx sending.
+
+The Track 8 export API and CLI still do not send MIDI.
+
+See docs/midi-send-transport-boundary.md.
+
 ## 7. Local example
 Use an in-memory SongModel (see tests/test_track8_export_api.py for concrete SongModel construction):
 

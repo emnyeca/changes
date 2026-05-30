@@ -23,6 +23,7 @@ def test_top_level_help_mentions_modern_commands(monkeypatch: pytest.MonkeyPatch
     out = capsys.readouterr().out
     assert "Modern commands:" in out
     assert "export" in out
+    assert "check" in out
     assert "send" in out
     assert "digitone-track8" in out
     assert "digitone-syx" in out
@@ -64,6 +65,16 @@ def test_send_group_help_mentions_digitone_syx(monkeypatch: pytest.MonkeyPatch, 
     assert "digitone-syx" in out
 
 
+def test_check_group_help_mentions_digitone_syx(monkeypatch: pytest.MonkeyPatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["changes", "check", "--help"])
+
+    cli.main()
+
+    out = capsys.readouterr().out
+    assert "Available check commands:" in out
+    assert "digitone-syx" in out
+
+
 def test_modern_export_dispatch_routes_to_track8_helper(monkeypatch: pytest.MonkeyPatch):
     called: dict[str, list[str]] = {}
 
@@ -84,6 +95,17 @@ def test_modern_send_dispatch_routes_to_sysex_helper(monkeypatch: pytest.MonkeyP
     cli.main()
 
     assert called["argv"] == ["--list-ports"]
+
+
+def test_modern_check_dispatch_routes_to_sysex_helper(monkeypatch: pytest.MonkeyPatch):
+    called: dict[str, list[str]] = {}
+
+    monkeypatch.setattr(cli, "_run_digitone_sysex_check_cli", lambda argv: called.setdefault("argv", argv))
+    monkeypatch.setattr(sys, "argv", ["changes", "check", "digitone-syx", "--syx", "demo.syx"])
+
+    cli.main()
+
+    assert called["argv"] == ["--syx", "demo.syx"]
 
 
 def test_docs_entrypoints_exist():

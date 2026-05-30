@@ -12,6 +12,10 @@ Current retained artifacts:
 - `changes_track8_export.syx`
 - `changes_track8_export_manifest.md`
 
+Recommended validation command for retained `.syx` artifacts:
+
+- `changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx`
+
 These artifacts are not the source of truth.
 
 Source of truth:

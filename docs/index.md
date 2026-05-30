@@ -4,6 +4,7 @@
 
 - Track 8 export: `track8-export-api.md`
 - SongModel YAML v1: `song-model-yaml-v1.md`
+- End-to-end workflow: `e2e-user-workflow.md`
 - Digitone SysEx real-send workflow: `real-send-workflow.md`
 - CLI reference: `cli.md`
 

@@ -56,6 +56,12 @@ changes export digitone-track8 `
 python -c "from pathlib import Path; b=Path('out/digitone-track8/changes_track8_export.syx').read_bytes(); print(len(b), hex(b[0]), hex(b[-1]))"
 ```
 
+Equivalent command using the CLI helper:
+
+```powershell
+changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx
+```
+
 ### 5. List ports
 
 ```powershell
@@ -109,4 +115,5 @@ This workflow does not:
 
 - `docs/index.md`
 - `docs/cli.md`
+- `docs/e2e-user-workflow.md`
 - `docs/generated-artifacts-policy.md`

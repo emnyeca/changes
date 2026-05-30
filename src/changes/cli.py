@@ -17,6 +17,7 @@ from .digitone.transport import (
     MidiPortInfo,
     MidoMidiBackend,
 )
+from .digitone.sysex_file import read_and_validate_sysex_file
 from .models.song_model_yaml import load_song_model_yaml
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
@@ -42,17 +43,19 @@ def _build_top_level_help_parser() -> argparse.ArgumentParser:
         usage=(
             "changes [--help]\n"
             "       changes export digitone-track8 ...\n"
+            "       changes check digitone-syx ...\n"
             "       changes send digitone-syx ...\n"
             "       changes digitone-bundle ...\n"
             "       changes INPUT --backend {generic-midi,digitone-compile,digitone-bundle} ..."
         ),
         description=(
-            "Changes CLI with modern Digitone Track 8 export/send commands and legacy progression export compatibility. "
+            "Changes CLI with modern Digitone Track 8 export/check/send commands and legacy progression export compatibility. "
             "Export and send remain separate."
         ),
         epilog=(
             "Modern commands:\n"
             "  export digitone-track8   Export Digitone II Track 8 artifacts\n"
+            "  check digitone-syx       Validate an existing .syx envelope without sending\n"
             "  send digitone-syx        List ports, dry-run, or guarded-send an existing .syx\n\n"
             "Legacy commands:\n"
             "  digitone-bundle          Build Digitone bundle artifacts from MusicXML\n"
@@ -90,6 +93,44 @@ def _print_send_group_help() -> None:
     print()
     print("Available send commands:")
     print("  digitone-syx   List ports, dry-run, or guarded-send an existing .syx file")
+
+
+def _print_check_group_help() -> None:
+    parser = argparse.ArgumentParser(
+        prog="changes check",
+        description="Modern check commands. Checks validate artifacts only and never send MIDI.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.print_help()
+    print()
+    print("Available check commands:")
+    print("  digitone-syx   Validate an existing .syx file envelope and basic file info")
+
+
+def _build_digitone_sysex_check_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Validate a Digitone .syx file envelope without MIDI send or hardware access"
+    )
+    parser.add_argument("--syx", required=True, help="Path to a SysEx file")
+    return parser
+
+
+def _run_digitone_sysex_check_cli(argv: list[str]) -> None:
+    parser = _build_digitone_sysex_check_parser()
+    args = parser.parse_args(argv)
+    syx_path = Path(args.syx)
+
+    try:
+        _, info = read_and_validate_sysex_file(syx_path)
+    except (FileNotFoundError, OSError, RuntimeError, ValueError) as exc:
+        raise SystemExit(f"SysEx check failed: {exc}") from exc
+
+    print("Digitone SysEx file validated:")
+    print(f"  syx: {info.path}")
+    print(f"  bytes: {info.byte_count}")
+    print(f"  first_byte: 0x{info.first_byte:02x}")
+    print(f"  last_byte: 0x{info.last_byte:02x}")
+    print("  valid: yes")
 
 
 def _build_digitone_sysex_send_parser() -> argparse.ArgumentParser:
@@ -157,7 +198,7 @@ def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
     syx_path = Path(args.syx)
 
     try:
-        syx_bytes = syx_path.read_bytes()
+        syx_bytes, _ = read_and_validate_sysex_file(syx_path)
         if args.dry_run:
             transport = DryRunSysexTransport([MidiPortInfo(name=args.port)])
             result = transport.send_sysex(syx_bytes, port_name=args.port, dry_run=True)
@@ -279,6 +320,18 @@ def _run_send_group_cli(argv: list[str]) -> None:
         return
 
     raise SystemExit(f"Unknown send command: {argv[0]}")
+
+
+def _run_check_group_cli(argv: list[str]) -> None:
+    if not argv or argv[0] in {"-h", "--help"}:
+        _print_check_group_help()
+        return
+
+    if argv[0] == "digitone-syx":
+        _run_digitone_sysex_check_cli(argv[1:])
+        return
+
+    raise SystemExit(f"Unknown check command: {argv[0]}")
 
 
 def _run_musicxml_digitone_bundle_cli(argv: list[str]) -> None:
@@ -422,6 +475,10 @@ def main() -> None:
 
     if argv[0] == "send":
         _run_send_group_cli(argv[1:])
+        return
+
+    if argv[0] == "check":
+        _run_check_group_cli(argv[1:])
         return
 
     if argv[0] == "export":

@@ -56,6 +56,18 @@ Notes:
 - `--yes-i-understand-this-writes-to-hardware` is required for real-send
 - `pip install .[midi]` is required for port listing and real-send
 
+### Check Digitone SysEx file
+
+```powershell
+changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx
+```
+
+Notes:
+
+- validates file envelope only
+- does not require `mido`
+- does not send
+
 ## Legacy commands
 
 Generic MIDI export:
@@ -85,6 +97,7 @@ changes digitone-bundle --musicxml input.musicxml --output out --write-syx
 ## Safety
 
 - export never sends
+- check never sends
 - real-send is explicit
 - no auto port selection
 - optional MIDI dependencies remain optional

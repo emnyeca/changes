@@ -1,6 +1,12 @@
-# Changes
+# EUB Changes
 
-Changes is an experimental toolkit for converting musical progression data into MIDI and Digitone-oriented artifacts.
+![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
+
+EUB Changes is an experimental toolkit for converting musical progression data into MIDI and Digitone-oriented artifacts.
+
+The repository name is `changes`, but the software name is intentionally branded as **EUB Changes**.
+
+![EUB Changes UI concept](docs/assets/1x/GUI_Concept.png)
 
 ## Current release-candidate workflow
 

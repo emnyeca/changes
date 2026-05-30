@@ -72,4 +72,5 @@ jobs:
             tests/test_track8_sysex_export.py \
             tests/test_track8_fixture_generation.py \
             tests/test_track8_product_like_fixture_generation.py \
-            tests/test_track8_export_api.py
+            tests/test_track8_export_api.py \
+            tests/test_track8_export_cli.py

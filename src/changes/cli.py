@@ -6,6 +6,11 @@ import sys
 
 import yaml
 
+from .digitone.track8_demo_songs import build_demo_cmaj7_song
+from .digitone.track8_export_api import (
+    DEFAULT_TRACK8_EXPORT_BASENAME,
+    export_track8_artifacts_from_song,
+)
 from .harmonic_context import UnsupportedHarmonicContextError
 from .chord_parser import parse_progression
 from .pipeline_digitone import (
@@ -20,8 +25,60 @@ from .voice_leading import generate_voice_leading
 from .midi_writer import write_midi
 
 
+def _run_track8_export_cli(argv: list[str]) -> None:
+    parser = argparse.ArgumentParser(description="Export Track 8 demo artifacts")
+    parser.add_argument("--demo", required=True, help="Demo song id (currently only: cmaj7)")
+    parser.add_argument("--output-dir", required=True, help="Output directory for Track 8 artifacts")
+    parser.add_argument(
+        "--basename",
+        default=DEFAULT_TRACK8_EXPORT_BASENAME,
+        help="Base filename for generated artifacts",
+    )
+    parser.add_argument("--name", default=None, help="Pattern name to write in exported YAML")
+    parser.add_argument(
+        "--events-yaml-only",
+        action="store_true",
+        help="Write only events.yaml + manifest and skip SysEx generation",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite existing output files",
+    )
+    args = parser.parse_args(argv)
+
+    if args.demo != "cmaj7":
+        raise SystemExit(f"Unsupported demo: {args.demo}. Supported demos: cmaj7")
+
+    song = build_demo_cmaj7_song()
+
+    try:
+        paths = export_track8_artifacts_from_song(
+            song,
+            args.output_dir,
+            basename=args.basename,
+            name=args.name,
+            include_sysex=not bool(args.events_yaml_only),
+            overwrite=bool(args.overwrite),
+        )
+    except (RuntimeError, ValueError, FileExistsError) as exc:
+        raise SystemExit(f"Track 8 export failed: {exc}") from exc
+
+    print("Wrote Track 8 export artifacts:")
+    print(f"  events_yaml: {paths.events_yaml_path}")
+    if paths.syx_path is not None:
+        print(f"  syx: {paths.syx_path}")
+    else:
+        print("  syx: not generated (--events-yaml-only)")
+    print(f"  manifest: {paths.manifest_path}")
+
+
 def main() -> None:
     """Run the Changes CLI."""
+    if len(sys.argv) > 2 and sys.argv[1] == "export" and sys.argv[2] == "digitone-track8":
+        _run_track8_export_cli(sys.argv[3:])
+        return
+
     if len(sys.argv) > 1 and sys.argv[1] == "digitone-bundle":
         sub = argparse.ArgumentParser(description="MusicXML to Digitone bundle artifacts")
         sub.add_argument("--musicxml", required=True, help="Path to MusicXML file")

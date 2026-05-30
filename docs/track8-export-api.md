@@ -81,3 +81,21 @@ Rationale:
 - Phase 5B adds a concrete export API with optional toolkit path.
 - CI should make toolkit-dependent behavior visible before broadening CLI surface.
 - After R2B, Phase 5C can add a minimal developer CLI wrapper around this API.
+
+## Developer CLI wrapper
+
+Phase 5C adds a minimal developer CLI wrapper:
+
+```bash
+changes export digitone-track8 --demo cmaj7 --output-dir out/digitone-track8 --events-yaml-only
+```
+
+This CLI currently supports only the built-in cmaj7 demo input.
+
+It does not load arbitrary song/project files.
+
+It does not send MIDI.
+
+SysEx generation is enabled by default and requires digitone-syx-toolkit.
+
+Use --events-yaml-only to avoid the toolkit dependency.

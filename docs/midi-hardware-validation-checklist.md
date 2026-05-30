@@ -57,6 +57,8 @@ Stop immediately if:
 
 Use docs/hardware-validation/digitone-syx-real-send-template.md as the recording template.
 
+See docs/real-send-workflow.md for the practical workflow, docs/cli.md for the CLI reference, and docs/index.md for the documentation entry point.
+
 ```text
 Date:
 Device:

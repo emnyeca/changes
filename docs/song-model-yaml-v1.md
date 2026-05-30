@@ -95,6 +95,8 @@ changes export digitone-track8 --input examples/song_models/demo_cmaj7.changes.y
 
 The command still does not send MIDI.
 
+See docs/cli.md for the current export command reference.
+
 ## Multi-chord example
 
 A small II-V-I example is available at:
@@ -110,6 +112,13 @@ Current format contract:
 - type: changes.song
 
 Future incompatible changes should increment version.
+
+## Documentation links
+
+- docs/index.md
+- docs/track8-export-api.md
+- docs/track8-export-cli-readiness.md
+- docs/cli.md
 
 ## Next phase
 Recommended next phase:

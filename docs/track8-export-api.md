@@ -65,6 +65,10 @@ See docs/midi-send-transport-boundary.md.
 
 Export continues to write `.syx` artifacts only; dry-run send validation lives in the separate send CLI.
 
+See docs/cli.md for the current user-facing CLI reference.
+
+See docs/generated-artifacts-policy.md for the current retained-artifact policy.
+
 ## 7. Local example
 Use an in-memory SongModel (see tests/test_track8_export_api.py for concrete SongModel construction):
 
@@ -139,6 +143,8 @@ This command still does not send MIDI or operate hardware.
 See docs/song-model-yaml-v1.md for the file format.
 
 See docs/track8-export-cli-readiness.md for current readiness status and boundaries.
+
+See docs/index.md for the documentation entry point.
 
 ## Multi-chord coverage
 

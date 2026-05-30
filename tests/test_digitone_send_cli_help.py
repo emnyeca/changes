@@ -18,3 +18,5 @@ def test_send_help_includes_safety_flags(monkeypatch: pytest.MonkeyPatch, capsys
     assert "--real-send" in out
     assert "--list-ports" in out
     assert "--yes-i-understand-this-writes-to-hardware" in out
+    assert "hardware" in out
+    assert ".[midi]" in out

@@ -39,9 +39,9 @@ The first manual real-send validation passed for the II-V-I fixture while keepin
 
 ## Why --dry-run is required
 
-Phase 6B intentionally prevents accidental hardware writes.
+The dry-run mode exists to prevent accidental hardware writes and to keep validation available without optional MIDI dependencies.
 
-Real send will be added only after backend selection, fake-backend tests, and manual hardware validation checklist are reviewed.
+Guarded real-send now exists separately, but dry-run remains the recommended first step before any hardware write.
 
 ## Backend selection
 
@@ -79,13 +79,14 @@ changes send digitone-syx \
 
 ## Not implemented
 
-- real MIDI send
-- port discovery
 - device identity check
 - transfer progress
 - retry
-- hardware validation
+
+Port listing and guarded real-send are implemented separately; this document covers dry-run behavior only.
 
 For guarded real-send behavior, see docs/digitone-syx-real-send-guarded-cli.md.
 
 For the practical end-to-end workflow, see docs/real-send-workflow.md.
+
+For the consolidated CLI reference, see docs/cli.md and docs/index.md.

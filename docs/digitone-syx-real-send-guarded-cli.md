@@ -75,3 +75,5 @@ Back up important Digitone II data before testing.
 Use docs/hardware-validation/digitone-syx-real-send-first-validation.md for the first manual validation checklist and status log.
 
 Use docs/real-send-workflow.md for the stabilized user-facing workflow.
+
+Use docs/cli.md for the consolidated CLI reference and docs/index.md for the documentation entry point.

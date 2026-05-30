@@ -73,19 +73,17 @@ This CLI does not:
 
 ## Transport boundary
 
-Phase 6A introduces a dry-run MIDI SysEx transport boundary for future send support.
-
-Real MIDI send is still not implemented.
+Phase 6A introduced a dry-run MIDI SysEx transport boundary for future send support.
 
 The Track 8 CLI remains artifact export only.
 
-Phase 6B adds a separate dry-run `changes send digitone-syx` command for validating existing `.syx` files.
+Phase 6B added a separate dry-run `changes send digitone-syx` command for validating existing `.syx` files.
 
 Export still does not send implicitly.
 
-Phase 6D adds an optional backend prototype for future send work, but export CLI remains artifact-only and hardware validation is not yet performed.
+Phase 6D added an optional backend prototype for send work while keeping export CLI artifact-only.
 
-Phase 6E adds guarded real-send and port listing to the separate send CLI, but Track 8 export remains artifact-only and does not include `--send`.
+Phase 6E added guarded real-send and port listing to the separate send CLI, but Track 8 export remains artifact-only and does not include `--send`.
 
 End-to-end user readiness for hardware operations still depends on manual hardware validation records.
 
@@ -134,5 +132,8 @@ Current docs now describe implemented CLI behavior:
 
 - docs/track8-export-api.md
 - docs/song-model-yaml-v1.md
+- docs/cli.md
+- docs/generated-artifacts-policy.md
+- docs/index.md
 
 Future CLI architecture cleanup may move early dispatch logic to full argparse subparsers, but this phase intentionally keeps the current small dispatch shape.

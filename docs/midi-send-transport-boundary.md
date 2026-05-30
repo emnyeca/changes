@@ -24,8 +24,6 @@ Implemented:
 
 Not implemented:
 
-- MIDI port discovery
-- hardware send
 - export `--send`
 - retry logic
 - device identity confirmation
@@ -142,6 +140,8 @@ See docs/midi-hardware-validation-checklist.md for future manual validation flow
 Use docs/hardware-validation/digitone-syx-real-send-template.md to record manual hardware validation results.
 
 See docs/real-send-workflow.md for the stabilized user-facing real-send workflow.
+
+See docs/cli.md for the consolidated CLI reference and docs/generated-artifacts-policy.md for retained validation artifacts.
 
 ## Recommended next phase
 

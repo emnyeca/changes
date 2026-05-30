@@ -104,3 +104,9 @@ This workflow does not:
 - bypass confirmation
 - guarantee all future fixtures
 - validate every possible LEN mapping
+
+## See also
+
+- `docs/index.md`
+- `docs/cli.md`
+- `docs/generated-artifacts-policy.md`

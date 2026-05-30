@@ -36,11 +36,68 @@ def _create_mido_backend() -> MidoMidiBackend:
     return MidoMidiBackend()
 
 
-def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
+def _build_top_level_help_parser() -> argparse.ArgumentParser:
+    return argparse.ArgumentParser(
+        prog="changes",
+        usage=(
+            "changes [--help]\n"
+            "       changes export digitone-track8 ...\n"
+            "       changes send digitone-syx ...\n"
+            "       changes digitone-bundle ...\n"
+            "       changes INPUT --backend {generic-midi,digitone-compile,digitone-bundle} ..."
+        ),
+        description=(
+            "Changes CLI with modern Digitone Track 8 export/send commands and legacy progression export compatibility. "
+            "Export and send remain separate."
+        ),
+        epilog=(
+            "Modern commands:\n"
+            "  export digitone-track8   Export Digitone II Track 8 artifacts\n"
+            "  send digitone-syx        List ports, dry-run, or guarded-send an existing .syx\n\n"
+            "Legacy commands:\n"
+            "  digitone-bundle          Build Digitone bundle artifacts from MusicXML\n"
+            "  INPUT --backend generic-midi      Export generic MIDI\n"
+            "  INPUT --backend digitone-compile  Build Digitone compile artifacts\n"
+            "  INPUT --backend digitone-bundle   Build Digitone bundle artifacts from YAML"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+
+def _print_top_level_help() -> None:
+    _build_top_level_help_parser().print_help()
+
+
+def _print_export_group_help() -> None:
+    parser = argparse.ArgumentParser(
+        prog="changes export",
+        description="Modern export commands. Export writes artifacts only and does not send MIDI.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.print_help()
+    print()
+    print("Available export commands:")
+    print("  digitone-track8   Export Digitone II Track 8 artifacts from SongModel YAML v1 or demo input")
+
+
+def _print_send_group_help() -> None:
+    parser = argparse.ArgumentParser(
+        prog="changes send",
+        description="Modern send commands. Real-send is always explicit and requires confirmation.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.print_help()
+    print()
+    print("Available send commands:")
+    print("  digitone-syx   List ports, dry-run, or guarded-send an existing .syx file")
+
+
+def _build_digitone_sysex_send_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "List MIDI ports, validate a .syx file with dry-run, or perform an explicitly confirmed "
-            "Digitone II real-send"
+            "Digitone II real-send. Port listing and real-send require the optional MIDI extra "
+            "(pip install .[midi]); dry-run does not."
         )
     )
     parser.add_argument("--syx", help="Path to a SysEx file")
@@ -66,6 +123,11 @@ def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
         action="store_true",
         help="Required with --real-send; acknowledges that hardware will be written",
     )
+    return parser
+
+
+def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
+    parser = _build_digitone_sysex_send_parser()
     args = parser.parse_args(argv)
 
     if not (args.list_ports or args.dry_run or args.real_send):
@@ -125,9 +187,12 @@ def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
         print("  warning: hardware was written")
 
 
-def _run_track8_export_cli(argv: list[str]) -> None:
+def _build_track8_export_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Export Digitone II Track 8 chord artifacts from demo or SongModel YAML"
+        description=(
+            "Export Digitone II Track 8 artifacts from SongModel YAML v1 or built-in demo input; "
+            "does not send MIDI"
+        )
     )
     source_group = parser.add_mutually_exclusive_group(required=True)
     source_group.add_argument(
@@ -145,13 +210,18 @@ def _run_track8_export_cli(argv: list[str]) -> None:
     parser.add_argument(
         "--events-yaml-only",
         action="store_true",
-        help="Write only events.yaml + manifest and skip SysEx generation",
+        help="Write only .events.yaml + manifest and skip SysEx generation",
     )
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        help="Overwrite existing output files",
+        help="Overwrite existing artifact files",
     )
+    return parser
+
+
+def _run_track8_export_cli(argv: list[str]) -> None:
+    parser = _build_track8_export_parser()
     args = parser.parse_args(argv)
 
     try:
@@ -187,23 +257,37 @@ def _run_track8_export_cli(argv: list[str]) -> None:
     print(f"  manifest: {paths.manifest_path}")
 
 
-def main() -> None:
-    """Run the Changes CLI."""
-    if len(sys.argv) > 2 and sys.argv[1] == "send" and sys.argv[2] == "digitone-syx":
-        _run_digitone_sysex_send_cli(sys.argv[3:])
+def _run_export_group_cli(argv: list[str]) -> None:
+    if not argv or argv[0] in {"-h", "--help"}:
+        _print_export_group_help()
         return
 
-    if len(sys.argv) > 2 and sys.argv[1] == "export" and sys.argv[2] == "digitone-track8":
-        _run_track8_export_cli(sys.argv[3:])
+    if argv[0] == "digitone-track8":
+        _run_track8_export_cli(argv[1:])
         return
 
-    if len(sys.argv) > 1 and sys.argv[1] == "digitone-bundle":
+    raise SystemExit(f"Unknown export command: {argv[0]}")
+
+
+def _run_send_group_cli(argv: list[str]) -> None:
+    if not argv or argv[0] in {"-h", "--help"}:
+        _print_send_group_help()
+        return
+
+    if argv[0] == "digitone-syx":
+        _run_digitone_sysex_send_cli(argv[1:])
+        return
+
+    raise SystemExit(f"Unknown send command: {argv[0]}")
+
+
+def _run_musicxml_digitone_bundle_cli(argv: list[str]) -> None:
         sub = argparse.ArgumentParser(description="MusicXML to Digitone bundle artifacts")
         sub.add_argument("--musicxml", required=True, help="Path to MusicXML file")
         sub.add_argument("--output", required=True, help="Output directory for artifacts")
         sub.add_argument("--tempo", type=int, default=120, help="Performance BPM metadata")
         sub.add_argument("--write-syx", action="store_true", help="Also emit per-pattern SYX and bundle SYX")
-        sub_args = sub.parse_args(sys.argv[2:])
+        sub_args = sub.parse_args(argv)
 
         try:
             song, timeline, bundle_plan, diagnostics = compile_musicxml_digitone_bundle_pipeline(
@@ -229,10 +313,11 @@ def main() -> None:
         print(f"  manifest: {artifacts['bundle_manifest_json']}")
         if "bundle_syx" in artifacts:
             print(f"  bundle_syx: {artifacts['bundle_syx']}")
-        return
 
+
+def _run_legacy_root_cli(argv: list[str]) -> None:
     parser = argparse.ArgumentParser(
-        description="Generate six-voice chord clouds and export to generic MIDI"
+        description="Legacy generic progression export CLI with optional Digitone backend modes"
     )
     parser.add_argument(
         "input",
@@ -253,7 +338,7 @@ def main() -> None:
         "--backend",
         choices=["generic-midi", "digitone-compile", "digitone-bundle"],
         default="generic-midi",
-        help="Output backend mode",
+        help="Legacy output backend mode",
     )
     parser.add_argument(
         "--artifact-dir",
@@ -265,7 +350,7 @@ def main() -> None:
         action="store_true",
         help="When backend is digitone-compile or digitone-bundle, also emit SYX via digitone-syx-toolkit",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.backend == "generic-midi":
         progression = parse_progression(args.input)
@@ -325,6 +410,29 @@ def main() -> None:
     for key, path in artifacts.items():
         if key not in {"bundle_manifest_json", "bundle_syx"}:
             print(f"  {key}: {path}")
+
+
+def main() -> None:
+    """Run the Changes CLI."""
+    argv = sys.argv[1:]
+
+    if not argv or argv[0] in {"-h", "--help"}:
+        _print_top_level_help()
+        return
+
+    if argv[0] == "send":
+        _run_send_group_cli(argv[1:])
+        return
+
+    if argv[0] == "export":
+        _run_export_group_cli(argv[1:])
+        return
+
+    if argv[0] == "digitone-bundle":
+        _run_musicxml_digitone_bundle_cli(argv[1:])
+        return
+
+    _run_legacy_root_cli(argv)
 
 
 if __name__ == "__main__":

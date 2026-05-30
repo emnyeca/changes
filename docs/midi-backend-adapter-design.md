@@ -103,6 +103,8 @@ Real sending must remain disabled at application/CLI level until:
 
 Phase 6E guarded send requires explicit confirmation flag and does not run implicitly from export.
 
+For user-facing CLI usage, see docs/cli.md and docs/real-send-workflow.md.
+
 ## Future real backend shape
 
 A future phase may keep this backend class and expose a reviewed application-level real-send switch:
@@ -127,9 +129,7 @@ Phase 6E does not:
 
 - make `mido` mandatory
 - make `python-rtmidi` mandatory
-- enable real send in `changes send`
 - remove `--dry-run`
 - add export `--send`
 - discover ports automatically in user CLI
 - perform hardware validation automatically
-- claim completed hardware validation

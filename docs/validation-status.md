@@ -30,9 +30,10 @@ Covered by tests:
 - broader SongModel fixture coverage:
   - `examples/song_models/demo_multibar_turnaround.changes.yaml`
   - `examples/song_models/demo_multisection_form.changes.yaml`
-- broader fixtures validated through export -> check --manifest -> dry-run (software path only)
+- broader fixtures are covered by export/manifest regression tests
+- `demo_multibar_turnaround.changes.yaml` is additionally validated through export -> check --manifest -> dry-run (software path only)
 
-Additional software fixtures now cover broader SongModel shapes, including multi-bar and multi-section examples. These fixtures are validated through export, manifest-aware check, and dry-run only. They have not yet been manually validated on Digitone II hardware.
+Additional software fixtures now cover broader SongModel shapes, including multi-bar and multi-section examples. Hardware validation is still limited to the II-V-I fixture.
 
 ## Not yet validated
 

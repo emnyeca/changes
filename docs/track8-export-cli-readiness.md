@@ -120,9 +120,13 @@ Not yet complete:
 
 Focus on broader export coverage, editor/application workflow, and additional hardware validation records.
 
+Prefer Phase 5G before MIDI send.
+
 Reason:
 
 The first guarded real-send fixture is validated, but broader song coverage and user-facing workflow remain incomplete.
+
+Phase 5G remains the shorthand label for broadening export coverage before treating MIDI send as broadly ready.
 
 ## Documentation cleanup
 

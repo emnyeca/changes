@@ -12,7 +12,9 @@ class RenderProfile:
     voice_leading_strategy: str
     bass_enabled: bool
     bass_strategy: str
-    hold_repeated_same_pitch: str
+    cloud_trigger_policy: str
+    bass_trigger_policy: str
+    chord_trigger_policy: str
     cloud_min_midi: int
     cloud_max_midi: int
     chord_min_midi: int
@@ -28,7 +30,9 @@ def default_render_profile() -> RenderProfile:
         voice_leading_strategy="minimum_motion",
         bass_enabled=True,
         bass_strategy="slash_or_root_in_window",
-        hold_repeated_same_pitch="hold_until_change",
+        cloud_trigger_policy="hold_until_change",
+        bass_trigger_policy="hold_until_change",
+        chord_trigger_policy="retrigger",
         cloud_min_midi=48,
         cloud_max_midi=72,
         chord_min_midi=48,
@@ -57,5 +61,9 @@ def render_profile_to_dict(profile: RenderProfile) -> dict:
             "bass_min_midi": profile.bass_min_midi,
             "bass_max_midi": profile.bass_max_midi,
         },
-        "hold": {"repeated_same_pitch": profile.hold_repeated_same_pitch},
+        "trigger": {
+            "cloud": profile.cloud_trigger_policy,
+            "bass": profile.bass_trigger_policy,
+            "chord": profile.chord_trigger_policy,
+        },
     }

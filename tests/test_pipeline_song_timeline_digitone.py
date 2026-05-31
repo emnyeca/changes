@@ -50,8 +50,8 @@ def test_rendered_timeline_hold_merges_contiguous_same_pitch():
     timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
 
     v1 = [e for e in timeline.events if e.voice_id == "cloud_voice_1"]
-    assert len(v1) == 2
-    assert all(event.duration_quarters == Fraction(2, 1) for event in v1)
+    assert len(v1) == 1, "hold_until_change merges contiguous same-pitch events into one"
+    assert v1[0].duration_quarters == Fraction(4, 1), "merged event spans the full duration"
 
 
 def test_rendered_timeline_emits_six_chord_voices_plus_bass_per_event_without_hold_merge():
@@ -62,8 +62,8 @@ def test_rendered_timeline_emits_six_chord_voices_plus_bass_per_event_without_ho
         "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
     }
     song = compact_progression_to_song_model(payload)
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
+    rp = replace(default_render_profile(), cloud_trigger_policy="retrigger", bass_trigger_policy="retrigger")
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp), render_profile=rp)
 
     assert len(timeline.events) == 4 * 13
 
@@ -105,10 +105,11 @@ def test_rendered_timeline_am7_contains_f_not_f_sharp_in_c_major_context():
 
 
 def test_timing_plan_falls_back_from_invalid_tempo_bounds():
+    from changes.models.digitone_target_profile import LayerRouting, VoiceRouting
     target = DigitoneTargetProfile(
         name="fallback-test",
         device="digitone2",
-        voice_to_track={"cloud_voice_1": 1},
+        routing={"cloud": LayerRouting(voices={"cloud_voice_1": VoiceRouting(track=1)})},
         default_velocity="inherit",
         length_strategy="hold_until_next_event",
         allow_inf=False,

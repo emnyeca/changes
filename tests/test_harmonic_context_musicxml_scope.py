@@ -136,9 +136,9 @@ def test_bundle_split_does_not_recompute_harmony_selection():
             {"name": "A", "progression": [["Cmaj7"] for _ in range(300)]},
         ],
     }
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    rp = replace(default_render_profile(), cloud_trigger_policy="retrigger", bass_trigger_policy="retrigger")
     song = compact_progression_to_song_model(payload)
-    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp), render_profile=rp)
 
     bundle = compile_timeline_to_digitone_bundle_plan(song, timeline, default_digitone_target_profile())
     assert len(bundle.patterns) >= 2

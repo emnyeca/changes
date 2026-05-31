@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from fractions import Fraction
 
+from changes.models.render_profile import default_render_profile
 from changes.models.rendered_arrangement import (
     RenderedArrangement,
     RenderedBassLayer,
@@ -292,3 +294,110 @@ def test_flatten_render_arrangement_output_for_minimal_cmaj7_song():
         70,
         50,
     )
+
+
+def _two_occurrence_arrangement(note_midi_1: int, note_midi_2: int, *, contiguous: bool = True) -> RenderedArrangement:
+    gap = Fraction(0) if contiguous else Fraction(1)
+    return RenderedArrangement(
+        title="Hold Test",
+        performance_tempo=Fraction(120, 1),
+        occurrences=(
+            RenderedHarmonyOccurrence(
+                id="h1",
+                source_harmony_id="src-h1",
+                symbol="Cmaj7",
+                onset_quarters=Fraction(0),
+                duration_quarters=Fraction(2),
+                cloud=RenderedCloudLayer(
+                    role="cloud",
+                    notes=(RenderedLayerNote(note_midi=note_midi_1, lane_id="cloud_voice_1"),),
+                ),
+                bass=RenderedBassLayer(
+                    role="bass",
+                    note=RenderedLayerNote(note_midi=note_midi_1, lane_id="bass"),
+                    source_pitch_class=0,
+                ),
+                chord=_chord_layer((RenderedLayerNote(note_midi=note_midi_1, lane_id="chord_note_1"),)),
+            ),
+            RenderedHarmonyOccurrence(
+                id="h2",
+                source_harmony_id="src-h2",
+                symbol="Cmaj7",
+                onset_quarters=Fraction(2) + gap,
+                duration_quarters=Fraction(2),
+                cloud=RenderedCloudLayer(
+                    role="cloud",
+                    notes=(RenderedLayerNote(note_midi=note_midi_2, lane_id="cloud_voice_1"),),
+                ),
+                bass=RenderedBassLayer(
+                    role="bass",
+                    note=RenderedLayerNote(note_midi=note_midi_2, lane_id="bass"),
+                    source_pitch_class=0,
+                ),
+                chord=_chord_layer((RenderedLayerNote(note_midi=note_midi_2, lane_id="chord_note_1"),)),
+            ),
+        ),
+    )
+
+
+def test_hold_until_change_merges_contiguous_same_pitch_cloud_and_bass():
+    arrangement = _two_occurrence_arrangement(60, 60, contiguous=True)
+    profile = default_render_profile()  # cloud=hold_until_change, bass=hold_until_change, chord=retrigger
+
+    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=profile)
+
+    cloud_events = [e for e in timeline.events if e.role == "cloud"]
+    bass_events = [e for e in timeline.events if e.role == "bass"]
+    chord_events = [e for e in timeline.events if e.role == "chord"]
+
+    assert len(cloud_events) == 1, "cloud: same pitch contiguous should merge to 1 event"
+    assert cloud_events[0].duration_quarters == Fraction(4)
+    assert cloud_events[0].onset_quarters == Fraction(0)
+
+    assert len(bass_events) == 1, "bass: same pitch contiguous should merge to 1 event"
+    assert bass_events[0].duration_quarters == Fraction(4)
+
+    assert len(chord_events) == 2, "chord: retrigger always produces 2 events"
+
+
+def test_hold_until_change_does_not_merge_different_pitches():
+    arrangement = _two_occurrence_arrangement(60, 62, contiguous=True)
+    profile = default_render_profile()
+
+    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=profile)
+
+    cloud_events = [e for e in timeline.events if e.role == "cloud"]
+    bass_events = [e for e in timeline.events if e.role == "bass"]
+
+    assert len(cloud_events) == 2, "cloud: different pitches should not merge"
+    assert len(bass_events) == 2, "bass: different pitches should not merge"
+
+
+def test_hold_until_change_does_not_merge_non_contiguous_same_pitch():
+    arrangement = _two_occurrence_arrangement(60, 60, contiguous=False)
+    profile = default_render_profile()
+
+    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=profile)
+
+    cloud_events = [e for e in timeline.events if e.role == "cloud"]
+    bass_events = [e for e in timeline.events if e.role == "bass"]
+
+    assert len(cloud_events) == 2, "cloud: gap between events means no merge"
+    assert len(bass_events) == 2, "bass: gap between events means no merge"
+
+
+def test_retrigger_policy_never_merges_same_pitch():
+    arrangement = _two_occurrence_arrangement(60, 60, contiguous=True)
+    profile = replace(
+        default_render_profile(),
+        cloud_trigger_policy="retrigger",
+        bass_trigger_policy="retrigger",
+    )
+
+    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=profile)
+
+    cloud_events = [e for e in timeline.events if e.role == "cloud"]
+    bass_events = [e for e in timeline.events if e.role == "bass"]
+
+    assert len(cloud_events) == 2, "retrigger: same pitch contiguous must NOT merge"
+    assert len(bass_events) == 2, "retrigger: same pitch contiguous must NOT merge"

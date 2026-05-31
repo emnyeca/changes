@@ -28,7 +28,7 @@ def test_bundle_single_pattern_uses_song_title_only():
         "sections": [{"name": "A", "progression": [["Cmaj7"]]}],
     }
 
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    rp = replace(default_render_profile(), bass_trigger_policy="retrigger")
     _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
 
     assert len(bundle.patterns) == 1
@@ -68,7 +68,7 @@ def test_bundle_overflow_split_adds_section_part_numbers():
         ],
     }
 
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    rp = replace(default_render_profile(), bass_trigger_policy="retrigger")
     _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
     names = [p.pattern_name for p in bundle.patterns]
 
@@ -95,8 +95,8 @@ def test_bundle_capacity_split_without_named_sections_uses_p_prefix():
         song,
         measures=tuple(replace(m, section_id=None) for m in song.measures),
     )
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    timeline = flatten_arrangement_to_timeline(render_arrangement(song_without_sections, rp), layers="bass")
+    rp = replace(default_render_profile(), bass_trigger_policy="retrigger")
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song_without_sections, rp), layers="bass", render_profile=rp)
     bundle = compile_timeline_to_digitone_bundle_plan(
         song_without_sections,
         timeline,
@@ -232,7 +232,7 @@ def test_repeated_section_occurrence_with_overflow_has_unique_deterministic_name
         ],
     }
 
-    rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
+    rp = replace(default_render_profile(), bass_trigger_policy="retrigger")
     _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
     names = [p.pattern_name for p in bundle.patterns]
 

@@ -187,7 +187,7 @@ def compile_digitone_pipeline(
 
     song = compact_progression_to_song_model(payload)
     arrangement = render_arrangement(song, rp)
-    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers, render_profile=rp)
     plan = compile_timeline_to_digitone_plan(timeline, tp)
     events_payload = digitone_compile_plan_to_events_yaml_payload(
         plan,
@@ -209,7 +209,7 @@ def compile_digitone_bundle_pipeline(
 
     song = compact_progression_to_song_model(payload)
     arrangement = render_arrangement(song, rp)
-    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers, render_profile=rp)
     explicit_overrides = _extract_explicit_pattern_name_overrides(payload)
     bundle_plan = compile_timeline_to_digitone_bundle_plan(
         song,
@@ -235,7 +235,7 @@ def compile_musicxml_digitone_bundle_pipeline(
     diagnostics = build_musicxml_harmony_resolution_diagnostic(imported)
     song = imported_song_to_song_model(imported, tempo=tempo)
     arrangement = render_arrangement(song, rp)
-    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers, render_profile=rp)
     bundle_plan = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
     return song, timeline, bundle_plan, diagnostics
 

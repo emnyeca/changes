@@ -7,10 +7,20 @@ from fractions import Fraction
 
 
 @dataclass(frozen=True)
+class VoiceRouting:
+    track: int
+
+
+@dataclass(frozen=True)
+class LayerRouting:
+    voices: dict[str, VoiceRouting]
+
+
+@dataclass(frozen=True)
 class DigitoneTargetProfile:
     name: str
     device: str
-    voice_to_track: dict[str, int]
+    routing: dict[str, LayerRouting]
     default_velocity: int | str
     length_strategy: str
     allow_inf: bool
@@ -19,6 +29,14 @@ class DigitoneTargetProfile:
     fallback_speeds: tuple[Fraction, ...]
     track_default_velocity: dict[int, int] | None = None
     polyphonic_tracks: tuple[int, ...] = ()
+
+    @property
+    def voice_to_track(self) -> dict[str, int]:
+        result: dict[str, int] = {}
+        for layer_routing in self.routing.values():
+            for voice_id, vr in layer_routing.voices.items():
+                result[voice_id] = vr.track
+        return result
 
 
 DEFAULT_SPEED_CANDIDATES = (
@@ -34,20 +52,26 @@ def default_digitone_target_profile() -> DigitoneTargetProfile:
     return DigitoneTargetProfile(
         name="digitone2_jazz_cloud",
         device="digitone2",
-        voice_to_track={
-            "cloud_voice_1": 1,
-            "cloud_voice_2": 2,
-            "cloud_voice_3": 3,
-            "cloud_voice_4": 4,
-            "cloud_voice_5": 5,
-            "cloud_voice_6": 6,
-            "bass": 7,
-            "chord_note_1": 8,
-            "chord_note_2": 8,
-            "chord_note_3": 8,
-            "chord_note_4": 8,
-            "chord_note_5": 8,
-            "chord_note_6": 8,
+        routing={
+            "cloud": LayerRouting(voices={
+                "cloud_voice_1": VoiceRouting(track=1),
+                "cloud_voice_2": VoiceRouting(track=2),
+                "cloud_voice_3": VoiceRouting(track=3),
+                "cloud_voice_4": VoiceRouting(track=4),
+                "cloud_voice_5": VoiceRouting(track=5),
+                "cloud_voice_6": VoiceRouting(track=6),
+            }),
+            "bass": LayerRouting(voices={
+                "bass": VoiceRouting(track=7),
+            }),
+            "chord": LayerRouting(voices={
+                "chord_note_1": VoiceRouting(track=8),
+                "chord_note_2": VoiceRouting(track=8),
+                "chord_note_3": VoiceRouting(track=8),
+                "chord_note_4": VoiceRouting(track=8),
+                "chord_note_5": VoiceRouting(track=8),
+                "chord_note_6": VoiceRouting(track=8),
+            }),
         },
         default_velocity="inherit",
         length_strategy="hold_until_next_event",

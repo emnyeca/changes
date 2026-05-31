@@ -101,10 +101,11 @@ def test_digitone_note_round_trip_c5_to_midi_60(tmp_path: Path):
             ),
         ),
     )
+    from changes.models.digitone_target_profile import LayerRouting, VoiceRouting
     target = DigitoneTargetProfile(
         name="note-rt",
         device="digitone2",
-        voice_to_track={"cloud_voice_1": 1},
+        routing={"cloud": LayerRouting(voices={"cloud_voice_1": VoiceRouting(track=1)})},
         default_velocity="inherit",
         length_strategy="hold_until_next_event",
         allow_inf=False,

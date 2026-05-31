@@ -26,6 +26,7 @@ class EditorState:
     title: str = "NO TITLE"
     tempo: int = 120
     meter: str = "4/4"
+    working_key: str = "C"
     cells: list[str] = field(default_factory=list)
     cursor: int = 0
     _history: list[tuple[list[str], int]] = field(

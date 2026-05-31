@@ -2,15 +2,18 @@
 
 ## Product framing
 
-- Concept: `concept.md`
-- Product architecture: `product-architecture.md`
-- Current state: `current-state.md`
+- Concept（主要概念・モデル契約・用語）: `concept.md`
+- Product architecture（入力経路・画面構成・レイヤー・パイプライン）: `product-architecture.md`
+- Current state（現在状態・計画）: `current-state.md`
+
+## Editor
+
+- モデル・変換仕様: `concept.md`（Core Model Contracts > EditorState 節）
 
 ## 現在の practical workflow
 
 - Chord export API: `chord-export-api.md`
 - Chord internal implementation notes: `chord-internal-implementation-notes.md`
-- Model contracts (SongModel / RenderedArrangement / Track8ChordEvent): `concept.md`
 - End-to-end workflow: `e2e-user-workflow.md`
 - Digitone SysEx real-send workflow: `real-send-workflow.md`
 - CLI reference: `cli.md`

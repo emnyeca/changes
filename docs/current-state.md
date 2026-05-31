@@ -7,11 +7,13 @@
 
 ## プロダクト目標と方針
 
-EUB Changes は、iReal Pro または MusicXML 由来の楽曲データから Cloud / Bass / Chord の各レイヤーを生成し、用途に応じて単独または組み合わせて使える machine-live workflow を目指します。
+EUB Changes は、楽曲データから Cloud / Bass / Chord の各レイヤーを生成し、用途に応じて単独または組み合わせて使える machine-live workflow を目指します。
 
 - Track 1-6: Harmony Cloud
 - Track 7: Bass
 - Track 8: Chord
+
+楽曲データの入力源は、iReal Pro / MusicXML 由来のファイルと、GUI Editor からの直接入力の2種類を想定します。
 
 現在は Track 8 が RC 安定化 subset ですが、これは長期的なプロダクト方針を変更するものではありません。
 
@@ -40,6 +42,8 @@ EUB Changes は、iReal Pro または MusicXML 由来の楽曲データから Cl
 - chord / bass register bounds を含む timeline rendering
 - `RenderedArrangement` から Cloud Track 1-6 / Bass Track 7 / Chord Track 8 を同時 compile する regression
 - `changes export digitone-product` による Track 1-8 product artifact export
+- layer 別 trigger policy（`hold_until_change` / `retrigger`）の flatten 適用
+- `EditorState` からの SongModel 変換（chord 入力・% 解決・空小節補填・section 進行）
 
 ソフトウェア E2E fixture:
 
@@ -61,6 +65,7 @@ export/manifest fixture:
 - 大規模 song export の検証は未完了
 - consumer 向け導入フローの検証は未完了
 - Cloud / Bass / Chord をそろえた実機検証は Chord RC workflow 相当の粒度には未到達
+- Editor GUI シェル（画面実装）は未着手
 
 ## 現在状態にもとづく計画
 
@@ -75,16 +80,18 @@ export/manifest fixture:
 - 複数系統の hardware-validated fixture が成立
 - guarded send safety checks に回帰がない
 
-### Horizon B: Cloud/Bass/Chord 統合提供へ再バランス（中期）
+### Horizon B: Cloud/Bass/Chord 統合提供・Editor 拡張（中期）
 
 - Chord 偏重を減らすため Cloud/Bass/Chord 統合経路の検証カバレッジを増加
 - Cloud/Bass/Chord の導線バランスを改善
 - Track 1-8 product export を実機 validation へ進める
+- Editor GUI シェル実装（Generate/Send 画面との統合）
 
 完了シグナル:
 
 - validation matrix が Chord 中心を超える実用カバレッジを示す
 - docs 読み順で Cloud/Bass/Chord のレイヤー関係が過不足なく理解できる
+- Editor 画面で chord 進行を入力し Digitone へ送れる基本フローが動作する
 
 ### Horizon C: production 耐性拡張（後期）
 

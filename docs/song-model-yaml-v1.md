@@ -117,10 +117,4 @@ Future incompatible changes should increment version.
 
 - docs/index.md
 - docs/track8-export-api.md
-- docs/track8-export-cli-readiness.md
 - docs/cli.md
-
-## Next phase
-Recommended next phase:
-
-Phase 5E: Add --input SongModel YAML mode to Track 8 export CLI

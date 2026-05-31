@@ -1,14 +1,14 @@
-# Track 8 Chord Event Model (Phase 4A)
+# Track 8 Chord Event Model
 
 ## Purpose
 
-This phase introduces a Changes-side event model for Digitone Track 8 chord triggers.
+This document defines the Changes-side event model for Digitone Track 8 chord triggers.
 
 The conversion path is:
 
 RenderedArrangement.chord -> Track8ChordEvent
 
-This phase does not write SysEx and does not call digitone-syx-toolkit.
+This model does not write SysEx and does not call digitone-syx-toolkit.
 
 ## Why Use RenderedArrangement.chord Directly
 
@@ -25,15 +25,15 @@ Using legacy `RenderedTimeline role="chord"` is unsafe because that legacy role 
 - source harmony identity
 - onset and duration
 
-## Scope of This Phase
+## Scope
 
-Implemented in this phase:
+Implemented scope:
 
 - Changes-side dataclasses for Track 8 chord notes/events
 - Extraction from `RenderedArrangement` chord occurrences
 - Validation for v1 constraints
 
-Not implemented in this phase:
+Out of scope:
 
 - SysEx byte encoding
 - digitone-syx-toolkit calls
@@ -80,6 +80,3 @@ Extraction raises `ValueError` when:
 - velocity is outside `1..127`
 - note MIDI is outside `0..127`
 
-## Next Phase
-
-A later phase will map this model into toolkit-facing payloads (YAML/API) and then to SysEx.

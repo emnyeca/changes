@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document converts the Phase 4H open questions into product-like Digitone pattern settings decisions.
+This document defines product-like Digitone pattern settings decisions for Track 8 export.
 
 It does not implement these settings.
 
@@ -16,15 +16,14 @@ It does not modify SysEx generation.
 
 It does not modify bundle planner behavior.
 
-## Context: what Phase 4G revealed
+## Context
 
-The Phase 4G fixture was Track-8-only. When loaded to Digitone II, Track 1-7 showed
+The Track-8-only fixture showed that Track 1-7
 the base empty template defaults rather than the intended product default output spec.
 This is expected for a Track-8-only fixture: Changes only emits events for active tracks,
 and the template supplies all other defaults.
 
-This means the caveat about Track 1-7 LEN / VEL defaults "not matching intended spec"
-is a product-readiness gap, not a bug in the Track 8 chord-trigger logic.
+This is treated as a product-readiness gap, not a Track 8 chord-trigger bug.
 
 ## Decisions
 
@@ -37,7 +36,7 @@ Product-like export should use PER TRACK mode for:
 - CHANGE
 - RESET
 
-This is already the stated target in `docs/design/digitone-native-syx-backend.md`:
+This is already the stated target in `docs/digitone-internal-spec.md`:
 
 - pattern.mode = per-track
 - Track 1..8 LENGTH = Changes-computed total_steps
@@ -45,7 +44,6 @@ This is already the stated target in `docs/design/digitone-native-syx-backend.md
 - pattern-shared CHANGE = OFF
 - pattern-shared RESET = INF
 
-The Phase 4G fixture used pattern-wide mode because it was a Track-8-only scoped fixture.
 Product-like export will use per-track mode per the existing design.
 
 Rationale:
@@ -70,8 +68,7 @@ This value is already present in `default_digitone_target_profile()`. No guessin
 
 Rationale:
 
-Track 1-7 VEL is already part of the default output profile. It was not applied in the
-Phase 4G fixture because the fixture contained no Track 1-7 events.
+Track 1-7 VEL is already part of the default output profile and applies when Track 1-7 events exist.
 
 ### Decision 3: Track 1-7 LEN default
 
@@ -84,9 +81,8 @@ There is no single "Track 1-7 default LEN" to define.
 If an exported pattern contains no Track 1-7 events, Track 1-7 LEN state in the loaded
 pattern comes from the base empty template, not from Changes.
 
-SPEC-OPEN: The base empty template LEN state for Track 1-7 (when no events are emitted)
-is not currently inspected. Phase 4J must confirm whether the template default LEN
-state is acceptable for product-like patterns where Track 1-7 events are absent.
+OPEN: The base empty template LEN state for Track 1-7 (when no events are emitted)
+is not currently inspected and must be verified.
 
 Rationale:
 
@@ -145,10 +141,8 @@ Product behavior should not require the user to supply a template for basic expo
 
 However, advanced users should be able to provide a template later.
 
-SPEC-OPEN: The current base empty template bundled in digitone-syx-toolkit sets
-PATTERN-wide mode. Phase 4J must determine whether a separate PER TRACK template is
-needed, and if so, whether it should be bundled in toolkit, in Changes, or generated
-dynamically.
+OPEN: The current base empty template bundled in digitone-syx-toolkit sets
+PATTERN-wide mode. A separate PER TRACK template source is still undecided.
 
 Rationale:
 
@@ -185,21 +179,17 @@ Bundle planner should not become responsible for device initialization policy.
 | RESET mode | PER TRACK (INF) | template/toolkit | decided |
 | Track 1-7 VEL | {1:70,2:70,3:70,4:50,5:70,6:50,7:100} | Changes track_default_velocity | decided |
 | Track 1-7 LEN | event-level via hold_until_next_event | Changes events | decided |
-| Track 1-7 LEN (template default) | base empty template state when no events | template | SPEC-OPEN |
+| Track 1-7 LEN (template default) | base empty template state when no events | template | OPEN |
 | Track 8 LEN | chord event length_code | Changes events + toolkit | decided |
 | Track 8 VEL | ChordRealizationResult.velocities | Changes chord realization | decided |
 | Track 8 micro timing | 0 by default | Changes event model | decided |
 | Track 8 note order | preserve realized order | Changes event model | decided |
-| Template policy | bundled default + optional user template | Changes/toolkit boundary | SPEC-OPEN (PER TRACK template source) |
+| Template policy | bundled default + optional user template | Changes/toolkit boundary | OPEN (PER TRACK template source) |
 | Bundle planner relation | separate from device initialization | architecture | decided |
 
-## Requirements for Phase 4J
+## Open verification items
 
-Phase 4J must inspect digitone-syx-toolkit and determine whether the product-like
-settings are currently expressible through events YAML, template pattern file, builder
-defaults, or direct builder API.
-
-Phase 4J must specifically answer:
+The following items must be verified to complete this specification:
 
 1. Can LENGTH / SPEED / CHANGE / RESET PER TRACK modes be expressed in events YAML today?
 2. If yes, where?
@@ -212,9 +202,9 @@ Phase 4J must specifically answer:
 9. If so, what PER TRACK / LEN / VEL state does it contain?
 10. Should Changes pass an explicit PER TRACK template file for product-like export?
 
-## Non-goals
+## Scope boundary
 
-This phase does not:
+This specification does not:
 
 - implement PER TRACK modes
 - edit toolkit behavior
@@ -222,7 +212,5 @@ This phase does not:
 - generate new fixture files
 - modify existing fixtures
 - validate hardware
-- does not implement any of the settings defined in this document
-- does not validate hardware behavior for PER TRACK mode
-- does not modify bundle planner
-- does not modify UI
+- modify bundle planner
+- modify UI

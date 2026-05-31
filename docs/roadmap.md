@@ -27,3 +27,9 @@
 - 拡張 improvisation に向けた live-coding / generative variation を検討する。
 
 各ステージで community からの contribution を歓迎します。toolkit を試しながら issue や pull request を送ってください。
+
+## Documentation Balance TODO
+
+Cloud / Bass / Chord と Track 8 の文書比重調整タスクは次を参照してください。
+
+- `docs/status/cloud-bass-chord-doc-rebalance-todo-20260531.md`

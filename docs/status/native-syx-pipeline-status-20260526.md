@@ -4,7 +4,7 @@
 
 - Digitone II Pattern SysEx analysis and encoder for:
   - trigger / track / step / pitch / velocity / full length / tempo / speed / total steps / pattern name
-- Per-track scale mode output implemented across `changes` -> `digitone-syx-toolkit` integration:
+- `changes` -> `digitone-syx-toolkit` integration 全体で per-track scale mode output を実装:
   - emitted events YAML now defaults to `pattern.mode = per-track`
   - Track 1..8 `track_scale.length` mirrors computed segment `total_steps`
   - Track 1..8 `track_scale.speed` mirrors computed plan/segment `speed`
@@ -12,38 +12,38 @@
   - Track 9..16 `track_scale.speed` is fixed to `1`
   - pattern-shared CHANGE is fixed to `OFF`
   - pattern-shared RESET is fixed to `INF`
-- Simple ii-V-I end-to-end hardware validation
+- simple ii-V-I end-to-end hardware validation
 - Blue Moon end-to-end hardware validation
-- Pattern Name hardware validation completed and passed
-- Song-level shared timing plan for split patterns
-- Section-first deterministic split planning with 128-step capacity handling
-- Prefix-first readable auto naming for multi-pattern exports
-- Bundle artifacts export:
+- Pattern Name hardware validation 完了（pass）
+- split pattern 向け song-level shared timing plan
+- 128-step capacity を考慮した section-first deterministic split planning
+- multi-pattern export 向け prefix-first readable auto naming
+- Bundle artifact export:
   - `digitone_bundle_plan.json`
   - `bundle_manifest.json`
   - ordered per-pattern events YAML and per-pattern SYX
   - concatenated bundle SYX
-- Sequential send support in toolkit (ordered file list and concatenated bundle replay)
-- Initial BLUE MOON pattern-bundle fixture generated:
+- toolkit 側で sequential send support（ordered file list と concatenated bundle replay）
+- 初期 BLUE MOON pattern-bundle fixture を生成:
   - `examples/generated/pattern_bundle_blue_moon/`
-- Context-aware voicing migration completed:
+- context-aware voicing migration 完了:
   - fixed per-chord expansion removed from main render path
   - Local Pitch Collection + Selected Scale Collection + slot extraction (`1,3,5,6/13,7,9`)
   - corrected C-major context output for `Am7` (`F`, not `F#`)
-- Bundle robustness hardening completed:
+- bundle robustness hardening 完了:
   - section occurrence-aware split planning (`A`, `B`, `A` handled as independent occurrences)
   - boundary carryover reconstruction for section/capacity splits (held notes retriggered at pattern step 1)
   - deterministic short-section merge policy for Digitone minimum length (`2..128` enforced)
   - shared Pattern Name policy for single and bundle outputs (auto/explicit consistent validation)
   - `digitone-bundle` CLI backend integrated with artifact and optional SYX output
   - manifest enriched with `pattern_count`, occurrence/global-order metadata, and path aliases
-- Bundle transport/display/timing hardware validation completed:
+- bundle transport / display / timing hardware validation 完了:
   - Section bundle smoke test: pass
   - Held note boundary test: pass
   - Overflow/sequential import test: pass
   - Repeated section naming test: pass
   - verification mode: direct visual/aural confirmation on hardware (no screenshot/capture evidence recorded)
-- Harmonic context engine extension completed:
+- harmonic context engine extension 完了:
   - canonical qualities added:
     - `major`, `m`, `6`, `m6`, `dim`, `maj7`, `maj9`, `maj7#5`, `m7`, `mMaj7`, `m9`, `m7b5`, `dim7`
     - `7`, `9`, `13`, `13b9`, `7b9`, `7#9`, `7b5`, `7#5`, `7#5b9`, `7b5b9`, `7#11`, `7b13`, `7#9b5`
@@ -54,7 +54,7 @@
   - normalized harmonic identity used for repeated-chord context decisions
   - chromatic fallback removed; context-reduction retry policy implemented (`current+prev+next` -> `current+prev` -> `current`)
   - sus heptatonic extraction rule added: `1-4-5-13-b7-9`
-- MusicXML importer normalization completed:
+- MusicXML importer normalization 完了:
   - accepts both iReal Pro direct-export MusicXML and `@infojunkie/ireal-musicxml` output
   - source-independent harmony normalization (`kind + degree + bass`) with compatibility overrides for `alt` and direct-export `7sus4` / `9sus4` / `7b9sus4`
   - normalized import-layer structured event model implemented with raw degree/form-marker diagnostics retained
@@ -65,26 +65,26 @@
   - paired compatibility tests strengthened for local 20-pair corpus (`examples/musicXML/iRealPro` vs `examples/musicXML/ireal-musicxml`):
     - structured semantic signature comparison
     - importer -> harmony-core end-to-end resolution/output equivalence comparison
-- MusicXML to Digitone vertical-slice CLI path completed:
+- MusicXML to Digitone vertical-slice CLI path 完了:
   - new command style: `changes digitone-bundle --musicxml <file.musicxml> --output <artifact-dir> [--write-syx]`
   - pipeline path: MusicXML import -> SongModel -> timeline render -> Digitone bundle plan -> artifacts
   - emits `musicxml_harmony_resolution.json` for per-occurrence harmonic decision diagnostics
   - unresolved harmonic contexts fail conversion explicitly with measure/event/symbol/local-pitch-collection details
-- Symmetric collection eligibility restriction added after Digitone II listening validation of `500 Miles High`:
+- Digitone II listening validation（`500 Miles High`）後、symmetric collection eligibility restriction を追加:
   - plain major/minor qualities cannot select whole-tone/diminished as current output collection
   - explicit altered/diminished qualities remain eligible for whole-tone/diminished selection
   - prevents accidental recoloring such as plain `Gm7` resolving to diminished from surrounding context alone
-- Dominant altered-tension hard/color split added after Digitone II listening validation:
+- Digitone II listening validation 後、dominant altered-tension の hard/color split を追加:
   - contextual selection now distinguishes hard structural constituents vs color hints
   - dominant altered tensions (`b9`, `#9`, `#11`, `b13`) are treated as soft color hints in Attempt 1/2
   - Attempt 3 (`current_only`) restores current chord color hints into constraint set
   - preserves `alt` as a hard semantic directive (`1, b9, 3, b13/#5`)
   - preserves structural altered-fifth tones (`b5`, `#5`) as hard constraints
   - fixes minor ii-V case (`Bm7b5 | E7#9 | Am7`) to prefer `A_harmonic_minor` for `E7#9`
-- Regression validation completed:
+- regression validation 完了:
   - `changes`: `168 passed`
   - `digitone-syx-toolkit`: `97 passed`
-- Register policy rollout completed (render-layer):
+- register policy rollout 完了（render-layer）:
   - chord voices now bounded to Digitone display `C4-A5` (MIDI `48..69`)
   - bass now bounded to Digitone display `G2-F#3` (MIDI `31..42`)
   - bass source now follows slash bass when present (`Dm7/G` -> `G` bass, `C/E` -> `E` bass)
@@ -93,18 +93,18 @@
 
 ## Confirmed import behavior
 
-- Multiple Pattern SYX messages can be received consecutively.
-- They are placed sequentially from the destination start slot selected on the device.
-- Destination slot does not need to be encoded by the generator.
-- Same destination slot is overwritten on receive.
+- 複数の Pattern SYX message は連続受信できる。
+- device 側で選んだ destination start slot から順に配置される。
+- generator 側で destination slot を encode する必要はない。
+- 同じ destination slot へ受信した場合は上書きされる。
 
 ## Current boundary policy
 
-- `changes` separates `source_title` (song identity) and `pattern_name` (device display name).
-- events YAML `name` is always exported from the final per-pattern `pattern_name`.
-- `changes` supports explicit per-segment Pattern Name override, records `pattern_name_source` (`auto` or `explicit`), and preserves override intent (no auto prefix injection when explicit name is present).
-- toolkit normalizes Pattern Name with ASCII lowercase to uppercase, validates allowed characters across the full normalized string, and truncates over-16-char names to the first 16 characters.
-- Generic MIDI export path is unaffected by Digitone Pattern Name restrictions.
+- `changes` は `source_title`（song identity）と `pattern_name`（device display name）を分離する。
+- events YAML の `name` は最終的な per-pattern `pattern_name` から常に export する。
+- `changes` は explicit な per-segment Pattern Name override をサポートし、`pattern_name_source`（`auto` or `explicit`）を記録し、override 意図を保持する（explicit name がある場合は auto prefix を注入しない）。
+- toolkit は Pattern Name を ASCII lowercase から uppercase へ normalize し、正規化後の全文字列で allowed character を検証し、16 文字超過時は先頭 16 文字に truncate する。
+- Generic MIDI export path は Digitone Pattern Name restriction の影響を受けない。
 
 ## Pattern Name validation artifacts
 
@@ -117,9 +117,9 @@
 - `examples/generated/pattern_name_validation/angstrom.digitone.events.yaml`
 - `examples/generated/pattern_name_validation/angstrom.syx`
 
-Execution note:
+execution note:
 
-- This session generated artifacts and checklist documents for hardware validation; runbook execution results should be appended in `docs/hardware-validation/pattern-name-native-sysex-send-2026-05-26.md`.
+- この session では hardware validation 用 artifact と checklist 文書を生成済み。runbook 実行結果は `docs/hardware-validation/pattern-name-native-sysex-send-2026-05-26.md` へ追記する。
 
 ## Bundle transport validation artifacts (generated)
 
@@ -154,14 +154,14 @@ Execution note:
 
 ## Intentionally Unimplemented Scope (Current)
 
-- iReal Pro HTML / `irealb://` direct decoding.
-- iReal Pro alias grammar expansion remains deferred (data-driven implementation after symbol-sample collection).
-- `allow_sus_add3` remains deferred.
+- iReal Pro HTML / `irealb://` の direct decoding。
+- iReal Pro alias grammar expansion は deferred のまま（symbol sample 収集後に data-driven 実装）。
+- `allow_sus_add3` は deferred のまま。
 
 ## Next major target
 
-- iReal Pro HTML importer implementation
-- MusicXML repeat/ending/DS/DC/Coda unfolding with dedicated validation
+- iReal Pro HTML importer 実装
+- dedicated validation を伴う MusicXML repeat/ending/DS/DC/Coda unfolding
 
 ## Register Policy and Bounded Voice Sliding (current default)
 

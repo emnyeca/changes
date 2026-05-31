@@ -8,7 +8,6 @@ The API takes an in-memory SongModel and writes deterministic export artifacts.
 ## 2. Why Python API before CLI
 Track 8 export is implemented as a Python API before a user-facing CLI because:
 
-- SongModel/project file format is still SPEC-OPEN.
 - CLI namespace exists, but Track 8 command shape is not stable yet.
 - Python API enables deterministic test-first validation of export behavior.
 
@@ -57,11 +56,9 @@ This API intentionally does not:
 
 ## MIDI send boundary
 
-Phase 6A adds a dry-run transport boundary for future SysEx sending.
-
 The Track 8 export API and CLI still do not send MIDI.
 
-See docs/midi-send-transport-boundary.md.
+See docs/digitone-internal-spec.md.
 
 Export continues to write `.syx` artifacts only; dry-run send validation lives in the separate send CLI.
 
@@ -85,18 +82,7 @@ paths = export_track8_artifacts_from_song(
 )
 ```
 
-## 8. Next phase
-Recommended next phase:
-
-Phase R2B: implement toolkit integration CI job
-
-Rationale:
-
-- Phase 5B adds a concrete export API with optional toolkit path.
-- CI should make toolkit-dependent behavior visible before broadening CLI surface.
-- After R2B, Phase 5C can add a minimal developer CLI wrapper around this API.
-
-## Developer CLI wrapper
+## 8. Current CLI status
 
 Track 8 export currently provides a practical explicit CLI wrapper:
 
@@ -125,8 +111,6 @@ Use --events-yaml-only to avoid the toolkit dependency.
 
 ## SongModel YAML input
 
-Phase 5E adds SongModel YAML v1 input mode:
-
 ```bash
 changes export digitone-track8 \
     --input examples/song_models/demo_cmaj7.changes.yaml \
@@ -141,8 +125,6 @@ The input file must use SongModel YAML v1.
 This command still does not send MIDI or operate hardware.
 
 See docs/song-model-yaml-v1.md for the file format.
-
-See docs/track8-export-cli-readiness.md for current readiness status and boundaries.
 
 See docs/index.md for the documentation entry point.
 

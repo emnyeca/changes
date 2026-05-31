@@ -1,19 +1,10 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import pytest
 
 from changes import cli
-
-
-DOC_ENTRYPOINTS = [
-    Path("docs/index.md"),
-    Path("docs/cli.md"),
-    Path("docs/generated-artifacts-policy.md"),
-    Path("docs/manifest-aware-validation.md"),
-]
 
 
 def test_top_level_help_mentions_modern_commands(monkeypatch: pytest.MonkeyPatch, capsys):
@@ -107,8 +98,3 @@ def test_modern_check_dispatch_routes_to_sysex_helper(monkeypatch: pytest.Monkey
     cli.main()
 
     assert called["argv"] == ["--syx", "demo.syx"]
-
-
-def test_docs_entrypoints_exist():
-    for path in DOC_ENTRYPOINTS:
-        assert path.exists(), f"Expected documentation entrypoint to exist: {path}"

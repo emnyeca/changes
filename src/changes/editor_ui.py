@@ -15,8 +15,8 @@ from changes.models.song_model import song_model_to_dict
 
 # ── Config ───────────────────────────────────────────────────────────────────
 
-_LOGO_PATH = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x" / "eub_changes_logo_square.png"
-_APP_VERSION = "0.1.0"
+_LOGO_PATH = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x" / "eub_changes_logo_square_transparent.png"
+_APP_VERSION = "v0.1.0"
 
 # ── Music constants ──────────────────────────────────────────────────────────
 

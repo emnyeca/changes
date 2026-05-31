@@ -44,6 +44,7 @@ def _build_top_level_help_parser() -> argparse.ArgumentParser:
         usage=(
             "changes [--help]\n"
             "       changes export digitone-track8 ...\n"
+            "       changes export digitone-product ...\n"
             "       changes check digitone-syx ...\n"
             "       changes send digitone-syx ...\n"
             "       changes digitone-bundle ...\n"
@@ -56,6 +57,7 @@ def _build_top_level_help_parser() -> argparse.ArgumentParser:
         epilog=(
             "Modern commands:\n"
             "  export digitone-track8   Export Chord artifacts for Digitone II Track 8\n"
+            "  export digitone-product  Export Cloud/Bass/Chord product artifacts for Digitone II Tracks 1-8\n"
             "  check digitone-syx       Validate an existing .syx envelope or manifest metadata without sending\n"
             "  send digitone-syx        List ports, dry-run, or guarded-send an existing .syx\n\n"
             "Legacy commands:\n"
@@ -82,6 +84,7 @@ def _print_export_group_help() -> None:
     print()
     print("Available export commands:")
     print("  digitone-track8   Export Chord artifacts for Digitone II Track 8 from SongModel YAML v1 or demo input")
+    print("  digitone-product  Export Cloud/Bass/Chord artifacts for Digitone II Tracks 1-8")
 
 
 def _print_send_group_help() -> None:
@@ -337,6 +340,58 @@ def _run_track8_export_cli(argv: list[str]) -> None:
     print(f"  manifest: {paths.manifest_path}")
 
 
+def _build_digitone_product_export_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description=(
+            "Export Cloud/Bass/Chord product artifacts for Digitone II Tracks 1-8 from compact progression YAML; "
+            "does not send MIDI"
+        )
+    )
+    parser.add_argument("--input", required=True, help="Path to compact progression YAML input")
+    parser.add_argument("--output-dir", required=True, help="Output directory for product artifacts")
+    parser.add_argument(
+        "--layers",
+        default="cloud,bass,chord",
+        help="Comma-separated layers to export: cloud,bass,chord. Default: cloud,bass,chord",
+    )
+    parser.add_argument(
+        "--write-syx",
+        action="store_true",
+        help="Also emit SYX via digitone-syx-toolkit; never sends MIDI",
+    )
+    return parser
+
+
+def _run_digitone_product_export_cli(argv: list[str]) -> None:
+    parser = _build_digitone_product_export_parser()
+    args = parser.parse_args(argv)
+
+    try:
+        payload = yaml.safe_load(Path(args.input).read_text(encoding="utf-8"))
+        if not isinstance(payload, dict):
+            raise ValueError("digitone-product export requires mapping YAML input")
+
+        song, timeline, plan, events_payload = compile_digitone_pipeline(payload, layers=args.layers)
+        artifacts = save_digitone_pipeline_artifacts(
+            output_dir=args.output_dir,
+            song=song,
+            timeline=timeline,
+            plan=plan,
+            events_payload=events_payload,
+            write_syx=bool(args.write_syx),
+            syx_filename="digitone_product.syx",
+        )
+    except (RuntimeError, ValueError, FileExistsError, OSError, yaml.YAMLError) as exc:
+        raise SystemExit(f"Product export failed (Digitone Tracks 1-8): {exc}") from exc
+
+    print("Wrote product export artifacts (Digitone Tracks 1-8):")
+    print(f"  source_title={song.title}")
+    print(f"  layers={args.layers}")
+    print(f"  pattern_name={plan.pattern_name}")
+    for key, path in artifacts.items():
+        print(f"  {key}: {path}")
+
+
 def _run_export_group_cli(argv: list[str]) -> None:
     if not argv or argv[0] in {"-h", "--help"}:
         _print_export_group_help()
@@ -344,6 +399,10 @@ def _run_export_group_cli(argv: list[str]) -> None:
 
     if argv[0] == "digitone-track8":
         _run_track8_export_cli(argv[1:])
+        return
+
+    if argv[0] == "digitone-product":
+        _run_digitone_product_export_cli(argv[1:])
         return
 
     raise SystemExit(f"Unknown export command: {argv[0]}")

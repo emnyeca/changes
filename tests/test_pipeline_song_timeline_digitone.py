@@ -19,7 +19,6 @@ from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.pipeline_digitone import compile_digitone_pipeline
 from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
 from changes.rendering.arrangement_renderer import render_arrangement
-from changes.rendering.timeline_renderer import render_timeline
 
 
 def _song_payload(prog):
@@ -48,11 +47,11 @@ def test_compact_progression_fraction_expansion_4_4_patterns():
 def test_rendered_timeline_hold_merges_contiguous_same_pitch():
     payload = _song_payload([["Cmaj7", "Cmaj7"]])
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
 
-    v1 = [e for e in timeline.events if e.voice_id == "chord_voice_1"]
-    assert len(v1) == 1
-    assert v1[0].duration_quarters == Fraction(4, 1)
+    v1 = [e for e in timeline.events if e.voice_id == "cloud_voice_1"]
+    assert len(v1) == 2
+    assert all(event.duration_quarters == Fraction(2, 1) for event in v1)
 
 
 def test_rendered_timeline_emits_six_chord_voices_plus_bass_per_event_without_hold_merge():
@@ -64,18 +63,26 @@ def test_rendered_timeline_emits_six_chord_voices_plus_bass_per_event_without_ho
     }
     song = compact_progression_to_song_model(payload)
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    timeline = render_timeline(song, rp)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
 
-    assert len(timeline.events) == 4 * 7
+    assert len(timeline.events) == 4 * 13
 
-    chord_voices = {e.voice_id for e in timeline.events if e.role == "chord"}
-    assert chord_voices == {
-        "chord_voice_1",
-        "chord_voice_2",
-        "chord_voice_3",
-        "chord_voice_4",
-        "chord_voice_5",
-        "chord_voice_6",
+    cloud_voices = {e.voice_id for e in timeline.events if e.role == "cloud"}
+    assert cloud_voices == {
+        "cloud_voice_1",
+        "cloud_voice_2",
+        "cloud_voice_3",
+        "cloud_voice_4",
+        "cloud_voice_5",
+        "cloud_voice_6",
+    }
+    assert {e.voice_id for e in timeline.events if e.role == "chord"} == {
+        "chord_note_1",
+        "chord_note_2",
+        "chord_note_3",
+        "chord_note_4",
+        "chord_note_5",
+        "chord_note_6",
     }
     assert any(e.role == "bass" and e.voice_id == "bass" for e in timeline.events)
 
@@ -88,9 +95,9 @@ def test_rendered_timeline_am7_contains_f_not_f_sharp_in_c_major_context():
         "sections": [{"name": "A", "progression": [["Cmaj7", "Am7", "Dm7", "G7"]]}],
     }
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
 
-    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "chord"]
+    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "cloud"]
     pcs = {e.note_midi % 12 for e in am7_events}
 
     assert 5 in pcs  # F
@@ -101,7 +108,7 @@ def test_timing_plan_falls_back_from_invalid_tempo_bounds():
     target = DigitoneTargetProfile(
         name="fallback-test",
         device="digitone2",
-        voice_to_track={"chord_voice_1": 1},
+        voice_to_track={"cloud_voice_1": 1},
         default_velocity="inherit",
         length_strategy="hold_until_next_event",
         allow_inf=False,
@@ -116,8 +123,8 @@ def test_timing_plan_falls_back_from_invalid_tempo_bounds():
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(1, 1),
@@ -142,8 +149,8 @@ def test_compile_plan_splits_long_durations_into_exact_length_code_chunks():
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(35, 1),
@@ -152,8 +159,8 @@ def test_compile_plan_splits_long_durations_into_exact_length_code_chunks():
             ),
             RenderedNoteEvent(
                 id="e2",
-                voice_id="chord_voice_2",
-                role="chord",
+                voice_id="cloud_voice_2",
+                role="cloud",
                 note_midi=64,
                 onset_quarters=Fraction(35, 1),
                 duration_quarters=Fraction(1, 1),
@@ -174,8 +181,8 @@ def test_choose_shared_timing_plan_allows_total_steps_over_128_for_song_level_pl
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(1, 1),
@@ -184,8 +191,8 @@ def test_choose_shared_timing_plan_allows_total_steps_over_128_for_song_level_pl
             ),
             RenderedNoteEvent(
                 id="e2",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(300, 1),
                 duration_quarters=Fraction(1, 1),
@@ -208,7 +215,7 @@ def test_choose_shared_timing_plan_allows_total_steps_over_128_for_song_level_pl
 def test_compile_plan_and_events_export_smoke():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
     plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
     assert plan.total_steps <= 128
@@ -237,7 +244,7 @@ def test_default_target_profile_contains_track_default_velocity_map():
     assert profile.track_default_velocity == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
     assert profile.voice_to_track["cloud_voice_1"] == 1
     assert profile.voice_to_track["cloud_voice_6"] == 6
-    assert profile.voice_to_track["chord_voice_1"] == 1
+    assert "chord_voice_1" not in profile.voice_to_track
     assert profile.voice_to_track["chord_note_1"] == 8
     assert profile.voice_to_track["chord_note_6"] == 8
     assert profile.polyphonic_tracks == (8,)
@@ -263,6 +270,15 @@ def test_flattened_arrangement_compiles_product_tracks_1_to_8_with_chord_velocit
     assert all(event.velocity == "inherit" for event in track1_to_7_events)
 
 
+def test_compile_digitone_pipeline_layer_selection_can_export_chord_only():
+    payload = _song_payload([["Cmaj7"]])
+    _song, timeline, _plan, events_payload = compile_digitone_pipeline(payload, layers="chord")
+
+    assert {event.role for event in timeline.events} == {"chord"}
+    assert {event["track"] for event in events_payload["events"]} == {8}
+    assert [event["velocity"] for event in events_payload["events"]] == [70, 70, 70, 50, 70, 50]
+
+
 def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_velocity_inherit():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     _song, _timeline, plan, events_payload = compile_digitone_pipeline(payload)
@@ -278,14 +294,22 @@ def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_veloci
     assert events_payload["track_scale"][8] == {"length": plan.total_steps, "speed": plan.speed}
     assert events_payload["track_scale"][16] == {"length": 16, "speed": "1"}
     assert events_payload["events"]
-    assert all(event["velocity"] == "inherit" for event in events_payload["events"])
+    assert all(event["velocity"] == "inherit" for event in events_payload["events"] if event["track"] in range(1, 8))
+    assert [event["velocity"] for event in events_payload["events"] if event["track"] == 8][:6] == [
+        70,
+        70,
+        70,
+        50,
+        70,
+        50,
+    ]
 
 
 def test_single_pattern_plan_pattern_name_is_final_device_name():
     payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
     payload["name"] = "Blue Moon A"
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
     plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
 
     out = digitone_compile_plan_to_events_yaml_payload(plan)
@@ -300,8 +324,8 @@ def test_single_pattern_long_title_is_truncated_in_plan_with_warning():
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(2, 1),
@@ -310,8 +334,8 @@ def test_single_pattern_long_title_is_truncated_in_plan_with_warning():
             ),
             RenderedNoteEvent(
                 id="e2",
-                voice_id="chord_voice_2",
-                role="chord",
+                voice_id="cloud_voice_2",
+                role="cloud",
                 note_midi=64,
                 onset_quarters=Fraction(2, 1),
                 duration_quarters=Fraction(2, 1),
@@ -333,8 +357,8 @@ def test_single_pattern_unsupported_auto_name_character_fails_before_build():
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(2, 1),
@@ -343,8 +367,8 @@ def test_single_pattern_unsupported_auto_name_character_fails_before_build():
             ),
             RenderedNoteEvent(
                 id="e2",
-                voice_id="chord_voice_2",
-                role="chord",
+                voice_id="cloud_voice_2",
+                role="cloud",
                 note_midi=64,
                 onset_quarters=Fraction(2, 1),
                 duration_quarters=Fraction(2, 1),
@@ -370,19 +394,19 @@ def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_colli
     assert song.title == "Blue Moon Head"
 
     # Am7 must contain F and not F# in rendered harmony source.
-    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "chord"]
+    am7_events = [e for e in timeline.events if e.source_harmony_id == "m1_h2" and e.role == "cloud"]
     am7_pcs = {e.note_midi % 12 for e in am7_events}
     assert 5 in am7_pcs
     assert 6 not in am7_pcs
 
     events = events_payload["events"]
-    pairs = {(ev["track"], ev["step"]) for ev in events}
-    assert len(pairs) == len(events)
+    non_poly_pairs = [(ev["track"], ev["step"]) for ev in events if ev["track"] != 8]
+    assert len(set(non_poly_pairs)) == len(non_poly_pairs)
 
     tracks = {int(ev["track"]) for ev in events}
-    # chord voices 1..6 and bass track 7 are all used by default profile/mapping.
     assert {1, 2, 3, 4, 5, 6}.issubset(tracks)
     assert 7 in tracks
+    assert 8 in tracks
 
 
 @pytest.mark.parametrize(
@@ -390,17 +414,17 @@ def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_colli
     [
         ("Cmaj7", 36),
         ("F#7", 42),
-        ("Gm7", 31),
-        ("Am7", 33),
-        ("B7", 35),
-        ("Dm7/G", 31),
+        ("Gm7", 43),
+        ("Am7", 45),
+        ("B7", 47),
+        ("Dm7/G", 43),
         ("C/E", 40),
     ],
 )
 def test_bass_register_policy_and_slash_bass_source(symbol: str, expected_bass_midi: int):
     payload = _song_payload([[symbol]])
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, default_render_profile())
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
 
     bass_events = [e for e in timeline.events if e.role == "bass"]
     assert len(bass_events) == 1
@@ -416,9 +440,11 @@ def test_rendered_timeline_chord_and_bass_events_are_within_profile_register_bou
     }
     song = compact_progression_to_song_model(payload)
     rp = default_render_profile()
-    timeline = render_timeline(song, rp)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
 
     for event in timeline.events:
+        if event.role == "cloud":
+            assert rp.cloud_min_midi <= event.note_midi <= rp.cloud_max_midi
         if event.role == "chord":
             assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
         if event.role == "bass":

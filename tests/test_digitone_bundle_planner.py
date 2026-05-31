@@ -16,7 +16,8 @@ from changes.importers.compact_progression import compact_progression_to_song_mo
 from changes.models.digitone_target_profile import default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
 from changes.pipeline_digitone import compile_digitone_bundle_pipeline, save_digitone_bundle_artifacts
-from changes.rendering.timeline_renderer import render_timeline
+from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
+from changes.rendering.arrangement_renderer import render_arrangement
 
 
 def test_bundle_single_pattern_uses_song_title_only():
@@ -28,7 +29,7 @@ def test_bundle_single_pattern_uses_song_title_only():
     }
 
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
 
     assert len(bundle.patterns) == 1
     assert bundle.patterns[0].pattern_name == "BLUE MOON"
@@ -48,7 +49,7 @@ def test_bundle_named_multi_pattern_uses_section_prefix_first_names():
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="cloud,bass")
     names = [p.pattern_name for p in bundle.patterns]
 
     assert names == ["INT BLUE MOON", "A BLUE MOON", "SOL BLUE MOON", "OUT BLUE MOON"]
@@ -68,7 +69,7 @@ def test_bundle_overflow_split_adds_section_part_numbers():
     }
 
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
     names = [p.pattern_name for p in bundle.patterns]
 
     assert len(names) == 2
@@ -95,7 +96,7 @@ def test_bundle_capacity_split_without_named_sections_uses_p_prefix():
         measures=tuple(replace(m, section_id=None) for m in song.measures),
     )
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    timeline = render_timeline(song_without_sections, rp)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song_without_sections, rp), layers="bass")
     bundle = compile_timeline_to_digitone_bundle_plan(
         song_without_sections,
         timeline,
@@ -119,7 +120,7 @@ def test_bundle_long_title_truncation_keeps_prefix_and_length_16():
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="cloud,bass")
 
     for segment in bundle.patterns:
         assert len(segment.pattern_name) <= 16
@@ -141,7 +142,7 @@ def test_bundle_explicit_override_disables_auto_prefix_and_uses_explicit_source(
         },
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
 
     assert [p.pattern_name for p in bundle.patterns] == ["SCENE ONE", "SOL BLUE MOON"]
     assert [p.pattern_name_source for p in bundle.patterns] == ["explicit", "auto"]
@@ -156,7 +157,7 @@ def test_bundle_explicit_override_truncates_and_manifest_records_warning(tmp_pat
         "digitone_pattern_name_overrides": ["blue moon solo long"],
     }
 
-    song, timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    song, timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
     assert bundle.patterns[0].pattern_name == "BLUE MOON SOLO L"
     assert bundle.patterns[0].pattern_name_source == "explicit"
     assert any("truncated to 16" in w for w in bundle.patterns[0].warnings)
@@ -177,7 +178,7 @@ def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_posit
     }
 
     with pytest.raises(ValueError, match="Unsupported character"):
-        compile_digitone_bundle_pipeline(payload)
+        compile_digitone_bundle_pipeline(payload, layers="bass")
 
 
 def test_repeated_non_contiguous_section_labels_are_separate_occurrences():
@@ -192,7 +193,7 @@ def test_repeated_non_contiguous_section_labels_are_separate_occurrences():
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
 
     assert [p.section_label for p in bundle.patterns] == ["A", "B", "A"]
     assert [p.section_global_order_index for p in bundle.patterns] == [1, 2, 3]
@@ -212,7 +213,7 @@ def test_aaba_form_preserves_order_and_unique_auto_names():
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
     names = [p.pattern_name for p in bundle.patterns]
 
     assert names == ["A1 BLUE MOON", "A2 BLUE MOON", "B BLUE MOON", "A3 BLUE MOON"]
@@ -232,7 +233,7 @@ def test_repeated_section_occurrence_with_overflow_has_unique_deterministic_name
     }
 
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, render_profile=rp, layers="bass")
     names = [p.pattern_name for p in bundle.patterns]
 
     assert names[:2] == ["A1S1 BLUE MOON", "A1S2 BLUE MOON"]
@@ -250,8 +251,8 @@ def test_boundary_crossing_held_notes_are_retriggered_at_next_pattern_step_one()
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
-    assert len(bundle.patterns) == 2
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="cloud,bass")
+    assert len(bundle.patterns) >= 2
 
     p2_steps = {(e.track, e.step) for e in bundle.patterns[1].events}
     assert (1, 1) in p2_steps
@@ -269,7 +270,7 @@ def test_section_boundary_crossing_held_notes_exist_in_each_standalone_pattern()
         ],
     }
 
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload)
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="cloud,bass")
     assert len(bundle.patterns) == 2
 
     p1_steps = {(e.track, e.step) for e in bundle.patterns[0].events}

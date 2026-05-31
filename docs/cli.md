@@ -4,6 +4,23 @@
 
 ## 現行コマンド
 
+### Digitone Product artifact export（Tracks 1-8）
+
+```powershell
+changes export digitone-product `
+  --input examples/ii_v_i_intro_a.progression.yaml `
+  --output-dir out/digitone-product `
+  --layers cloud,bass,chord
+```
+
+要点:
+
+- Digitone II Track 1-6 の Cloud、Track 7 の Bass、Track 8 の Chord を同時に生成
+- MIDI は送信しない
+- `--layers` 省略時は `cloud,bass,chord`
+- `--layers cloud,bass`、`--layers chord`、`--layers cloud` のように layer を選択可能
+- `--write-syx` 指定時のみ `.syx` も生成
+
 ### Digitone Chord artifact export（Track 8）
 
 ```powershell

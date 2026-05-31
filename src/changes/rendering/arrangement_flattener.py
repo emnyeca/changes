@@ -9,6 +9,9 @@ from __future__ import annotations
 from changes.models.rendered_arrangement import RenderedArrangement
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 
+DEFAULT_LAYERS = ("cloud", "bass", "chord")
+_ALLOWED_LAYERS = frozenset(DEFAULT_LAYERS)
+
 _ROLE_ORDER = {
     "cloud": 0,
     "chord": 1,
@@ -25,13 +28,34 @@ def _sort_key(event: RenderedNoteEvent) -> tuple[object, int, str, str]:
     )
 
 
-def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> RenderedTimeline:
+def normalize_layers(layers: str | list[str] | tuple[str, ...] | set[str] | None) -> tuple[str, ...]:
+    if layers is None:
+        return DEFAULT_LAYERS
+
+    raw_layers = layers.split(",") if isinstance(layers, str) else list(layers)
+    normalized = tuple(layer.strip().lower() for layer in raw_layers if layer.strip())
+    if not normalized:
+        raise ValueError("layers must contain at least one of: cloud, bass, chord")
+
+    unknown = sorted(set(normalized) - _ALLOWED_LAYERS)
+    if unknown:
+        raise ValueError(f"Unsupported layer selection: {', '.join(unknown)}")
+
+    return tuple(layer for layer in DEFAULT_LAYERS if layer in normalized)
+
+
+def flatten_arrangement_to_timeline(
+    arrangement: RenderedArrangement,
+    *,
+    layers: str | list[str] | tuple[str, ...] | set[str] | None = None,
+) -> RenderedTimeline:
+    selected_layers = set(normalize_layers(layers))
     events: list[RenderedNoteEvent] = []
 
     for occurrence_index, occurrence in enumerate(arrangement.occurrences, start=1):
         occurrence_key = occurrence.id if occurrence.id else f"occ{occurrence_index}"
 
-        if occurrence.cloud is not None:
+        if "cloud" in selected_layers and occurrence.cloud is not None:
             for note_index, note in enumerate(occurrence.cloud.notes, start=1):
                 events.append(
                     RenderedNoteEvent(
@@ -47,7 +71,7 @@ def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> Rendere
                     )
                 )
 
-        if occurrence.chord is not None:
+        if "chord" in selected_layers and occurrence.chord is not None:
             for note_index, note in enumerate(occurrence.chord.notes, start=1):
                 events.append(
                     RenderedNoteEvent(
@@ -63,7 +87,7 @@ def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> Rendere
                     )
                 )
 
-        if occurrence.bass is not None:
+        if "bass" in selected_layers and occurrence.bass is not None:
             events.append(
                 RenderedNoteEvent(
                     id=f"{occurrence_key}_bass",

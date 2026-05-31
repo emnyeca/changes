@@ -39,6 +39,7 @@ EUB Changes は、iReal Pro または MusicXML 由来の楽曲データから Cl
 - MusicXML import と bundle diagnostics
 - chord / bass register bounds を含む timeline rendering
 - `RenderedArrangement` から Cloud Track 1-6 / Bass Track 7 / Chord Track 8 を同時 compile する regression
+- `changes export digitone-product` による Track 1-8 product artifact export
 
 ソフトウェア E2E fixture:
 
@@ -59,7 +60,7 @@ export/manifest fixture:
 - 複数 OS 環境の検証は未完了
 - 大規模 song export の検証は未完了
 - consumer 向け導入フローの検証は未完了
-- Cloud / Bass / Chord をそろえた hardware-facing export command と実機検証は Chord RC workflow 相当の粒度には未到達
+- Cloud / Bass / Chord をそろえた実機検証は Chord RC workflow 相当の粒度には未到達
 
 ## 現在状態にもとづく計画
 
@@ -78,7 +79,7 @@ export/manifest fixture:
 
 - Chord 偏重を減らすため Cloud/Bass/Chord 統合経路の検証カバレッジを増加
 - Cloud/Bass/Chord の導線バランスを改善
-- Track 1-8 product export command/API を Chord export とどう統合するか決める
+- Track 1-8 product export を実機 validation へ進める
 
 完了シグナル:
 

@@ -1,4 +1,4 @@
-"""High-level SongModel -> RenderedTimeline -> DigitoneCompilePlan pipeline."""
+"""High-level SongModel -> RenderedArrangement -> RenderedTimeline -> DigitoneCompilePlan pipeline."""
 
 from __future__ import annotations
 
@@ -33,7 +33,8 @@ from changes.models.digitone_target_profile import DigitoneTargetProfile, defaul
 from changes.models.render_profile import RenderProfile, default_render_profile
 from changes.models.rendered_timeline import RenderedTimeline, rendered_timeline_to_dict
 from changes.models.song_model import SongModel, song_model_to_dict
-from changes.rendering.timeline_renderer import render_timeline
+from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
+from changes.rendering.arrangement_renderer import render_arrangement
 
 
 class DigitonePipelineArtifacts(dict):
@@ -179,12 +180,14 @@ def compile_digitone_pipeline(
     payload: dict,
     render_profile: RenderProfile | None = None,
     target_profile: DigitoneTargetProfile | None = None,
+    layers: str | list[str] | tuple[str, ...] | set[str] | None = None,
 ) -> tuple[SongModel, RenderedTimeline, DigitoneCompilePlan, dict]:
     rp = render_profile or default_render_profile()
     tp = target_profile or default_digitone_target_profile()
 
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, rp)
+    arrangement = render_arrangement(song, rp)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
     plan = compile_timeline_to_digitone_plan(timeline, tp)
     events_payload = digitone_compile_plan_to_events_yaml_payload(
         plan,
@@ -198,13 +201,15 @@ def compile_digitone_bundle_pipeline(
     payload: dict,
     render_profile: RenderProfile | None = None,
     target_profile: DigitoneTargetProfile | None = None,
+    layers: str | list[str] | tuple[str, ...] | set[str] | None = None,
 ) -> tuple[SongModel, RenderedTimeline, DigitonePatternBundlePlan]:
     """Compile song into bundle-oriented Digitone plan (section/capacity split aware)."""
     rp = render_profile or default_render_profile()
     tp = target_profile or default_digitone_target_profile()
 
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, rp)
+    arrangement = render_arrangement(song, rp)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
     explicit_overrides = _extract_explicit_pattern_name_overrides(payload)
     bundle_plan = compile_timeline_to_digitone_bundle_plan(
         song,
@@ -221,6 +226,7 @@ def compile_musicxml_digitone_bundle_pipeline(
     tempo: Fraction | int | str = 120,
     render_profile: RenderProfile | None = None,
     target_profile: DigitoneTargetProfile | None = None,
+    layers: str | list[str] | tuple[str, ...] | set[str] | None = None,
 ) -> tuple[SongModel, RenderedTimeline, DigitonePatternBundlePlan, dict]:
     rp = render_profile or default_render_profile()
     tp = target_profile or default_digitone_target_profile()
@@ -228,7 +234,8 @@ def compile_musicxml_digitone_bundle_pipeline(
     imported = load_musicxml_song(musicxml_path)
     diagnostics = build_musicxml_harmony_resolution_diagnostic(imported)
     song = imported_song_to_song_model(imported, tempo=tempo)
-    timeline = render_timeline(song, rp)
+    arrangement = render_arrangement(song, rp)
+    timeline = flatten_arrangement_to_timeline(arrangement, layers=layers)
     bundle_plan = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
     return song, timeline, bundle_plan, diagnostics
 

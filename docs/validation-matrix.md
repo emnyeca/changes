@@ -18,8 +18,8 @@
 
 | Layer | Tracks | Role | Current validation status |
 | --- | --- | --- | --- |
-| Harmony Cloud | 1-6 | six-voice playable harmony texture | generation implemented; Track 1-8 product export regression added; RC 安定化未到達 |
-| Bass | 7 | root movement / slash-bass grounding layer | generation implemented; Track 1-8 product export regression added; RC 安定化未到達 |
+| Harmony Cloud | 1-6 | six-voice playable harmony texture | generation implemented; product export command added; hardware validation pending |
+| Bass | 7 | root movement / slash-bass grounding layer | generation implemented; product export command added; hardware validation pending |
 | Chord | 8 | symbol-faithful vertical layer | generation implemented; current RC-stabilized subset |
 
 ## フィクスチャマトリクス
@@ -34,7 +34,7 @@
 ## 現在サマリー
 
 - 現在マトリクスは Track 8 中心ですが、これは現在の RC 安定化 subset を示すものです
-- Cloud / Bass / Chord を同一 `RenderedArrangement` から Track 1-8 へ compile する software regression は追加済みです
+- Cloud / Bass / Chord を同一 `RenderedArrangement` から Track 1-8 へ compile / export する software regression は追加済みです
 - Hardware-validated: `demo_ii_v_i`
 - Software E2E validated: `demo_ii_v_i`, `demo_multibar_turnaround`
 - Export/manifest validated: `demo_multisection_form`（および `demo_cmaj7` の smoke export カバレッジ）

@@ -91,8 +91,8 @@ def test_digitone_note_round_trip_c5_to_midi_60(tmp_path: Path):
         events=(
             RenderedNoteEvent(
                 id="e1",
-                voice_id="chord_voice_1",
-                role="chord",
+                voice_id="cloud_voice_1",
+                role="cloud",
                 note_midi=60,
                 onset_quarters=Fraction(0, 1),
                 duration_quarters=Fraction(1, 1),
@@ -104,7 +104,7 @@ def test_digitone_note_round_trip_c5_to_midi_60(tmp_path: Path):
     target = DigitoneTargetProfile(
         name="note-rt",
         device="digitone2",
-        voice_to_track={"chord_voice_1": 1},
+        voice_to_track={"cloud_voice_1": 1},
         default_velocity="inherit",
         length_strategy="hold_until_next_event",
         allow_inf=False,

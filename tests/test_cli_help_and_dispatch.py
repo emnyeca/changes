@@ -18,6 +18,7 @@ def test_top_level_help_mentions_modern_commands(monkeypatch: pytest.MonkeyPatch
     assert "check" in out
     assert "send" in out
     assert "digitone-track8" in out
+    assert "digitone-product" in out
     assert "digitone-syx" in out
     assert "Legacy commands:" in out
 
@@ -45,6 +46,7 @@ def test_export_group_help_mentions_digitone_track8(monkeypatch: pytest.MonkeyPa
     out = capsys.readouterr().out
     assert "Available export commands:" in out
     assert "digitone-track8" in out
+    assert "digitone-product" in out
 
 
 def test_send_group_help_mentions_digitone_syx(monkeypatch: pytest.MonkeyPatch, capsys):
@@ -76,6 +78,17 @@ def test_modern_export_dispatch_routes_to_track8_helper(monkeypatch: pytest.Monk
     cli.main()
 
     assert called["argv"] == ["--demo", "cmaj7"]
+
+
+def test_modern_export_dispatch_routes_to_product_helper(monkeypatch: pytest.MonkeyPatch):
+    called: dict[str, list[str]] = {}
+
+    monkeypatch.setattr(cli, "_run_digitone_product_export_cli", lambda argv: called.setdefault("argv", argv))
+    monkeypatch.setattr(sys, "argv", ["changes", "export", "digitone-product", "--input", "demo.yaml"])
+
+    cli.main()
+
+    assert called["argv"] == ["--input", "demo.yaml"]
 
 
 def test_modern_send_dispatch_routes_to_sysex_helper(monkeypatch: pytest.MonkeyPatch):

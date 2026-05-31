@@ -15,7 +15,8 @@ from changes.harmonic_context import (
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_target_profile import default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
-from changes.rendering.timeline_renderer import render_timeline
+from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
+from changes.rendering.arrangement_renderer import render_arrangement
 
 
 _NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -137,7 +138,7 @@ def test_bundle_split_does_not_recompute_harmony_selection():
     }
     rp = replace(default_render_profile(), hold_repeated_same_pitch="retrigger")
     song = compact_progression_to_song_model(payload)
-    timeline = render_timeline(song, rp)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
 
     bundle = compile_timeline_to_digitone_bundle_plan(song, timeline, default_digitone_target_profile())
     assert len(bundle.patterns) >= 2

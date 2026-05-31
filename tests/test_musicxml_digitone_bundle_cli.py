@@ -10,7 +10,8 @@ from changes import cli
 from changes.importers.musicxml import imported_song_to_song_model, load_musicxml_song
 from changes.models.render_profile import default_render_profile
 from changes.pipeline_digitone import compile_digitone_bundle_pipeline
-from changes.rendering.timeline_renderer import render_timeline
+from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
+from changes.rendering.arrangement_renderer import render_arrangement
 
 
 def _musicxml_path(variant: str) -> Path:
@@ -235,9 +236,11 @@ def test_musicxml_500_miles_high_rendered_timeline_register_bounds(variant: str)
     imported = load_musicxml_song(_musicxml_path(variant))
     song = imported_song_to_song_model(imported, tempo=120)
     rp = default_render_profile()
-    timeline = render_timeline(song, rp)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
 
     for event in timeline.events:
+        if event.role == "cloud":
+            assert rp.cloud_min_midi <= event.note_midi <= rp.cloud_max_midi
         if event.role == "chord":
             assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
         if event.role == "bass":

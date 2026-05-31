@@ -52,8 +52,8 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
     raw_cloud_voicings = progression_to_voicings(_to_bars(song))
     cloud_voicings = generate_voice_leading(
         raw_cloud_voicings,
-        min_midi=active_profile.chord_min_midi,
-        max_midi=active_profile.chord_max_midi,
+        min_midi=active_profile.cloud_min_midi,
+        max_midi=active_profile.cloud_max_midi,
     )
 
     if len(cloud_voicings) != len(harmony_events):

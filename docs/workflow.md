@@ -1,4 +1,4 @@
-# Workflow
+# ワークフロー
 
 この文書は、live machine-jazz session で Changes を使うための実践的な workflow を示します。
 

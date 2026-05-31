@@ -1,136 +1,94 @@
-# End-to-end Digitone Track 8 SysEx Workflow
+# End-to-end Digitone Track 8 SysEx ワークフロー
 
-## Purpose
+## 目的
 
-This document describes the currently stabilized Track 8 RC workflow.
-It is not the full EUB Changes product workflow.
+この文書は、現在安定化している Chord RC ワークフロー（Digitone Track 8）を示します。
+EUB Changes 全体の完成形ワークフローを示すものではありません。
 
-For the higher-level product direction, see `docs/product-architecture.md` and `docs/current-state.md`.
+上位のプロダクト方針は `docs/product-architecture.md` と `docs/current-state.md` を参照してください。
 
-This document describes the practical end-to-end workflow:
+実運用フロー:
 
-SongModel YAML -> Track 8 export -> manifest-aware SysEx check -> dry-run -> guarded real-send.
+SongModel YAML -> Chord export (Digitone Track 8) -> manifest-aware SysEx check -> dry-run -> guarded real-send
 
-## Safety
+## 安全境界
 
-Export does not send.
+Export は送信しません。
 
-Check does not send.
+Check は送信しません。
 
-Dry-run does not send.
+Dry-run は送信しません。
 
-Guarded real-send requires explicit confirmation.
+Guarded real-send は明示確認が必須です。
 
-`mido` and `python-rtmidi` are only required for `changes send digitone-syx --list-ports` and guarded real-send.
+`mido` と `python-rtmidi` は `changes send digitone-syx --list-ports` と guarded real-send にのみ必要です。
 
-## Workflow
+## ワークフロー
 
-### 1. Export
+1. Export Chord artifacts（Digitone Track 8, `changes export digitone-track8`）
+2. Check `.syx` envelope and optional manifest (`changes check digitone-syx`)
+3. List ports (`changes send digitone-syx --list-ports`)
+4. Dry-run (`changes send digitone-syx --dry-run`)
+5. Guarded real-send (`changes send digitone-syx --real-send --yes-i-understand-this-writes-to-hardware`)
 
-```powershell
-changes export digitone-track8 `
-  --input examples/song_models/demo_ii_v_i.changes.yaml `
-  --output-dir out/digitone-track8 `
-  --basename changes_track8_export `
-  --overwrite
-```
+厳密なコマンドオプションは `docs/cli.md` を参照してください。
 
-### 2. Check SysEx file
+## 検証済み fixture
 
-```powershell
-changes check digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --manifest out/digitone-track8/changes_track8_export_manifest.md `
-  --expect-source-title "Demo II V I" `
-  --expect-chord-events 3 `
-  --expect-note-rows 18
-```
-
-### 3. List ports
-
-```powershell
-changes send digitone-syx --list-ports
-```
-
-### 4. Dry-run
-
-```powershell
-changes send digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --port "Elektron Digitone II 2" `
-  --dry-run
-```
-
-### 5. Guarded real-send
-
-```powershell
-changes send digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --port "Elektron Digitone II 2" `
-  --real-send `
-  --yes-i-understand-this-writes-to-hardware
-```
-
-## Validated fixture
-
-Current validated fixture:
+現在の検証済み fixture:
 
 - `examples/song_models/demo_ii_v_i.changes.yaml`
 - Dm7 at step1
 - G7 at step5
 - Cmaj7 at step9
-- validated on Digitone II firmware 1.10D
+- Digitone II firmware 1.10D で検証済み
 
-## Additional software fixtures
+## 追加ソフトウェア fixture
 
-Additional SongModel fixtures are available for software validation and regression coverage:
+ソフトウェア検証・回帰用の SongModel fixture:
 
 - `examples/song_models/demo_multibar_turnaround.changes.yaml`
 - `examples/song_models/demo_multisection_form.changes.yaml`
 
-Use the II-V-I fixture for the known hardware-validated path.
+II-V-I fixture は既知のハードウェア検証済みパスとして使用します。
 
-Use `demo_multibar_turnaround` for software E2E export/check/dry-run validation.
+`demo_multibar_turnaround` はソフトウェア E2E export/check/dry-run 検証に使用します。
 
-Use `demo_multisection_form` for export/manifest regression coverage.
+`demo_multisection_form` は export/manifest 回帰に使用します。
 
-See `docs/validation-matrix.md` for exact per-fixture validation scope.
+fixture ごとの正確な検証範囲は `docs/validation-matrix.md` を参照してください。
 
-## Requirements
+## 要件
 
-For export/check/dry-run:
+export/check/dry-run に必要:
 
-- normal development install
-- digitone-syx-toolkit if generating `.syx`
+- 通常の開発インストール
+- `.syx` 生成時は digitone-syx-toolkit
 
-These steps do not require `mido`.
+これらの手順に `mido` は不要です。
 
-For port listing / real-send:
+port 一覧 / real-send に必要:
 
 ```powershell
 python -m pip install -e ".[midi]"
 ```
 
-This keeps check and dry-run usable in environments without optional MIDI backends.
+これにより optional MIDI backend がない環境でも check と dry-run を維持できます。
 
-## Version checks
+## バージョン確認
 
-```powershell
-python --version
-python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
-python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
-```
+MIDI backend のトラブルシュート時は `docs/real-send-workflow.md` の version-check コマンドを使います。
 
-## Stop conditions
+## 中止条件
 
-Stop before real-send if:
+次の場合は real-send 前に中止します:
 
-- SysEx check fails
-- Digitone II port is not visible
-- port name is ambiguous
-- `.syx` is not the expected file
-- important Digitone data is not backed up
+- SysEx check が失敗した
+- Digitone II port が見えない
+- port 名が曖昧
+- `.syx` が想定ファイルでない
+- 重要な Digitone データをバックアップしていない
 
-See docs/manifest-aware-validation.md for manifest-aware check details and warning behavior.
+manifest-aware check の詳細と警告挙動は `docs/manifest-aware-validation.md` を参照してください。
 
-See docs/release-candidate-status.md and docs/validation-status.md for current RC scope and validated fixture status.
+現在の RC 範囲と検証済み fixture 状態は `docs/release-candidate-status.md` と `docs/current-state.md` を参照してください。

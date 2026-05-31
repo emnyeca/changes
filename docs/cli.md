@@ -1,17 +1,10 @@
-# Changes CLI Reference
+# Changes CLI リファレンス
 
-The current modern command surface is centered on Track 8 Chord export because that subset is currently stabilized.
+この文書は、現在の CLI コマンド仕様の正本です。
 
-This does not change the product priority order:
+## 現行コマンド
 
-- Cloud > Bass > Chord
-- Track 1-6 > Track 7 > Track 8
-
-Future or target workflows include Track 1-6 Harmony Cloud and Track 7 Bass generation from MusicXML or iReal Pro-derived data. Those broader layers already have partial internal pipeline support, but they are not documented here as RC-stabilized commands.
-
-## Modern commands
-
-### Export Digitone Track 8 artifacts
+### Digitone Chord artifact export（Track 8）
 
 ```powershell
 changes export digitone-track8 `
@@ -21,24 +14,28 @@ changes export digitone-track8 `
   --overwrite
 ```
 
-Notes:
+要点:
 
-- exports Digitone II Track 8 artifacts
-- does not send MIDI
-- writes `.events.yaml`, `.syx`, and manifest unless `--events-yaml-only`
-- `--input` expects SongModel YAML v1
-- `--events-yaml-only` skips SysEx generation
-- `--overwrite` overwrites existing artifacts
+- Digitone II Track 8 向けの Chord artifact を生成
+- MIDI は送信しない
+- `--events-yaml-only` でない場合、`.events.yaml` / `.syx` / manifest を出力
+- `--input` は SongModel YAML v1 を要求
+- `--events-yaml-only` は SysEx 生成をスキップ
+- `--overwrite` は既存 artifact を上書き
 
-### Send Digitone SysEx
+API 境界:
 
-List ports:
+- Python API 仕様: `docs/chord-export-api.md`
+
+### Digitone SysEx 送信
+
+port 一覧:
 
 ```powershell
 changes send digitone-syx --list-ports
 ```
 
-Dry-run:
+dry-run:
 
 ```powershell
 changes send digitone-syx `
@@ -47,7 +44,7 @@ changes send digitone-syx `
   --dry-run
 ```
 
-Guarded real-send:
+guarded real-send:
 
 ```powershell
 changes send digitone-syx `
@@ -57,21 +54,21 @@ changes send digitone-syx `
   --yes-i-understand-this-writes-to-hardware
 ```
 
-Notes:
+要点:
 
-- `--list-ports` lists output ports and does not send
-- `--dry-run` validates without hardware write
-- `--real-send` writes to hardware
-- `--yes-i-understand-this-writes-to-hardware` is required for real-send
-- `pip install .[midi]` is required for port listing and real-send
+- `--list-ports` は出力 port を列挙するだけで送信しない
+- `--dry-run` はハードウェア書き込みなしで検証する
+- `--real-send` はハードウェアへ書き込む
+- `--yes-i-understand-this-writes-to-hardware` は real-send で必須
+- `pip install .[midi]` は port 一覧と real-send で必要
 
-### Check Digitone SysEx file
+### Digitone SysEx ファイルチェック
 
 ```powershell
 changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx
 ```
 
-Manifest-aware example:
+manifest-aware 例:
 
 ```powershell
 changes check digitone-syx `
@@ -82,58 +79,28 @@ changes check digitone-syx `
   --expect-note-rows 18
 ```
 
-Notes:
+要点:
 
-- validates file envelope only
-- optionally validates `.syx` byte count and expected values against Track 8 manifest
+- file envelope を検証
+- 必要に応じて Track 8 manifest と `.syx` byte count / 期待値を照合
 - manifest-aware flags: `--manifest`, `--expect-source-title`, `--expect-chord-events`, `--expect-note-rows`
-- does not require `mido`
-- does not send
+- `mido` は不要
+- 送信しない
 
-For broader software fixture coverage, run the same export/check/dry-run flow with:
+より広いソフトウェア fixture カバレッジには、同じ export/check/dry-run フローを次で実行:
 
 - `examples/song_models/demo_multibar_turnaround.changes.yaml`
 
-For multi-section regression coverage, use:
+multi-section 回帰には次を使用:
 
 - `examples/song_models/demo_multisection_form.changes.yaml`
 
-See `docs/validation-matrix.md` for fixture-by-fixture validation depth.
+fixture ごとの検証深度は `docs/validation-matrix.md` を参照。
 
-## Legacy commands
+## 安全境界
 
-These commands expose older or partial broader-architecture paths. They are useful for internal development and software validation, but they are not the same thing as the current RC-stabilized Track 8 export/check/send workflow.
-
-Generic MIDI export:
-
-```powershell
-changes input.yaml --backend generic-midi --output out.mid
-```
-
-Digitone compile artifacts:
-
-```powershell
-changes input.yaml --backend digitone-compile --artifact-dir out_digitone
-```
-
-Digitone bundle artifacts from YAML:
-
-```powershell
-changes input.yaml --backend digitone-bundle --artifact-dir out_bundle --write-syx
-```
-
-MusicXML to Digitone bundle artifacts:
-
-```powershell
-changes digitone-bundle --musicxml input.musicxml --output out --write-syx
-```
-
-The `digitone-bundle` path is the clearest existing bridge from MusicXML-derived data toward broader Digitone track material, but it should be treated as architecture-facing or partial rather than as the currently stabilized product workflow.
-
-## Safety
-
-- export never sends
-- check never sends
-- real-send is explicit
-- no auto port selection
-- optional MIDI dependencies remain optional
+- export は送信しない
+- check は送信しない
+- real-send は明示指定のみ
+- port 自動選択は行わない
+- MIDI optional dependency は optional のまま維持

@@ -99,7 +99,7 @@ def test_build_payload_from_minimal_cmaj7_song_model():
 def test_unsupported_profile_raises():
     song = _minimal_cmaj7_song_model()
 
-    with pytest.raises(ValueError, match="Unsupported Track 8 export profile"):
+    with pytest.raises(ValueError, match="Unsupported Chord export profile \(Digitone Track 8\)"):
         build_track8_export_yaml_payload_from_song(song, profile="unknown")
 
 
@@ -203,5 +203,5 @@ def test_manifest_is_deterministic_and_has_no_absolute_paths():
 def test_no_track8_events_raises():
     song = _song_with_no_harmony_events()
 
-    with pytest.raises(ValueError, match="No Track 8 chord events"):
+    with pytest.raises(ValueError, match="No Chord events for Digitone Track 8"):
         build_track8_export_yaml_payload_from_song(song)

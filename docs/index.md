@@ -1,30 +1,30 @@
-# Changes Documentation Index
+# Changes ドキュメント索引
 
 ## Product framing
 
 - Product architecture: `product-architecture.md`
 - Current state: `current-state.md`
+- Glossary: `glossary.md`
 
 ## Current practical workflows
 
-- Track 8 export: `track8-export-api.md`
-- Track 8 internal implementation notes: `track8-internal-implementation-notes.md`
-- SongModel YAML v1: `song-model-yaml-v1.md`
+- Cloud export API (TBD): `cloud-export-api.md`
+- Bass export API (TBD): `bass-export-api.md`
+- Chord export API: `chord-export-api.md`
+- Chord internal implementation notes: `chord-internal-implementation-notes.md`
+- Model contracts (SongModel / RenderedArrangement / Track8ChordEvent): `concept.md`
 - End-to-end workflow: `e2e-user-workflow.md`
 - Digitone SysEx real-send workflow: `real-send-workflow.md`
-- Digitone SysEx CLI modes (developer reference): `digitone-syx-cli-modes.md`
 - CLI reference: `cli.md`
 
 ## Developer architecture notes
 
-- Rendered Arrangement pipeline: `rendered-arrangement-pipeline.md`
 - Harmony engine spec: `harmony-engine-spec.md`
 - Digitone internal spec: `digitone-internal-spec.md`
 
 ## Release candidate
 
 - Workflow RC status: `release-candidate-status.md`
-- Validation status: `validation-status.md`
 - Validation matrix: `validation-matrix.md`
 - Fixture inventory: `fixture-inventory.md`
 - Known limitations: `known-limitations.md`

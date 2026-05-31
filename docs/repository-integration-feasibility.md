@@ -1,4 +1,4 @@
-# Repository Integration Feasibility
+# Repository 統合方針
 
 ## Purpose
 

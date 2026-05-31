@@ -1,67 +1,67 @@
-# Workflow Release Candidate Status
+# ワークフロー RC 状態
 
-## Status
+## 状態
 
-Release-candidate workflow: active development / v0.1 candidate.
+Release-candidate workflow: active development / v0.1 candidate
 
-This is not a polished public release.
+これは polished public release ではありません。
 
-This document describes the currently stabilized Track 8 subset.
-It does not define the full product priority order.
-The product architecture remains Cloud > Bass > Chord.
+この文書は現在安定化している Chord subset（Digitone Track 8）を扱います。
+プロダクト全体方針を定義する文書ではありません。
+プロダクトアーキテクチャは Cloud > Bass > Chord を維持します。
 
-## Current RC-stabilized workflow
+## 現在の RC-stabilized workflow
 
 ```text
 SongModel YAML
-  -> Track 8 export
+  -> Chord export (Digitone Track 8)
   -> SysEx check
   -> manifest-aware validation
   -> dry-run send
   -> guarded real-send
 ```
 
-This current stable path should be read as a validated subset, not as the entire intended product workflow.
+この stable path は検証済み subset であり、プロダクト全体の最終ワークフローではありません。
 
-## Current validated fixture
+## 現在の検証済み fixture
 
 - Input: `examples/song_models/demo_ii_v_i.changes.yaml`
 - Output: `out/digitone-track8/changes_track8_export.syx`
 - Manifest: `out/digitone-track8/changes_track8_export_manifest.md`
 - Device: Digitone II
 - Firmware: 1.10D
-- Result: passed for Dm7 -> G7 -> Cmaj7 Track 8 import/send workflow
+- Result: Dm7 -> G7 -> Cmaj7 の Chord import/send workflow（Digitone Track 8）で passed
 
-## RC acceptance checklist
+## RC 受け入れチェックリスト
 
-- [x] Track 8 export CLI exists.
-- [x] SongModel YAML v1 input exists.
-- [x] SysEx file envelope check exists.
-- [x] Manifest-aware check exists.
-- [x] Dry-run send exists.
-- [x] Guarded real-send exists.
-- [x] Real-send requires explicit confirmation.
-- [x] First hardware validation passed for II-V-I fixture.
-- [x] mido remains optional.
-- [x] Export does not send.
-- [x] Check does not send.
-- [x] Broader SongModel software fixture coverage.
-- [ ] Multiple hardware/device validation.
-- [ ] Full Track 8 parameter mapping validation.
-- [ ] Public-facing installer/app packaging.
-- [ ] GUI workflow.
+- [x] Chord export CLI が存在
+- [x] SongModel YAML v1 入力が存在
+- [x] SysEx file envelope check が存在
+- [x] Manifest-aware check が存在
+- [x] Dry-run send が存在
+- [x] Guarded real-send が存在
+- [x] Real-send は明示確認が必須
+- [x] II-V-I fixture の first hardware validation が passed
+- [x] mido は optional を維持
+- [x] Export は送信しない
+- [x] Check は送信しない
+- [x] より広い SongModel software fixture coverage がある
+- [ ] 複数 hardware/device 検証
+- [ ] Chord parameter mapping の全面検証
+- [ ] Public-facing installer/app packaging
+- [ ] GUI workflow
 
-Additional software fixtures currently include:
+現在の追加ソフトウェア fixture:
 
 - software E2E export/check/dry-run: `demo_multibar_turnaround`
 - export/manifest regression coverage: `demo_multisection_form`
 
-Hardware validation remains limited to the first II-V-I fixture.
+hardware validation は現時点で最初の II-V-I fixture に限定されています。
 
-See `docs/validation-matrix.md` and `docs/fixture-inventory.md` for exact fixture coverage.
+fixture ごとの正確なカバレッジは `docs/validation-matrix.md` と `docs/fixture-inventory.md` を参照してください。
 
-## Release-candidate meaning
+## Release-candidate の意味
 
-This means the current workflow is usable for controlled development and manual validation.
+現在 workflow が controlled development と manual validation で利用可能であることを示します。
 
-It does not mean the project is ready for general consumer use.
+一般 consumer 利用準備が完了したことを意味しません。

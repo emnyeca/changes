@@ -1,4 +1,4 @@
-# Changes Voicing & Duration Rules
+# Changes Voicing / Duration ルール
 
 この文書は Changes の和声生成仕様（実装仕様）です。目的は 6 声の machine-live 向けハーモニークラウドを、決定的（deterministic）に生成することです。
 

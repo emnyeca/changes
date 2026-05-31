@@ -67,18 +67,18 @@ def build_track8_export_yaml_payload_from_song(
     name: str | None = None,
 ) -> dict:
     if profile != DEFAULT_TRACK8_EXPORT_PROFILE:
-        raise ValueError(f"Unsupported Track 8 export profile: {profile}")
+        raise ValueError(f"Unsupported Chord export profile (Digitone Track 8): {profile}")
 
     arrangement = render_arrangement(song)
     chord_events = extract_track8_chord_events(arrangement)
     if not chord_events:
-        raise ValueError("No Track 8 chord events were generated from song")
+        raise ValueError("No Chord events for Digitone Track 8 were generated from song")
 
     changes_payload = track8_chord_events_to_toolkit_payload(chord_events)
     toolkit_rows = changes_track8_payload_to_toolkit_events(changes_payload)
     final_rows = finalize_track8_toolkit_event_lengths(toolkit_rows)
 
-    payload_name = name if name is not None else "Changes Track 8 Export"
+    payload_name = name if name is not None else "Changes Chord Export (Track 8)"
 
     return {
         "version": 1,
@@ -110,7 +110,7 @@ def build_track8_export_manifest(
     sysex_generated: bool,
 ) -> str:
     lines = [
-        "# Track 8 Export Artifacts",
+        "# Chord Export Artifacts (Digitone Track 8)",
         "",
         "## Summary",
         "",
@@ -156,7 +156,7 @@ def build_track8_export_manifest(
             "  - Track 6: 50",
             "  - Track 7: 100",
             "",
-            "## Track 8 export counts",
+            "## Chord export counts (Digitone Track 8)",
             "",
             f"- Track 8 chord event count: {track8_chord_event_count}",
             f"- Track 8 note row count: {track8_note_row_count}",
@@ -190,7 +190,7 @@ def build_track8_export_manifest(
             "## Caveats",
             "",
             "- SongModel/project file loading is not implemented here.",
-            "- This export path targets Track 8 product-like artifacts only.",
+            "- This export path targets Chord product-like artifacts on Digitone Track 8 only.",
             "- Verify generated artifacts before any external transfer.",
         ]
     )
@@ -226,7 +226,7 @@ def export_track8_artifacts_from_song(
     arrangement = render_arrangement(song)
     chord_events = extract_track8_chord_events(arrangement)
     if not chord_events:
-        raise ValueError("No Track 8 chord events were generated from song")
+        raise ValueError("No Chord events for Digitone Track 8 were generated from song")
 
     yaml_payload = build_track8_export_yaml_payload_from_song(song, profile=profile, name=name)
     yaml_text = dump_track8_events_yaml(yaml_payload)

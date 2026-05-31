@@ -84,7 +84,7 @@ def test_overwrite_protection(tmp_path: Path, monkeypatch):
             "--events-yaml-only",
         ],
     )
-    with pytest.raises(SystemExit, match="Track 8 export failed"):
+    with pytest.raises(SystemExit, match="Chord export failed \(Digitone Track 8\)"):
         cli.main()
 
 
@@ -310,7 +310,7 @@ def test_invalid_input_file_fails_clearly(tmp_path: Path, monkeypatch):
         ],
     )
 
-    with pytest.raises(SystemExit, match="Track 8 export failed"):
+    with pytest.raises(SystemExit, match="Chord export failed \(Digitone Track 8\)"):
         cli.main()
 
 
@@ -347,7 +347,7 @@ def test_input_yaml_overwrite_behavior(tmp_path: Path, monkeypatch):
             "--events-yaml-only",
         ],
     )
-    with pytest.raises(SystemExit, match="Track 8 export failed"):
+    with pytest.raises(SystemExit, match="Chord export failed \(Digitone Track 8\)"):
         cli.main()
 
     monkeypatch.setattr(

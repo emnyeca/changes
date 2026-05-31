@@ -134,7 +134,7 @@ def build_track8_events_yaml_payload(
         if step < 1:
             raise ValueError(f"finalized_rows[{idx}].step must be >= 1: {step}")
         if track != _TRACK8_INDEX_1BASED:
-            raise ValueError(f"finalized_rows[{idx}].track must be 8 for Track 8 export: {track}")
+            raise ValueError(f"finalized_rows[{idx}].track must be 8 for Chord export (Digitone Track 8): {track}")
         if time < -23 or time > 23:
             raise ValueError(f"finalized_rows[{idx}].time must be in -23..23: {time}")
 

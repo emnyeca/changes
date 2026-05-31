@@ -50,12 +50,12 @@ def _build_top_level_help_parser() -> argparse.ArgumentParser:
             "       changes INPUT --backend {generic-midi,digitone-compile,digitone-bundle} ..."
         ),
         description=(
-            "Changes CLI with modern Digitone Track 8 export/check/send commands and legacy progression export compatibility. "
+            "Changes CLI with modern Chord export/check/send commands for Digitone Track 8 and legacy progression export compatibility. "
             "Export and send remain separate."
         ),
         epilog=(
             "Modern commands:\n"
-            "  export digitone-track8   Export Digitone II Track 8 artifacts\n"
+            "  export digitone-track8   Export Chord artifacts for Digitone II Track 8\n"
             "  check digitone-syx       Validate an existing .syx envelope or manifest metadata without sending\n"
             "  send digitone-syx        List ports, dry-run, or guarded-send an existing .syx\n\n"
             "Legacy commands:\n"
@@ -81,7 +81,7 @@ def _print_export_group_help() -> None:
     parser.print_help()
     print()
     print("Available export commands:")
-    print("  digitone-track8   Export Digitone II Track 8 artifacts from SongModel YAML v1 or demo input")
+    print("  digitone-track8   Export Chord artifacts for Digitone II Track 8 from SongModel YAML v1 or demo input")
 
 
 def _print_send_group_help() -> None:
@@ -113,7 +113,7 @@ def _build_digitone_sysex_check_parser() -> argparse.ArgumentParser:
         description="Validate a Digitone .syx file envelope without MIDI send or hardware access"
     )
     parser.add_argument("--syx", required=True, help="Path to a SysEx file")
-    parser.add_argument("--manifest", help="Optional Track 8 export manifest to cross-check .syx metadata")
+    parser.add_argument("--manifest", help="Optional Chord export manifest (Digitone Track 8) to cross-check .syx metadata")
     parser.add_argument("--expect-source-title", help="Optional expected source title for manifest validation")
     parser.add_argument("--expect-chord-events", type=int, help="Optional expected Track 8 chord event count")
     parser.add_argument("--expect-note-rows", type=int, help="Optional expected Track 8 note row count")
@@ -270,7 +270,7 @@ def _run_digitone_sysex_send_cli(argv: list[str]) -> None:
 def _build_track8_export_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
-            "Export Digitone II Track 8 artifacts from SongModel YAML v1 or built-in demo input; "
+            "Export Chord artifacts for Digitone II Track 8 from SongModel YAML v1 or built-in demo input; "
             "does not send MIDI"
         )
     )
@@ -280,7 +280,7 @@ def _build_track8_export_parser() -> argparse.ArgumentParser:
         help="Built-in demo song id for development/testing (currently only: cmaj7)",
     )
     source_group.add_argument("--input", help="Path to SongModel YAML v1 file")
-    parser.add_argument("--output-dir", required=True, help="Output directory for Track 8 artifacts")
+    parser.add_argument("--output-dir", required=True, help="Output directory for Chord artifacts (Digitone Track 8)")
     parser.add_argument(
         "--basename",
         default=DEFAULT_TRACK8_EXPORT_BASENAME,
@@ -326,9 +326,9 @@ def _run_track8_export_cli(argv: list[str]) -> None:
             overwrite=bool(args.overwrite),
         )
     except (RuntimeError, ValueError, FileExistsError, OSError, yaml.YAMLError) as exc:
-        raise SystemExit(f"Track 8 export failed: {exc}") from exc
+        raise SystemExit(f"Chord export failed (Digitone Track 8): {exc}") from exc
 
-    print("Wrote Track 8 export artifacts:")
+    print("Wrote Chord export artifacts (Digitone Track 8):")
     print(f"  events_yaml: {paths.events_yaml_path}")
     if paths.syx_path is not None:
         print(f"  syx: {paths.syx_path}")

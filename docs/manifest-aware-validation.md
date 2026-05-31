@@ -1,4 +1,4 @@
-# Manifest-aware SysEx Validation
+# Manifest-aware SysEx 検証
 
 ## Purpose
 

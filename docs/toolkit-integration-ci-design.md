@@ -1,4 +1,4 @@
-# Toolkit Integration CI Design
+# Toolkit 統合 CI 設計
 
 ## Purpose
 

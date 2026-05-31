@@ -1,40 +1,41 @@
-# Digitone SysEx Real-send Workflow
+# Digitone SysEx Real-send ワークフロー
 
-## Current status
+## 現在状態
 
-Guarded real-send has been manually validated on Digitone II.
+Guarded real-send は Digitone II で手動検証済みです。
 
-For the full export -> check -> dry-run -> real-send flow, see docs/e2e-user-workflow.md.
+全体の export -> check -> dry-run -> real-send フローは `docs/e2e-user-workflow.md` を参照してください。
+コマンド仕様は `docs/cli.md` が正本です。
 
-Validated fixture:
+検証済み fixture:
 
 - `examples/song_models/demo_ii_v_i.changes.yaml`
-- Pattern location observed: `A01`
-- Track 8 progression confirmed:
+- Pattern location: `A01`
+- Track 8 progression:
 - Dm7 at step1
 - G7 at step5
 - Cmaj7 at step9
 
-## Safety boundary
+## 安全境界
 
-Export does not send.
+Export は送信しません。
 
-Real-send requires:
+Real-send には次が必要です:
 
-- explicit `.syx`
-- explicit `--port`
+- 明示的な `.syx`
+- 明示的な `--port`
 - `--real-send`
 - `--yes-i-understand-this-writes-to-hardware`
 
-## Standard workflow
+## 標準ワークフロー
 
-### 1. Install MIDI extras
+### 1. MIDI extras をインストール
 
 ```powershell
 python -m pip install -e ".[midi]"
 ```
 
-### 2. Check versions
+### 2. version を確認
 
 ```powershell
 python --version
@@ -42,61 +43,19 @@ python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
 python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
 ```
 
-### 3. Export `.syx`
+### 3. guarded sequence を実行
 
-```powershell
-changes export digitone-track8 `
-  --input examples/song_models/demo_ii_v_i.changes.yaml `
-  --output-dir out/digitone-track8 `
-  --basename changes_track8_export `
-  --overwrite
-```
+1. export
+2. check
+3. list ports
+4. dry-run
+5. 明示確認付き real-send
 
-### 4. Confirm SysEx envelope
+厳密なコマンド定義は `docs/cli.md` を参照してください。
 
-```powershell
-python -c "from pathlib import Path; b=Path('out/digitone-track8/changes_track8_export.syx').read_bytes(); print(len(b), hex(b[0]), hex(b[-1]))"
-```
+## 既知の検証環境
 
-Equivalent command using the CLI helper:
-
-```powershell
-changes check digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --manifest out/digitone-track8/changes_track8_export_manifest.md `
-  --expect-source-title "Demo II V I" `
-  --expect-chord-events 3 `
-  --expect-note-rows 18
-```
-
-### 5. List ports
-
-```powershell
-changes send digitone-syx --list-ports
-```
-
-### 6. Dry-run
-
-```powershell
-changes send digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --port "Elektron Digitone II 2" `
-  --dry-run
-```
-
-### 7. Guarded real-send
-
-```powershell
-changes send digitone-syx `
-  --syx out/digitone-track8/changes_track8_export.syx `
-  --port "Elektron Digitone II 2" `
-  --real-send `
-  --yes-i-understand-this-writes-to-hardware
-```
-
-## Known validated environment
-
-From first validation:
+初回検証時:
 
 ```text
 Date: 2026-05-30
@@ -108,17 +67,17 @@ Digitone II firmware: 1.10D
 Port selected: Elektron Digitone II 2
 ```
 
-## Non-goals
+## 非ゴール
 
-This workflow does not:
+このワークフローが保証しないもの:
 
-- send from export
-- auto-select ports
-- bypass confirmation
-- guarantee all future fixtures
-- validate every possible LEN mapping
+- export からの送信
+- port 自動選択
+- 確認フローの省略
+- 将来すべての fixture 保証
+- すべての LEN mapping の検証
 
-## See also
+## 関連文書
 
 - `docs/index.md`
 - `docs/cli.md`
@@ -126,4 +85,4 @@ This workflow does not:
 - `docs/manifest-aware-validation.md`
 - `docs/generated-artifacts-policy.md`
 - `docs/release-candidate-status.md`
-- `docs/validation-status.md`
+- `docs/current-state.md`

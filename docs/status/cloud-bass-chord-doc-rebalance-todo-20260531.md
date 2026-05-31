@@ -19,7 +19,7 @@ Cloud / Bass / Chord を同等比重で扱う文書体系に再編する。
 
 - 主正本: `harmony-engine-spec.md`
 - 補助: `voicing-and-duration-rules.md`
-- パイプライン補助: `rendered-arrangement-pipeline.md`
+- モデル定義補助: `concept.md`（Model Contracts）
 - 特徴: 仕様は存在するが、Track 8 系ほどの粒度で分割されていない
 
 ### ギャップ評価
@@ -30,19 +30,19 @@ Cloud / Bass / Chord を同等比重で扱う文書体系に再編する。
 
 ## 直近実施済み（この回）
 
-- Track 8 phase 文書の一部を `track8-internal-implementation-notes.md` に統合
+- Track 8 phase 文書の一部を `chord-internal-implementation-notes.md` に統合
 - 分散した重複文書を削減
 
 ## 直近実施済み（追加整理）
 
-- Track 8 履歴系文書をさらに統合し、`track8-export-api.md` / `track8-chord-event-model.md` / `track8-product-like-pattern-settings-spec.md` / `track8-internal-implementation-notes.md` の4本へ集約
+- Track 8 履歴系文書をさらに統合し、`chord-export-api.md` / `track8-product-like-pattern-settings-spec.md` / `chord-internal-implementation-notes.md` を中心に集約
 - design/readiness/follow-up/capability-check/template-fixture の分散文書を削除し、リンク先を更新
 
 ## 現在地情報の置き場（運用ルール反映）
 
 - 仕様本文から current scope / 実装済み未実装の記述を削減
 - Digitone 実装状況は `status/native-syx-pipeline-status-20260526.md` を参照
-- RC/validation 状態は `validation-status.md` / `validation-matrix.md` で管理
+- RC/validation 状態は `current-state.md` / `validation-matrix.md` で管理
 
 ## TODO schedule
 

@@ -1,40 +1,40 @@
-# Validation Matrix
+# 検証マトリクス
 
-## Purpose
+## 目的
 
-This matrix tracks what is currently validated for each SongModel fixture in the v0.1 release-candidate workflow.
+このマトリクスは、v0.1 release-candidate workflow における各 SongModel fixture の現在検証範囲を追跡します。
 
-The validation matrix currently emphasizes Track 8 because Track 8 is the stabilized RC subset.
-It is not the full product priority order.
+現状は Chord workflow（Digitone Track 8）が RC 安定化 subset のため、検証マトリクスも Track 8 中心です。
+これはプロダクト全体の方針順序を示すものではありません。
 
-Validation levels:
+検証レベル:
 
-- hardware-validated: manually observed on Digitone II hardware
-- software E2E validated: automated export -> check --manifest -> dry-run coverage
-- export/manifest validated: automated export and manifest/count validation without full check/dry-run flow
-- not validated: no dedicated validation at this level yet
+- hardware-validated: Digitone II 実機で手動観測済み
+- software E2E validated: export -> check --manifest -> dry-run を自動検証
+- export/manifest validated: check/dry-run 全経路は含まず、export と manifest/count を自動検証
+- not validated: 当該レベルの専用検証なし
 
-## Product priority vs validation status
+## プロダクト方針と検証状態
 
 | Layer | Tracks | Product priority | Current validation status |
 | --- | --- | --- | --- |
-| Harmony Cloud | 1-6 | primary | architecture target / partial implementation; not yet RC-stabilized |
-| Bass | 7 | secondary | architecture target / partial implementation; not yet RC-stabilized |
+| Harmony Cloud | 1-6 | primary | architecture target / partial implementation; RC 安定化未到達 |
+| Bass | 7 | secondary | architecture target / partial implementation; RC 安定化未到達 |
 | Chord | 8 | additional | RC-stabilized subset |
 
-## Fixture Matrix
+## フィクスチャマトリクス
 
-| Fixture | Purpose | Export | SysEx generation | check --manifest | dry-run | real-send hardware | Notes |
+| フィクスチャ | Purpose | Export | SysEx generation | check --manifest | dry-run | real-send hardware | Notes |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `examples/song_models/demo_cmaj7.changes.yaml` | Quick smoke path | yes | optional | not primary path | not primary path | no | Basic single-chord smoke fixture |
-| `examples/song_models/demo_ii_v_i.changes.yaml` | Known hardware baseline | yes | yes | yes | yes | yes | Observed Track 8 steps: Dm7 step1, G7 step5, Cmaj7 step9 |
-| `examples/song_models/demo_multibar_turnaround.changes.yaml` | Multi-bar regression | yes | yes | yes | yes | no | Software E2E validated |
-| `examples/song_models/demo_multisection_form.changes.yaml` | Multi-section regression | yes | not covered as stable E2E path | export/manifest regression only | export/manifest regression only | no | Covered by export + manifest count regression tests |
+| `examples/song_models/demo_cmaj7.changes.yaml` | Quick smoke path | yes | optional | 主経路ではない | 主経路ではない | no | 単一 chord の基本 smoke fixture |
+| `examples/song_models/demo_ii_v_i.changes.yaml` | Known hardware baseline | yes | yes | yes | yes | yes | 観測 Track 8 steps: Dm7 step1, G7 step5, Cmaj7 step9 |
+| `examples/song_models/demo_multibar_turnaround.changes.yaml` | Multi-bar regression | yes | yes | yes | yes | no | software E2E validated |
+| `examples/song_models/demo_multisection_form.changes.yaml` | Multi-section regression | yes | 安定 E2E 経路としては未カバー | export/manifest 回帰のみ | export/manifest 回帰のみ | no | export + manifest count 回帰でカバー |
 
-## Current Summary
+## 現在サマリー
 
-- Product priority remains Cloud > Bass > Chord even though the current matrix is Track 8-focused.
+- 現在マトリクスは Track 8 中心ですが、プロダクト方針は Cloud > Bass > Chord を維持
 - Hardware-validated: `demo_ii_v_i`
 - Software E2E validated: `demo_ii_v_i`, `demo_multibar_turnaround`
-- Export/manifest validated: `demo_multisection_form` (and smoke export coverage for `demo_cmaj7`)
-- Not validated: broad hardware/device matrix and full payload-semantic validation
+- Export/manifest validated: `demo_multisection_form`（および `demo_cmaj7` の smoke export カバレッジ）
+- 未検証: 広い hardware/device マトリクスと payload 意味論の全面検証

@@ -1,4 +1,4 @@
-# Harmony Engine Specification
+# Harmony Engine 仕様
 
 ## 位置づけ
 
@@ -131,5 +131,5 @@ timing policy:
 ## 補助資料
 
 - `docs/voicing-and-duration-rules.md`（詳細ルール・検証背景）
-- `docs/track8-chord-event-model.md`
-- `docs/validation-status.md`
+- `docs/concept.md`（Model Contracts）
+- `docs/current-state.md`

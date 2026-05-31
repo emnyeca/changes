@@ -1,4 +1,4 @@
-# Generated Artifacts Policy
+# 生成 Artifact ポリシー
 
 Generated validation artifacts under `out/digitone-track8/` are currently kept for review and reproducibility during active release-candidate development.
 

@@ -1,14 +1,14 @@
-# Track 8 Product-like Pattern Settings Specification
+# Track 8 Product-like Pattern Settings 仕様
 
 ## Purpose
 
-This document defines product-like Digitone pattern settings decisions for Track 8 export.
+This document defines product-like Digitone pattern settings decisions for Chord export (Digitone Track 8).
 
 It does not implement these settings.
 
 ## Scope
 
-This specification covers the target behavior for product-like Track 8 chord export.
+This specification covers the target behavior for product-like Chord export (Digitone Track 8).
 
 It does not validate hardware behavior.
 
@@ -23,7 +23,7 @@ the base empty template defaults rather than the intended product default output
 This is expected for a Track-8-only fixture: Changes only emits events for active tracks,
 and the template supplies all other defaults.
 
-This is treated as a product-readiness gap, not a Track 8 chord-trigger bug.
+This is treated as a product-readiness gap, not a Chord trigger bug on Digitone Track 8.
 
 ## Decisions
 
@@ -48,8 +48,8 @@ Product-like export will use per-track mode per the existing design.
 
 Rationale:
 
-Track 8 chord export needs independent length/speed from Tracks 1-7.
-Global/shared modes would cause Track 8 chord behavior to affect unrelated tracks.
+Chord export on Digitone Track 8 needs independent length/speed from Tracks 1-7.
+Global/shared modes would cause Chord behavior on Track 8 to affect unrelated tracks.
 
 ### Decision 2: Track 1-7 VEL default
 
@@ -99,11 +99,11 @@ Track 8 has a separate policy from Tracks 1-7:
 - note order is preserved from realized chord note order
 - same-step chord trigger records are permitted up to the toolkit/device limit (16 notes)
 
-Track 8 does not use Track 1-7 default VEL/LEN for chord notes.
+Track 8 does not use Track 1-7 default VEL/LEN for Chord notes.
 
 Rationale:
 
-Track 8 chord notes carry musically intentional per-note velocity and length from the
+Chord notes on Track 8 carry musically intentional per-note velocity and length from the
 chord realization model. They must not be overwritten by Track 1-7 defaults.
 
 ### Decision 5: Ownership of product-like defaults

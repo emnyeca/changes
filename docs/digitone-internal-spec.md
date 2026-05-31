@@ -1,18 +1,18 @@
-# Digitone Internal Specification
+# Digitone 内部仕様
 
 ## 位置づけ
 
 この文書は Changes における Digitone 関連内部仕様の統合正本です。
 
-Export / Transport / Backend の責務境界と current scope を定義します。
+Export / Transport / Backend の責務境界と現在スコープを定義します。
 
-## Architecture boundary
+## アーキテクチャ境界
 
 期待フロー:
 
 ```text
 SongModel YAML
-  -> Track 8 export
+  -> Chord export (Digitone Track 8)
   -> .syx bytes
   -> transport layer
   -> MIDI backend
@@ -25,7 +25,7 @@ SongModel YAML
 - Transport layer: SysEx validation / send policy / dry-run / guard
 - Backend layer: port list / byte send / backend adapter
 
-## Native SysEx policy
+## Native SysEx ポリシー
 
 - Digitone 出力の primary backend は Native SysEx
 - dependency direction は one-way: `changes -> digitone-syx-toolkit`
@@ -39,7 +39,7 @@ base policy:
 - Track 9..16 は fixed LENGTH/SPEED
 - pattern-shared CHANGE=`OFF`, RESET=`INF`
 
-## Safety boundary
+## 安全境界
 
 - Export does not send.
 - Check does not send.
@@ -69,9 +69,9 @@ real-send 要件:
 4. dry-run
 5. guarded real-send
 
-詳細コマンドは `docs/digitone-syx-cli-modes.md` を参照。
+詳細コマンドは `docs/cli.md` を参照。
 
-## Backend policy
+## Backend ポリシー
 
 候補:
 
@@ -97,11 +97,11 @@ python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
 python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
 ```
 
-実装状況は status 文書で管理する。
+実装状況は status 文書で管理します。
 
 - `docs/status/native-syx-pipeline-status-20260526.md`
 
-## Tempo and pattern notes
+## Tempo と pattern メモ
 
 用語:
 
@@ -118,7 +118,7 @@ validation scope:
 
 ## 関連文書
 
-- `docs/digitone-syx-cli-modes.md`
+- `docs/cli.md`
 - `docs/real-send-workflow.md`
 - `docs/generated-artifacts-policy.md`
 - `docs/manifest-aware-validation.md`

@@ -35,28 +35,28 @@ iReal Pro
 	-> Digitone II
 ```
 
-The current Track 8 workflow remains important, but it is a stabilized subset rather than the full product architecture.
+The current Chord workflow (Digitone Track 8) remains important, but it is a stabilized subset rather than the full product architecture.
 
 See `docs/product-architecture.md` for the target layer model and `docs/current-state.md` for the distinction between product direction, current implementation, and current validation.
 
 ## Current RC-stabilized subset
 
-The current practical workflow focuses on Digitone II Track 8 SysEx export and guarded sending.
+The current practical workflow focuses on Chord SysEx export to Digitone II Track 8 and guarded sending.
 
 This is the currently stabilized subset, not the full product priority order:
 
 ```text
 SongModel YAML
-	-> Track 8 export
+	-> Chord export (Digitone Track 8)
 	-> SysEx check
 	-> manifest-aware validation
 	-> dry-run send
 	-> guarded real-send
 ```
 
-## Quick start: Digitone II Track 8 chord workflow
+## Quick start: Chord workflow on Digitone II Track 8
 
-### 1. Export Track 8 artifacts
+### 1. Export Chord artifacts (Digitone Track 8)
 
 ```powershell
 changes export digitone-track8 `
@@ -121,7 +121,7 @@ changes send digitone-syx `
 
 ## Validation status
 
-The II-V-I fixture has been manually validated on Digitone II for the Track 8 RC workflow.
+The II-V-I fixture has been manually validated on Digitone II for the Chord RC workflow (Track 8).
 
 Additional SongModel fixtures are available under `examples/song_models/` for software validation.
 The hardware-validated fixture remains `examples/song_models/demo_ii_v_i.changes.yaml`.
@@ -133,7 +133,6 @@ Validation scope references:
 
 See:
 
-- docs/validation-status.md
 - docs/hardware-validation/digitone-syx-real-send-first-validation.md
 - docs/product-architecture.md
 - docs/current-state.md

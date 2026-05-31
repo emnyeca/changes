@@ -1,56 +1,56 @@
-# Fixture Inventory
+# フィクスチャ一覧
 
-## Purpose
+## 目的
 
-This inventory captures intended use and current validation scope for SongModel fixtures used by the Digitone II Track 8 RC workflow.
+この一覧は、Chord RC ワークフロー（Digitone II Track 8）で使用する SongModel fixture の用途と現在の検証範囲を整理したものです。
 
-It documents the current stabilized subset only. It does not describe the full product priority order, which remains Cloud > Bass > Chord.
+記載対象は現在安定化している subset のみです。プロダクト全体の方針順序（Cloud > Bass > Chord）を定義する文書ではありません。
 
-## Fixtures
+## フィクスチャ詳細
 
 ### Demo Cmaj7
 
 - title: Demo Cmaj7
 - file: `examples/song_models/demo_cmaj7.changes.yaml`
-- musical shape: single 4/4 measure, one Cmaj7 harmony event
+- musical shape: 4/4 1小節、Cmaj7 harmony event 1件
 - chord events: 1
 - expected Track 8 note rows: 6
-- intended validation purpose: quick smoke test for export path and CLI basics
-- hardware validation status: not hardware-validated
+- intended validation purpose: export 経路と CLI 基本動作の quick smoke test
+- hardware validation status: hardware 検証なし
 
 ### Demo II V I
 
 - title: Demo II V I
 - file: `examples/song_models/demo_ii_v_i.changes.yaml`
-- musical shape: one 4/4 measure with Dm7 -> G7 -> Cmaj7
+- musical shape: 4/4 1小節に Dm7 -> G7 -> Cmaj7
 - chord events: 3
 - expected Track 8 note rows: 18
-- intended validation purpose: known baseline for export/check/dry-run and guarded real-send workflow
-- hardware validation status: hardware-validated on Digitone II (Dm7 step1, G7 step5, Cmaj7 step9)
+- intended validation purpose: export/check/dry-run/guarded real-send ワークフローの既知ベースライン
+- hardware validation status: Digitone II で hardware 検証済み（Dm7 step1, G7 step5, Cmaj7 step9）
 
 ### Demo Multibar Turnaround
 
 - title: Demo Multibar Turnaround
 - file: `examples/song_models/demo_multibar_turnaround.changes.yaml`
-- musical shape: two 2/4 measures with four harmony events across bars
+- musical shape: 2/4 2小節に4つの harmony event
 - chord events: 4
 - expected Track 8 note rows: 24
-- intended validation purpose: multi-bar regression for software export/check/dry-run workflow
-- hardware validation status: not hardware-validated
+- intended validation purpose: ソフトウェア export/check/dry-run の multi-bar 回帰
+- hardware validation status: hardware 検証なし
 
 ### Demo Multisection Form
 
 - title: Demo Multisection Form
 - file: `examples/song_models/demo_multisection_form.changes.yaml`
-- musical shape: eight 4/4 measures, A section then B section
+- musical shape: 4/4 8小節、A section -> B section
 - chord events: 8
 - expected Track 8 note rows: 48
-- intended validation purpose: multi-section SongModel export/manifest regression
-- hardware validation status: not hardware-validated
+- intended validation purpose: multi-section SongModel の export/manifest 回帰
+- hardware validation status: hardware 検証なし
 
-## Fixture Selection Guide
+## フィクスチャ選択ガイド
 
 - quick smoke test: `demo_cmaj7`
-- known hardware-validated path: `demo_ii_v_i`
-- multi-bar regression: `demo_multibar_turnaround`
-- multi-section regression: `demo_multisection_form`
+- 既知の hardware 検証済みパス: `demo_ii_v_i`
+- multi-bar 回帰: `demo_multibar_turnaround`
+- multi-section 回帰: `demo_multisection_form`

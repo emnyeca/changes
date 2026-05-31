@@ -1,12 +1,12 @@
-# Known Limitations
+# 既知の制約
 
 ## Scope
 
-The current release-candidate workflow is focused on Digitone II Track 8 export and guarded SysEx sending.
+The current release-candidate workflow is focused on Chord export to Digitone II Track 8 and guarded SysEx sending.
 
-Track 8 is currently the stabilized RC path, but the intended product architecture prioritizes Track 1-6 Harmony Cloud and Track 7 Bass before Track 8 Chord.
+The Chord workflow on Digitone Track 8 is currently the stabilized RC path, but the intended product architecture prioritizes Track 1-6 Harmony Cloud and Track 7 Bass before this Chord subset.
 
-The Track 8 emphasis in current docs and validation should be read as a subset status, not as the product priority order.
+The current Track 8 emphasis in docs and validation should be read as subset status for Chord workflow, not as the product priority order.
 
 ## Known limitations
 

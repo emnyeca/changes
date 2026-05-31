@@ -112,6 +112,7 @@ def _merge_holds(title: str, tempo: Fraction, events: list[RenderedNoteEvent]) -
                     duration_quarters=prev.duration_quarters + event.duration_quarters,
                     source_harmony_id=prev.source_harmony_id,
                     retrigger=prev.retrigger,
+                    velocity=prev.velocity,
                 )
                 continue
         merged.append(event)

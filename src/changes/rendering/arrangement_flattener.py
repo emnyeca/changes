@@ -1,7 +1,7 @@
 """Flatten RenderedArrangement into export-compatible RenderedTimeline.
 
-This adapter preserves timing and source identity but intentionally drops
-layer-specific metadata that RenderedTimeline does not model yet.
+This adapter preserves timing, source identity, lane assignment, and per-note
+velocity where the layer supplies it.
 """
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> Rendere
                         duration_quarters=occurrence.duration_quarters,
                         source_harmony_id=occurrence.source_harmony_id,
                         retrigger=True,
+                        velocity=note.velocity,
                     )
                 )
 
@@ -58,6 +59,7 @@ def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> Rendere
                         duration_quarters=occurrence.duration_quarters,
                         source_harmony_id=occurrence.source_harmony_id,
                         retrigger=True,
+                        velocity=note.velocity,
                     )
                 )
 
@@ -72,6 +74,7 @@ def flatten_arrangement_to_timeline(arrangement: RenderedArrangement) -> Rendere
                     duration_quarters=occurrence.duration_quarters,
                     source_harmony_id=occurrence.source_harmony_id,
                     retrigger=True,
+                    velocity=occurrence.bass.note.velocity,
                 )
             )
 

@@ -17,6 +17,8 @@ from changes.models.digitone_target_profile import DigitoneTargetProfile, defaul
 from changes.models.render_profile import default_render_profile
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.pipeline_digitone import compile_digitone_pipeline
+from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
+from changes.rendering.arrangement_renderer import render_arrangement
 from changes.rendering.timeline_renderer import render_timeline
 
 
@@ -233,6 +235,32 @@ def test_compile_plan_and_events_export_smoke():
 def test_default_target_profile_contains_track_default_velocity_map():
     profile = default_digitone_target_profile()
     assert profile.track_default_velocity == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
+    assert profile.voice_to_track["cloud_voice_1"] == 1
+    assert profile.voice_to_track["cloud_voice_6"] == 6
+    assert profile.voice_to_track["chord_voice_1"] == 1
+    assert profile.voice_to_track["chord_note_1"] == 8
+    assert profile.voice_to_track["chord_note_6"] == 8
+    assert profile.polyphonic_tracks == (8,)
+
+
+def test_flattened_arrangement_compiles_product_tracks_1_to_8_with_chord_velocity():
+    song = compact_progression_to_song_model(_song_payload([["Cmaj7"]]))
+    arrangement = render_arrangement(song)
+    timeline = flatten_arrangement_to_timeline(arrangement)
+
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+
+    tracks = {event.track for event in plan.events}
+    assert {1, 2, 3, 4, 5, 6, 7, 8}.issubset(tracks)
+
+    track8_events = [event for event in plan.events if event.track == 8]
+    assert len(track8_events) == 6
+    assert {event.step for event in track8_events} == {1}
+    assert tuple(event.velocity for event in track8_events) == (70, 70, 70, 50, 70, 50)
+
+    track1_to_7_events = [event for event in plan.events if event.track in {1, 2, 3, 4, 5, 6, 7}]
+    assert track1_to_7_events
+    assert all(event.velocity == "inherit" for event in track1_to_7_events)
 
 
 def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_velocity_inherit():

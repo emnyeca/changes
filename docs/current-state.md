@@ -38,6 +38,7 @@ EUB Changes は、iReal Pro または MusicXML 由来の楽曲データから Cl
 - CLI help / dispatch
 - MusicXML import と bundle diagnostics
 - chord / bass register bounds を含む timeline rendering
+- `RenderedArrangement` から Cloud Track 1-6 / Bass Track 7 / Chord Track 8 を同時 compile する regression
 
 ソフトウェア E2E fixture:
 
@@ -58,7 +59,7 @@ export/manifest fixture:
 - 複数 OS 環境の検証は未完了
 - 大規模 song export の検証は未完了
 - consumer 向け導入フローの検証は未完了
-- Cloud / Bass 側の実機検証は Chord RC workflow 相当の粒度には未到達
+- Cloud / Bass / Chord をそろえた hardware-facing export command と実機検証は Chord RC workflow 相当の粒度には未到達
 
 ## 現在状態にもとづく計画
 
@@ -73,11 +74,11 @@ export/manifest fixture:
 - 複数系統の hardware-validated fixture が成立
 - guarded send safety checks に回帰がない
 
-### Horizon B: Cloud/Bass 側へ再バランス（中期）
+### Horizon B: Cloud/Bass/Chord 統合提供へ再バランス（中期）
 
-- Chord 偏重を減らすため Cloud/Bass の検証カバレッジを増加
+- Chord 偏重を減らすため Cloud/Bass/Chord 統合経路の検証カバレッジを増加
 - Cloud/Bass/Chord の導線バランスを改善
-- Cloud / Bass export API は未整備であり、実装に入る段階で Chord export との共通化可能性を検討
+- Track 1-8 product export command/API を Chord export とどう統合するか決める
 
 完了シグナル:
 

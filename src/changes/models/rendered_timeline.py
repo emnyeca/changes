@@ -24,6 +24,7 @@ class RenderedNoteEvent:
     duration_quarters: Fraction
     source_harmony_id: str
     retrigger: bool
+    velocity: int | str | None = None
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ def rendered_timeline_to_dict(timeline: RenderedTimeline) -> dict:
                 "duration_quarters": _fraction_to_text(e.duration_quarters),
                 "source_harmony_id": e.source_harmony_id,
                 "retrigger": e.retrigger,
+                "velocity": e.velocity,
             }
             for e in timeline.events
         ],
@@ -64,6 +66,7 @@ def rendered_timeline_from_dict(data: dict) -> RenderedTimeline:
             duration_quarters=_fraction_from_text(e["duration_quarters"]),
             source_harmony_id=str(e["source_harmony_id"]),
             retrigger=bool(e["retrigger"]),
+            velocity=e.get("velocity"),
         )
         for e in data.get("events", [])
     )

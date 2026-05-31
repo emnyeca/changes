@@ -215,6 +215,7 @@ def compile_timeline_events_with_timing(
 
     events: list[CompiledDigitoneEvent] = []
     seen_pairs: set[tuple[int, int]] = set()
+    polyphonic_tracks = set(target.polyphonic_tracks)
 
     for event in sorted(timeline.events, key=lambda e: (e.onset_quarters, e.voice_id, e.id)):
         if event.voice_id not in target.voice_to_track:
@@ -254,7 +255,7 @@ def compile_timeline_events_with_timing(
         for chunk_index, (chunk_steps, code) in enumerate(chunks, start=1):
             chunk_local_step = local_step + offset
             pair = (track, chunk_local_step)
-            if pair in seen_pairs:
+            if pair in seen_pairs and track not in polyphonic_tracks:
                 raise ValueError(
                     f"Compile conflict: duplicate track/step detected for track={track}, local_step={chunk_local_step}"
                 )
@@ -267,7 +268,7 @@ def compile_timeline_events_with_timing(
                     track=track,
                     step=chunk_local_step,
                     note=_midi_to_digitone_note_name(event.note_midi),
-                    velocity=target.default_velocity,
+                    velocity=event.velocity if event.velocity is not None else target.default_velocity,
                     length_code=code,
                 )
             )

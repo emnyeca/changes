@@ -250,14 +250,45 @@ def test_flatten_render_arrangement_output_for_minimal_cmaj7_song():
 
     timeline = flatten_arrangement_to_timeline(arrangement)
 
-    assert len(timeline.events) == 6
-    assert all(event.role == "chord" for event in timeline.events)
-    assert tuple(event.note_midi for event in timeline.events) == (48, 52, 55, 59, 62, 69)
+    assert len(timeline.events) == 13
+    assert sum(event.role == "cloud" for event in timeline.events) == 6
+    assert sum(event.role == "chord" for event in timeline.events) == 6
+    assert sum(event.role == "bass" for event in timeline.events) == 1
+    assert tuple(event.note_midi for event in timeline.events) == (
+        48,
+        52,
+        55,
+        57,
+        59,
+        62,
+        48,
+        52,
+        55,
+        59,
+        62,
+        69,
+        36,
+    )
     assert tuple(event.voice_id for event in timeline.events) == (
+        "cloud_voice_1",
+        "cloud_voice_2",
+        "cloud_voice_3",
+        "cloud_voice_4",
+        "cloud_voice_5",
+        "cloud_voice_6",
         "chord_note_1",
         "chord_note_2",
         "chord_note_3",
         "chord_note_4",
         "chord_note_5",
         "chord_note_6",
+        "bass",
+    )
+    assert tuple(event.velocity for event in timeline.events if event.role == "chord") == (
+        70,
+        70,
+        70,
+        50,
+        70,
+        50,
     )

@@ -51,6 +51,22 @@ def test_render_arrangement_single_cmaj7_occurrence_chord_layer_shape():
     assert occ.onset_quarters == Fraction(0, 1)
     assert occ.duration_quarters == Fraction(4, 1)
 
+    assert occ.cloud is not None
+    assert tuple(note.note_midi for note in occ.cloud.notes) == (48, 52, 55, 57, 59, 62)
+    assert tuple(note.lane_id for note in occ.cloud.notes) == (
+        "cloud_voice_1",
+        "cloud_voice_2",
+        "cloud_voice_3",
+        "cloud_voice_4",
+        "cloud_voice_5",
+        "cloud_voice_6",
+    )
+
+    assert occ.bass is not None
+    assert occ.bass.note.note_midi == 36
+    assert occ.bass.note.lane_id == "bass"
+    assert occ.bass.source_pitch_class == 0
+
     assert occ.chord is not None
     chord = occ.chord
     assert chord.realized_midi_notes == (48, 52, 55, 59, 62, 69)

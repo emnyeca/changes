@@ -155,7 +155,7 @@ flatten 時の role mapping:
 
 注意:
 
-- `RenderedTimeline` は layer payload 全体（velocity, length_mode, diagnostics, grouping）を保持しない
+- `RenderedTimeline` は flat event と optional velocity を保持するが、layer payload 全体（length_mode, diagnostics, grouping など）は保持しない
 - richer metadata が必要な downstream は `RenderedArrangement` を直接参照する
 
 ### Track8ChordEvent Contract
@@ -303,7 +303,7 @@ RenderedTimeline よりもrichなmetadataを保持し、layerごとの情報、g
 
 flat event 向けの中間表現。
 
-RenderedArrangement と異なり、layer payload全体、grouping、diagnosticsなどのrich metadataは保持しません。
+RenderedArrangement と異なり、layer payload全体、grouping、diagnosticsなどのrich metadataは保持しません。Track 8 Chord の compile に必要な optional velocity は保持します。
 
 ### SysEx
 

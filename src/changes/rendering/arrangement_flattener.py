@@ -71,7 +71,7 @@ def _merge_hold_events(events: list[RenderedNoteEvent]) -> list[RenderedNoteEven
                     onset_quarters=current.onset_quarters,
                     duration_quarters=current.duration_quarters + next_ev.duration_quarters,
                     source_harmony_id=current.source_harmony_id,
-                    retrigger=True,
+                    retrigger=False,
                     velocity=current.velocity,
                 )
             else:

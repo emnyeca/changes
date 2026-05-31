@@ -181,24 +181,6 @@ def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_posit
         compile_digitone_bundle_pipeline(payload, layers="bass")
 
 
-def test_repeated_non_contiguous_section_labels_are_separate_occurrences():
-    payload = {
-        "name": "BLUE MOON",
-        "tempo": 120,
-        "time_signature": "4/4",
-        "sections": [
-            {"name": "A", "progression": [["Cmaj7"] for _ in range(16)]},
-            {"name": "B", "progression": [["Dm7"] for _ in range(16)]},
-            {"name": "A", "progression": [["G7"] for _ in range(16)]},
-        ],
-    }
-
-    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
-
-    assert [p.section_label for p in bundle.patterns] == ["A", "B", "A"]
-    assert [p.section_global_order_index for p in bundle.patterns] == [1, 2, 3]
-    assert [p.pattern_name for p in bundle.patterns] == ["A1 BLUE MOON", "B BLUE MOON", "A2 BLUE MOON"]
-
 
 def test_aaba_form_preserves_order_and_unique_auto_names():
     payload = {

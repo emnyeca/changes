@@ -353,11 +353,14 @@ def test_hold_until_change_merges_contiguous_same_pitch_cloud_and_bass():
     assert len(cloud_events) == 1, "cloud: same pitch contiguous should merge to 1 event"
     assert cloud_events[0].duration_quarters == Fraction(4)
     assert cloud_events[0].onset_quarters == Fraction(0)
+    assert cloud_events[0].retrigger is False, "merged hold event must not be marked as retrigger"
 
     assert len(bass_events) == 1, "bass: same pitch contiguous should merge to 1 event"
     assert bass_events[0].duration_quarters == Fraction(4)
+    assert bass_events[0].retrigger is False
 
     assert len(chord_events) == 2, "chord: retrigger always produces 2 events"
+    assert all(e.retrigger is True for e in chord_events)
 
 
 def test_hold_until_change_does_not_merge_different_pitches():
@@ -370,7 +373,9 @@ def test_hold_until_change_does_not_merge_different_pitches():
     bass_events = [e for e in timeline.events if e.role == "bass"]
 
     assert len(cloud_events) == 2, "cloud: different pitches should not merge"
+    assert all(e.retrigger is True for e in cloud_events), "non-merged events trigger fresh"
     assert len(bass_events) == 2, "bass: different pitches should not merge"
+    assert all(e.retrigger is True for e in bass_events)
 
 
 def test_hold_until_change_does_not_merge_non_contiguous_same_pitch():
@@ -383,6 +388,7 @@ def test_hold_until_change_does_not_merge_non_contiguous_same_pitch():
     bass_events = [e for e in timeline.events if e.role == "bass"]
 
     assert len(cloud_events) == 2, "cloud: gap between events means no merge"
+    assert all(e.retrigger is True for e in cloud_events)
     assert len(bass_events) == 2, "bass: gap between events means no merge"
 
 
@@ -400,4 +406,6 @@ def test_retrigger_policy_never_merges_same_pitch():
     bass_events = [e for e in timeline.events if e.role == "bass"]
 
     assert len(cloud_events) == 2, "retrigger: same pitch contiguous must NOT merge"
+    assert all(e.retrigger is True for e in cloud_events)
     assert len(bass_events) == 2, "retrigger: same pitch contiguous must NOT merge"
+    assert all(e.retrigger is True for e in bass_events)

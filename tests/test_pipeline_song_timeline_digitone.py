@@ -240,15 +240,16 @@ def test_compile_plan_and_events_export_smoke():
     assert out["events"][0]["length_code"].startswith("0x")
 
 
-def test_default_target_profile_contains_track_default_velocity_map():
+def test_default_target_profile_routing_and_velocity():
     profile = default_digitone_target_profile()
+
     assert profile.track_default_velocity == {1: 70, 2: 70, 3: 70, 4: 50, 5: 70, 6: 50, 7: 100}
-    assert profile.voice_to_track["cloud_voice_1"] == 1
-    assert profile.voice_to_track["cloud_voice_6"] == 6
-    assert "chord_voice_1" not in profile.voice_to_track
-    assert profile.voice_to_track["chord_note_1"] == 8
-    assert profile.voice_to_track["chord_note_6"] == 8
     assert profile.polyphonic_tracks == (8,)
+
+    v2t = profile.voice_to_track
+    assert {v2t[f"cloud_voice_{i}"] for i in range(1, 7)} == {1, 2, 3, 4, 5, 6}
+    assert v2t["bass"] == 7
+    assert all(v2t[f"chord_note_{i}"] == 8 for i in range(1, 7))
 
 
 def test_flattened_arrangement_compiles_product_tracks_1_to_8_with_chord_velocity():

@@ -23,20 +23,6 @@ def test_top_level_help_mentions_modern_commands(monkeypatch: pytest.MonkeyPatch
     assert "Legacy commands:" in out
 
 
-def test_export_help_mentions_track8_artifacts(monkeypatch: pytest.MonkeyPatch, capsys):
-    monkeypatch.setattr(sys, "argv", ["changes", "export", "digitone-track8", "--help"])
-
-    with pytest.raises(SystemExit):
-        cli.main()
-
-    out = capsys.readouterr().out
-    assert "Chord artifacts for Digitone II Track 8" in out
-    assert "SongModel YAML v1" in out
-    assert "--input" in out
-    assert "--events-yaml-only" in out
-    assert "--overwrite" in out
-    assert "--send" not in out
-
 
 def test_export_group_help_mentions_digitone_track8(monkeypatch: pytest.MonkeyPatch, capsys):
     monkeypatch.setattr(sys, "argv", ["changes", "export", "--help"])

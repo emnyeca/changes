@@ -19,7 +19,7 @@ Cloud / Bass / Chord を同等比重で扱う文書体系に再編する。
 
 - 主正本: `harmony-engine-spec.md`
 - 補助: `voicing-and-duration-rules.md`
-- モデル定義補助: `concept.md`（Model Contracts）
+- モデル定義補助: `concept.md`（Core Model Contracts）
 - 特徴: 仕様は存在するが、Track 8 系ほどの粒度で分割されていない
 
 ### ギャップ評価

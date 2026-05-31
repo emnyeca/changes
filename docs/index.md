@@ -2,14 +2,12 @@
 
 ## Product framing
 
+- Concept: `concept.md`
 - Product architecture: `product-architecture.md`
 - Current state: `current-state.md`
-- Glossary: `glossary.md`
 
 ## Current practical workflows
 
-- Cloud export API (TBD): `cloud-export-api.md`
-- Bass export API (TBD): `bass-export-api.md`
 - Chord export API: `chord-export-api.md`
 - Chord internal implementation notes: `chord-internal-implementation-notes.md`
 - Model contracts (SongModel / RenderedArrangement / Track8ChordEvent): `concept.md`
@@ -27,6 +25,7 @@
 - Workflow RC status: `release-candidate-status.md`
 - Validation matrix: `validation-matrix.md`
 - Fixture inventory: `fixture-inventory.md`
+- Current evidence summary: `current-state.md`
 - Known limitations: `known-limitations.md`
 
 ## Planning and status

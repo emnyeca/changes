@@ -131,5 +131,5 @@ timing policy:
 ## 補助資料
 
 - `docs/voicing-and-duration-rules.md`（詳細ルール・検証背景）
-- `docs/concept.md`（Model Contracts）
+- `docs/concept.md`（Core Model Contracts）
 - `docs/current-state.md`

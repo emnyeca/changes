@@ -29,7 +29,7 @@ def test_export_help_mentions_track8_artifacts(monkeypatch: pytest.MonkeyPatch, 
         cli.main()
 
     out = capsys.readouterr().out
-    assert "Digitone II Track 8 artifacts" in out
+    assert "Chord artifacts for Digitone II Track 8" in out
     assert "SongModel YAML v1" in out
     assert "--input" in out
     assert "--events-yaml-only" in out

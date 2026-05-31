@@ -80,7 +80,7 @@ paths = export_track8_artifacts_from_song(
 
 Chord export CLI/API（Digitone Track 8）は SongModel YAML v1 入力を受け付けます。
 
-入力形式は `docs/concept.md` の Model Contracts を参照してください。
+入力形式は `docs/concept.md` の Core Model Contracts を参照してください。
 
 ## 8. カバレッジメモ
 

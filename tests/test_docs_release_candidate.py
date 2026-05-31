@@ -33,8 +33,8 @@ def test_product_docs_include_core_headings():
     architecture = _read("docs/product-architecture.md")
     current_state = _read("docs/current-state.md")
 
-    assert "Cloud > Bass > Chord" in readme
-    assert "Cloud > Bass > Chord" in architecture
+    assert "multiple performance layers" in readme
+    assert "単独または組み合わせて使える machine-live workflow" in architecture
     assert "Cloud" in architecture
     assert "Bass" in architecture
     assert "Chord" in architecture

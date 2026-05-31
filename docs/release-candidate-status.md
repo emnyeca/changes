@@ -8,7 +8,6 @@ Release-candidate workflow: active development / v0.1 candidate
 
 この文書は現在安定化している Chord subset（Digitone Track 8）を扱います。
 プロダクト全体方針を定義する文書ではありません。
-プロダクトアーキテクチャは Cloud > Bass > Chord を維持します。
 
 ## 現在の RC-stabilized workflow
 

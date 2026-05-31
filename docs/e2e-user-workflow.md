@@ -17,7 +17,7 @@ Export は送信しません。
 
 Check は送信しません。
 
-Dry-run は送信しません。
+Dry-run はハードウェアに書き込みません。
 
 Guarded real-send は明示確認が必須です。
 

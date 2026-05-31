@@ -14,13 +14,13 @@
 - export/manifest validated: check/dry-run 全経路は含まず、export と manifest/count を自動検証
 - not validated: 当該レベルの専用検証なし
 
-## プロダクト方針と検証状態
+## レイヤーと検証状態
 
-| Layer | Tracks | Product priority | Current validation status |
+| Layer | Tracks | Role | Current validation status |
 | --- | --- | --- | --- |
-| Harmony Cloud | 1-6 | primary | architecture target / partial implementation; RC 安定化未到達 |
-| Bass | 7 | secondary | architecture target / partial implementation; RC 安定化未到達 |
-| Chord | 8 | additional | RC-stabilized subset |
+| Harmony Cloud | 1-6 | six-voice playable harmony texture | architecture target / partial implementation; RC 安定化未到達 |
+| Bass | 7 | root movement / slash-bass grounding layer | architecture target / partial implementation; RC 安定化未到達 |
+| Chord | 8 | symbol-faithful vertical layer | RC-stabilized subset |
 
 ## フィクスチャマトリクス
 
@@ -33,7 +33,7 @@
 
 ## 現在サマリー
 
-- 現在マトリクスは Track 8 中心ですが、プロダクト方針は Cloud > Bass > Chord を維持
+- 現在マトリクスは Track 8 中心ですが、これは現在の RC 安定化 subset を示すものです
 - Hardware-validated: `demo_ii_v_i`
 - Software E2E validated: `demo_ii_v_i`, `demo_multibar_turnaround`
 - Export/manifest validated: `demo_multisection_form`（および `demo_cmaj7` の smoke export カバレッジ）

@@ -8,10 +8,13 @@ Its intended user experience is to turn iReal Pro / MusicXML song data into Digi
 
 The repository name is `changes`, but the software name is intentionally branded as **EUB Changes**.
 
-The core musical priority is:
+EUB Changes generates multiple performance layers for Digitone II:
 
-- Cloud > Bass > Chord
-- Track 1-6 > Track 7 > Track 8
+- Cloud: moving six-voice texture
+- Bass: low-register grounding layer
+- Chord: symbol-faithful vertical layer
+
+These layers can be used independently or together depending on the performance workflow.
 
 ![EUB Changes UI concept](docs/assets/1x/GUI_Concept.png)
 
@@ -19,11 +22,11 @@ The core musical priority is:
 
 EUB Changes targets a Digitone II machine-live workflow:
 
-| Digitone II Track | Role | Priority | Status |
+| Digitone II Track | Layer | Role | Current status |
 | --- | --- | --- | --- |
-| Track 1-6 | Harmony Cloud voices 1-6 | Primary | architecture target / partial implementation |
-| Track 7 | Bass | Secondary | architecture target / partial implementation |
-| Track 8 | Chord reference/helper | Additional | current RC-stabilized workflow |
+| Track 1-6 | Harmony Cloud | six-voice playable harmony texture | architecture target / partial implementation |
+| Track 7 | Bass | root movement / slash-bass grounding layer | architecture target / partial implementation |
+| Track 8 | Chord | symbol-faithful vertical layer | current RC-stabilized workflow |
 
 The intended end-to-end flow is:
 
@@ -43,7 +46,7 @@ See `docs/product-architecture.md` for the target layer model and `docs/current-
 
 The current practical workflow focuses on Chord SysEx export to Digitone II Track 8 and guarded sending.
 
-This is the currently stabilized subset, not the full product priority order:
+This is the currently stabilized subset, not the full product architecture:
 
 ```text
 SongModel YAML

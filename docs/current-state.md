@@ -7,9 +7,7 @@
 
 ## プロダクト目標と方針
 
-プロダクト目標は Cloud > Bass > Chord を維持します。
-
-EUB Changes は、iReal Pro または MusicXML 由来の楽曲データを Digitone II の performance layer へ変換する machine-live workflow を目指します。
+EUB Changes は、iReal Pro または MusicXML 由来の楽曲データから Cloud / Bass / Chord の各レイヤーを生成し、用途に応じて単独または組み合わせて使える machine-live workflow を目指します。
 
 - Track 1-6: Harmony Cloud
 - Track 7: Bass
@@ -79,6 +77,7 @@ export/manifest fixture:
 - Chord 偏重を減らすため Cloud/Bass の検証カバレッジを増加
 - Cloud/Bass/Chord の導線バランスを改善
 - docs と workflow ガイドで Chord（Digitone Track 8）を helper layer として維持
+- Cloud / Bass export API は未整備であり、実装に入る段階で Chord export との共通化可能性を検討
 
 完了シグナル:
 

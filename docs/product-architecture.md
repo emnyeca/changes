@@ -12,26 +12,23 @@ iReal Pro
   -> Digitone II tracks
 ```
 
-プロダクト方針順序:
-
-- Cloud > Bass > Chord
-- Track 1-6 > Track 7 > Track 8
+EUB Changes は、Cloud / Bass / Chord の各レイヤーを生成し、用途に応じて単独または組み合わせて使える machine-live workflow を目指します。
 
 ## レイヤーモデル
 
-| Digitone II Track | Layer | Role | Product priority | Current status |
-| --- | --- | --- | --- | --- |
-| Track 1-6 | Harmony Cloud | 主演奏レイヤーとしての six-voice playable harmony cloud | Primary | architecture target / partial implementation |
-| Track 7 | Bass | root movement / slash-bass の grounding layer | Secondary | architecture target / partial implementation |
-| Track 8 | Chord | chord reference / helper layer | Additional | current RC-stabilized workflow |
+| Digitone II Track | Layer | Role | Current status |
+| --- | --- | --- | --- |
+| Track 1-6 | Harmony Cloud | six-voice playable harmony texture | architecture target / partial implementation |
+| Track 7 | Bass | root movement / slash-bass grounding layer | architecture target / partial implementation |
+| Track 8 | Chord | symbol-faithful vertical layer | current RC-stabilized workflow |
 
-## この順序の意味
+## レイヤーの役割
 
 Track 1-6 Harmony Cloud は主要な音楽出力です。演奏時の和声テクスチャを担う playable な machine-live 素材として扱います。
 
 Track 7 Bass は grounding を担います。低域で和声を支え、Cloud を置き換えるのではなく補強します。
 
-Chord（Digitone Track 8）は和声参照・補助制御に有効ですが、プロダクトの主出力そのものではありません。
+Chord（Digitone Track 8）は chord symbol に忠実な vertical layer として、現在の RC-stabilized workflow を担います。
 
 ## 内部パイプライン観
 

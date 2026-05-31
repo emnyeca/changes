@@ -1,58 +1,58 @@
 # Repository 統合方針
 
-## Purpose
+## 目的
 
-This document defines the current repository strategy for `changes` and `digitone-syx-toolkit`.
+この文書は、`changes` と `digitone-syx-toolkit` の現在の repository 方針を定義します。
 
-## Current decision
+## 現在の判断
 
-- Keep repositories separate.
-- Keep dependency direction one-way: `changes -> digitone-syx-toolkit`.
-- Keep toolkit integration explicit and lazy in `changes` runtime paths.
-- Do not duplicate low-level Digitone encoding logic in musical model layers.
+- repository は分離したまま維持する。
+- dependency direction は `changes -> digitone-syx-toolkit` の一方向にする。
+- `changes` runtime path では toolkit integration を明示的かつ lazy に保つ。
+- musical model layer に low-level Digitone encoding logic を重複実装しない。
 
-## Required toolkit capabilities
+## toolkit に求める capability
 
-- events YAML loading/validation
-- SysEx build from events YAML
+- events YAML loading / validation
+- events YAML からの SysEx build
 - Digitone template seed handling
 - per-track scale handling
 - track default velocity propagation
 
-## Responsibility boundary
+## 責務境界
 
-Remain in `changes`:
+`changes` 側に置く責務:
 
-- musical allocation and rendering
-- export orchestration and artifact policy
+- musical allocation / rendering
+- export orchestration / artifact policy
 - send/check command safety policy
 
-Remain in `digitone-syx-toolkit`:
+`digitone-syx-toolkit` 側に置く責務:
 
 - byte-level SysEx encoding
-- checksum/packing details
+- checksum / packing details
 - template byte handling
 - hardware-specific low-level builder behavior
 
-## CI policy while repositories remain separate
+## repository 分離中の CI policy
 
-- normal tests run without mandatory toolkit install
-- toolkit-dependent integration tests run in dedicated CI job
-- local development can run integration tests with editable install of both repos
+- normal test は toolkit install を必須にしない。
+- toolkit-dependent integration test は専用 CI job で実行する。
+- local development では両 repository を editable install して integration test を実行できる。
 
-## Migration criteria (only if needed)
+## migration 判断基準
 
-Consider stronger integration topology only when most of the following are true:
+次の多くが成立する場合のみ、より強い repository integration を検討する。
 
-- integration tests must run on every PR as required checks
-- schema changes frequently span both repos
-- product packaging requires tighter repository coupling
-- current two-repo overhead exceeds migration cost
+- integration test を every PR の required check にする必要がある。
+- schema change が頻繁に両 repository をまたぐ。
+- product packaging がより強い repository coupling を必要とする。
+- 現在の two-repo overhead が migration cost を上回る。
 
-## Rollback posture
+## rollback 方針
 
-If repository topology changes later, maintain rollback by preserving package import boundary and keeping public toolkit APIs stable during migration.
+将来 repository topology を変更する場合も、package import boundary を保ち、migration 中は public toolkit API を安定させて rollback 可能性を維持する。
 
-## Scope boundary
+## scope boundary
 
-This document defines current strategy only. It does not change runtime behavior.
+この文書は現在の方針のみを定義します。runtime behavior は変更しません。

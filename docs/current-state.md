@@ -58,6 +58,7 @@ export/manifest fixture:
 - 複数 OS 環境の検証は未完了
 - 大規模 song export の検証は未完了
 - consumer 向け導入フローの検証は未完了
+- Cloud / Bass 側の実機検証は Chord RC workflow 相当の粒度には未到達
 
 ## 現在状態にもとづく計画
 
@@ -76,13 +77,12 @@ export/manifest fixture:
 
 - Chord 偏重を減らすため Cloud/Bass の検証カバレッジを増加
 - Cloud/Bass/Chord の導線バランスを改善
-- docs と workflow ガイドで Chord（Digitone Track 8）を helper layer として維持
 - Cloud / Bass export API は未整備であり、実装に入る段階で Chord export との共通化可能性を検討
 
 完了シグナル:
 
 - validation matrix が Chord 中心を超える実用カバレッジを示す
-- docs 読み順で Cloud/Bass/Chord のバランス導線が成立
+- docs 読み順で Cloud/Bass/Chord のレイヤー関係が過不足なく理解できる
 
 ### Horizon C: production 耐性拡張（後期）
 
@@ -98,8 +98,6 @@ export/manifest fixture:
 ## 参照マップ
 
 - プロダクト階層と意図: `product-architecture.md`
-- RC/検証記録: `release-candidate-status.md`, `validation-matrix.md`, `fixture-inventory.md`
-- SysEx pipeline 状態詳細: `status/native-syx-pipeline-status-20260526.md`
-- ドキュメント再バランス計画: `status/cloud-bass-chord-doc-rebalance-todo-20260531.md`
+- 検証範囲: `validation-matrix.md`
 
 status と schedule 情報は、仕様本文ではなく status/schedule 文書または本サマリーで管理します。

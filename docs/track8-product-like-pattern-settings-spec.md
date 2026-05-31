@@ -1,42 +1,40 @@
 # Track 8 Product-like Pattern Settings 仕様
 
-## Purpose
+## 目的
 
-This document defines product-like Digitone pattern settings decisions for Chord export (Digitone Track 8).
+この文書は、Chord export（Digitone Track 8）における product-like Digitone pattern settings の判断を定義します。
 
-It does not implement these settings.
+この文書自体はこれらの settings を実装しません。
 
-## Scope
+## scope
 
-This specification covers the target behavior for product-like Chord export (Digitone Track 8).
+この仕様は、product-like Chord export（Digitone Track 8）の target behavior を対象にします。
 
-It does not validate hardware behavior.
+hardware behavior は検証しません。
 
-It does not modify SysEx generation.
+SysEx generation は変更しません。
 
-It does not modify bundle planner behavior.
+bundle planner behavior は変更しません。
 
-## Context
+## context
 
-The Track-8-only fixture showed that Track 1-7
-the base empty template defaults rather than the intended product default output spec.
-This is expected for a Track-8-only fixture: Changes only emits events for active tracks,
-and the template supplies all other defaults.
+Track-8-only fixture では、Track 1-7 が intended product default output spec ではなく base empty template default に依存することが分かっています。
+これは Track-8-only fixture としては想定内です。Changes は active track の event のみを emit し、それ以外の default は template が供給します。
 
-This is treated as a product-readiness gap, not a Chord trigger bug on Digitone Track 8.
+これは Digitone Track 8 の Chord trigger bug ではなく、product-readiness gap として扱います。
 
-## Decisions
+## decisions
 
-### Decision 1: LENGTH / SPEED / CHANGE / RESET modes
+### decision 1: LENGTH / SPEED / CHANGE / RESET modes
 
-Product-like export should use PER TRACK mode for:
+Product-like export は次に PER TRACK mode を使います。
 
 - LENGTH
 - SPEED
 - CHANGE
 - RESET
 
-This is already the stated target in `docs/digitone-internal-spec.md`:
+これは `docs/digitone-internal-spec.md` の既存 target です。
 
 - pattern.mode = per-track
 - Track 1..8 LENGTH = Changes-computed total_steps
@@ -44,17 +42,16 @@ This is already the stated target in `docs/digitone-internal-spec.md`:
 - pattern-shared CHANGE = OFF
 - pattern-shared RESET = INF
 
-Product-like export will use per-track mode per the existing design.
+Product-like export は既存設計に従って per-track mode を使います。
 
-Rationale:
+理由:
 
-Chord export on Digitone Track 8 needs independent length/speed from Tracks 1-7.
-Global/shared modes would cause Chord behavior on Track 8 to affect unrelated tracks.
+Digitone Track 8 の Chord export は、Track 1-7 から独立した length / speed を必要とします。
+global / shared mode では、Track 8 の Chord behavior が無関係な track に影響します。
 
-### Decision 2: Track 1-7 VEL default
+### decision 2: Track 1-7 VEL default
 
-Track 1-7 trigger-level VEL uses `inherit` at the trigger record level and falls back to
-the track_default_velocity table already defined in `src/changes/models/digitone_target_profile.py`:
+Track 1-7 trigger-level VEL は trigger record level では `inherit` を使い、`src/changes/models/digitone_target_profile.py` にある track_default_velocity table に fallback します。
 
 - Track 1: 70
 - Track 2: 70
@@ -64,112 +61,102 @@ the track_default_velocity table already defined in `src/changes/models/digitone
 - Track 6: 50
 - Track 7: 100
 
-This value is already present in `default_digitone_target_profile()`. No guessing is needed.
+この値は `default_digitone_target_profile()` に定義済みです。推測は不要です。
 
-Rationale:
+理由:
 
-Track 1-7 VEL is already part of the default output profile and applies when Track 1-7 events exist.
+Track 1-7 VEL は default output profile の一部であり、Track 1-7 event が存在する場合に適用されます。
 
-### Decision 3: Track 1-7 LEN default
+### decision 3: Track 1-7 LEN default
 
-Track 1-7 trigger-level LEN is not a fixed per-track default value.
-It is computed per event using `length_strategy = hold_until_next_event`.
-Each trigger gets an explicit length_code derived from its duration_quarters.
+Track 1-7 trigger-level LEN は固定の per-track default value ではありません。
+`length_strategy = hold_until_next_event` により event ごとに計算されます。
+各 trigger は duration_quarters から導出した explicit length_code を持ちます。
 
-There is no single "Track 1-7 default LEN" to define.
+定義すべき単一の "Track 1-7 default LEN" はありません。
 
-If an exported pattern contains no Track 1-7 events, Track 1-7 LEN state in the loaded
-pattern comes from the base empty template, not from Changes.
+exported pattern に Track 1-7 event が含まれない場合、loaded pattern の Track 1-7 LEN state は Changes ではなく base empty template 由来です。
 
-OPEN: The base empty template LEN state for Track 1-7 (when no events are emitted)
-is not currently inspected and must be verified.
+OPEN: event が emit されない場合の Track 1-7 に対する base empty template LEN state は未確認であり、検証が必要です。
 
-Rationale:
+理由:
 
-LEN is an event-level property for Cloud/Bass voices. Changes computes it from
-hold_until_next_event. A fixed per-track fallback does not apply to the Cloud engine model.
+LEN は Cloud / Bass voice の event-level property です。Changes は hold_until_next_event から LEN を計算します。固定 per-track fallback は Cloud engine model には適用されません。
 
-### Decision 4: Track 8 defaults
+### decision 4: Track 8 defaults
 
-Track 8 has a separate policy from Tracks 1-7:
+Track 8 は Track 1-7 とは別 policy を持ちます。
 
-- note velocities come from ChordRealizationResult.velocities (e.g. 70 70 70 50 70 50 for Cmaj7)
-- explicit note lengths come from event duration_quarters -> length_code
-- micro timing defaults to 0
-- note order is preserved from realized chord note order
-- same-step chord trigger records are permitted up to the toolkit/device limit (16 notes)
+- note velocity は ChordRealizationResult.velocities 由来（例: Cmaj7 は 70 70 70 50 70 50）
+- explicit note length は event duration_quarters -> length_code 由来
+- micro timing default は 0
+- note order は realized chord note order を保持
+- same-step chord trigger record は toolkit / device limit（16 notes）まで許可
 
-Track 8 does not use Track 1-7 default VEL/LEN for Chord notes.
+Track 8 は Chord note に Track 1-7 default VEL / LEN を使いません。
 
-Rationale:
+理由:
 
-Chord notes on Track 8 carry musically intentional per-note velocity and length from the
-chord realization model. They must not be overwritten by Track 1-7 defaults.
+Track 8 の Chord note は chord realization model 由来の musically intentional な per-note velocity / length を持ちます。Track 1-7 default で上書きしてはいけません。
 
-### Decision 5: Ownership of product-like defaults
+### decision 5: product-like default の ownership
 
 Changes:
-  chooses the product export profile and template policy
-  emits musical event rows
-  preserves chord note order, velocity, length mode, duration, and timing
-  supplies track_default_velocity table to the events YAML exporter
+  product export profile と template policy を選ぶ
+  musical event row を emit する
+  chord note order、velocity、length mode、duration、timing を保持する
+  events YAML exporter に track_default_velocity table を供給する
 
 digitone-syx-toolkit:
-  applies template/default pattern data
-  converts toolkit-loadable events YAML to SysEx
-  owns low-level Digitone encoding details
-  accepts track_defaults.velocity in events YAML
+  template / default pattern data を適用する
+  toolkit-loadable events YAML を SysEx に変換する
+  low-level Digitone encoding details を所有する
+  events YAML の track_defaults.velocity を受け取る
 
 template file:
-  stores product-like Digitone pattern state
-  should contain PER TRACK modes and baseline track defaults
-  is loaded by toolkit builder as the starting state
+  product-like Digitone pattern state を保持する
+  PER TRACK mode と baseline track default を含むべきである
+  toolkit builder の starting state として読み込まれる
 
-Rationale:
+理由:
 
-PER TRACK modes and default track behavior are Digitone pattern state, not pure musical
-rendering data. They belong to the template/toolkit layer, with Changes supplying the
-policy choice.
+PER TRACK mode と default track behavior は Digitone pattern state であり、純粋な musical rendering data ではありません。これは template / toolkit layer の責務であり、Changes は policy choice を供給します。
 
-### Decision 6: Default template policy
+### decision 6: default template policy
 
-Use:
+使用するもの:
 
 bundled product-like default template + optional user-supplied template
 
-Product behavior should not require the user to supply a template for basic export.
+basic export で user に template 供給を要求しません。
 
-However, advanced users should be able to provide a template later.
+ただし advanced user は template を指定できるべきです。
 
-OPEN: The current base empty template bundled in digitone-syx-toolkit sets
-PATTERN-wide mode. A separate PER TRACK template source is still undecided.
+OPEN: digitone-syx-toolkit bundled の current base empty template は PATTERN-wide mode を設定します。別の PER TRACK template source は未決定です。
 
-Rationale:
+理由:
 
-Bundled template gives reproducible default output. Optional user template keeps the
-workflow extensible. Requiring a template from the user makes the first usable export
-too difficult.
+bundled template は reproducible default output を与えます。optional user template は workflow の拡張性を保ちます。user に template を要求すると、最初に使える export までの難度が上がりすぎます。
 
-### Decision 7: Relationship with bundle planner
+### decision 7: bundle planner との関係
 
-Product-like pattern settings should be treated as export profile / template concerns,
-not as bundle planner musical allocation concerns.
+Product-like pattern settings は export profile / template concern として扱い、bundle planner の musical allocation concern とは分離します。
 
 Bundle planner:
-  decides musical allocation
-  decides pattern/section/track placement
+  musical allocation を決める
+  pattern / section / track placement を決める
 
 Product-like export profile/template:
-  decides Digitone pattern initialization
-  decides PER TRACK modes
-  decides baseline LEN/VEL defaults
-  decides device-specific starting state
+  Digitone pattern initialization を決める
+  PER TRACK mode を決める
+  baseline LEN / VEL default を決める
+  device-specific starting state を決める
 
-Rationale:
+理由:
 
-Bundle planner should not become responsible for device initialization policy.
+bundle planner は device initialization policy の責務を持つべきではありません。
 
-## Product-like target settings table
+## product-like target settings table
 
 | Setting | Target | Owner | Status |
 |---|---|---|---|
@@ -187,30 +174,30 @@ Bundle planner should not become responsible for device initialization policy.
 | Template policy | bundled default + optional user template | Changes/toolkit boundary | OPEN (PER TRACK template source) |
 | Bundle planner relation | separate from device initialization | architecture | decided |
 
-## Open verification items
+## open verification items
 
-The following items must be verified to complete this specification:
+この仕様を完了するには、次の項目を検証する必要があります。
 
-1. Can LENGTH / SPEED / CHANGE / RESET PER TRACK modes be expressed in events YAML today?
-2. If yes, where?
-3. If no, should support be added to toolkit, a template file, or Changes?
-4. Can Track 1-7 VEL defaults be expressed via track_defaults.velocity in events YAML today?
-5. If yes, does it propagate correctly to the built SysEx?
-6. What LEN state does the base empty template set for Track 1-7 when no events are emitted?
-7. Is there already a PER TRACK template in toolkit?
-8. Does build_syx_from_events(..., template_file=None) use the base empty template?
-9. If so, what PER TRACK / LEN / VEL state does it contain?
-10. Should Changes pass an explicit PER TRACK template file for product-like export?
+1. LENGTH / SPEED / CHANGE / RESET の PER TRACK mode を events YAML で表現できるか。
+2. できる場合、どこで表現するか。
+3. できない場合、toolkit、template file、Changes のどこに support を追加するか。
+4. Track 1-7 VEL default を events YAML の track_defaults.velocity で表現できるか。
+5. できる場合、built SysEx へ正しく伝播するか。
+6. event が emit されない場合、base empty template は Track 1-7 にどの LEN state を設定するか。
+7. toolkit に PER TRACK template が既にあるか。
+8. build_syx_from_events(..., template_file=None) は base empty template を使うか。
+9. 使う場合、どの PER TRACK / LEN / VEL state を含むか。
+10. Changes は explicit PER TRACK template file を渡すべきか。
 
-## Scope boundary
+## scope boundary
 
-This specification does not:
+この仕様は次を行いません。
 
-- implement PER TRACK modes
-- edit toolkit behavior
-- generate new SysEx
-- generate new fixture files
-- modify existing fixtures
-- validate hardware
-- modify bundle planner
-- modify UI
+- PER TRACK mode の実装
+- toolkit behavior の編集
+- new SysEx の生成
+- new fixture file の生成
+- existing fixture の変更
+- hardware validation
+- bundle planner の変更
+- UI の変更

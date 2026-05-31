@@ -1,65 +1,65 @@
 # MIDI ハードウェア検証チェックリスト
 
-## Purpose
+## 目的
 
-This checklist is for future manual validation of real SysEx send to Digitone II.
+この checklist は、Digitone II への real SysEx send を manual validation するためのものです。
 
-For the first manual run preparation, see docs/hardware-validation/digitone-syx-real-send-first-validation.md.
+最初の manual run preparation は `docs/hardware-validation/digitone-syx-real-send-first-validation.md` を参照してください。
 
-That first validation now records a passed guarded real-send result for the II-V-I fixture.
+最初の validation では、II-V-I fixture の guarded real-send が passed として記録されています。
 
 ## Preconditions
 
-- Digitone II connected by USB MIDI or MIDI interface
-- Digitone II visible as a MIDI output port
+- Digitone II を USB MIDI または MIDI interface で接続している
+- Digitone II が MIDI output port として見えている
 - Chord export（Digitone Track 8）で生成した既知良好 `.syx`
-- User has backed up any important Digitone II data
-- User explicitly accepts risk of writing pattern data
-- Volume/audio monitoring is safe
-- No live performance depends on the device state
+- 重要な Digitone II data を backup 済み
+- pattern data を書き込む risk を明示的に受け入れている
+- volume / audio monitoring が安全
+- live performance が device state に依存していない
 
-## Software preparation
+## software preparation
 
-- Install optional MIDI dependencies:
+- optional MIDI dependency を install:
   - `pip install .[midi]`
   - or `pip install mido python-rtmidi`
-- Check versions with:
+- version check:
   - `python -c "import importlib.metadata as md; print('mido', md.version('mido'))"`
   - `python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"`
-- Confirm port listing works
-- Confirm dry-run send works first
-- Confirm `.syx` file begins with `0xF0` and ends with `0xF7`
-- Prefer manifest-aware check first:
+- port listing が動くことを確認
+- dry-run send が先に動くことを確認
+- `.syx` file が `0xF0` で始まり `0xF7` で終わることを確認
+- 先に manifest-aware check を行う:
   - `changes check digitone-syx --syx <file.syx> --manifest <file_manifest.md>`
 
-## Manual validation steps
+## manual validation steps
 
 1. Chord export（Digitone Track 8）で `.syx` を生成する。
-2. Run dry-run send.
-3. List available MIDI output ports.
-4. Select the Digitone II port explicitly.
-5. Confirm device state is safe to overwrite.
-6. Send the `.syx` using the future real-send command.
-7. Verify import/transfer on Digitone II.
-8. Verify Track 8 pattern behavior.
-9. Record results in a dated hardware validation note.
+2. dry-run send を実行する。
+3. 利用可能な MIDI output port を一覧する。
+4. Digitone II port を明示的に選択する。
+5. device state を overwrite してよいことを確認する。
+6. real-send command で `.syx` を送信する。
+7. Digitone II 上で import / transfer を確認する。
+8. Track 8 pattern behavior を確認する。
+9. 日付付き hardware validation note に結果を記録する。
 
-## Stop conditions
+## stop conditions
 
-Stop immediately if:
+次の場合は即時中止する。
 
-- port name is ambiguous
-- Digitone II is not visible
-- wrong device may receive SysEx
-- `.syx` file is not from the expected export
-- user has not backed up important data
-- device behavior differs from expected import flow
+- port name が曖昧
+- Digitone II が見えない
+- 誤った device が SysEx を受信する可能性がある
+- `.syx` file が期待した export 由来ではない
+- 重要な data を backup していない
+- device behavior が期待した import flow と異なる
 
-## Result log template
+## result log template
 
-Use docs/hardware-validation/digitone-syx-real-send-template.md as the recording template.
+recording template は `docs/hardware-validation/digitone-syx-real-send-template.md` を使います。
 
-See docs/real-send-workflow.md for the practical workflow, docs/cli.md for the CLI reference, and docs/index.md for the documentation entry point.
+practical workflow は `docs/real-send-workflow.md`、CLI reference は `docs/cli.md`、documentation entry point は `docs/index.md` を参照してください。
 
 ```text
 Date:

@@ -97,9 +97,17 @@ python -c "import importlib.metadata as md; print('mido', md.version('mido'))"
 python -c "import importlib.metadata as md; print('python-rtmidi', md.version('python-rtmidi'))"
 ```
 
-実装状況は status 文書で管理します。
+## Pattern import / naming policy
 
-- `docs/status/native-syx-pipeline-status-20260526.md`
+- 複数の Pattern SysEx message は連続受信できる。
+- device 側で選んだ destination start slot から順に配置される。
+- generator 側で destination slot を encode しない。
+- 同じ destination slot へ受信した場合は上書きされる。
+- `source_title` は song identity、`pattern_name` は device display name として分離する。
+- events YAML の `name` は最終的な per-pattern `pattern_name` から export する。
+- explicit per-segment Pattern Name override は `pattern_name_source` で記録し、auto prefix を注入しない。
+- toolkit は Pattern Name を Digitone 側の allowed character / 16文字制約に合わせて normalize / validate / truncate する。
+- Generic MIDI export path は Digitone Pattern Name restriction の影響を受けない。
 
 ## Tempo と pattern メモ
 
@@ -122,4 +130,3 @@ validation scope:
 - `docs/real-send-workflow.md`
 - `docs/generated-artifacts-policy.md`
 - `docs/manifest-aware-validation.md`
-- `docs/status/native-syx-pipeline-status-20260526.md`（時点スナップショット）

@@ -7,7 +7,7 @@ def _read(path: str) -> str:
     return Path(path).read_text(encoding="utf-8")
 
 
-def test_rc_core_docs_exist():
+def test_core_docs_exist():
     required = [
         Path("README.md"),
         Path("docs/product-architecture.md"),
@@ -17,7 +17,7 @@ def test_rc_core_docs_exist():
     ]
 
     for path in required:
-        assert path.exists(), f"Missing required release-candidate doc: {path}"
+        assert path.exists(), f"Missing required doc: {path}"
 
 
 def test_readme_mentions_safety_boundaries():
@@ -33,13 +33,16 @@ def test_product_docs_include_core_headings():
     architecture = _read("docs/product-architecture.md")
     current_state = _read("docs/current-state.md")
 
-    assert "multiple performance layers" in readme
-    assert "単独または組み合わせて使える machine-live workflow" in architecture
+    assert "Cloud" in readme
+    assert "Bass" in readme
+    assert "Chord" in readme
+    assert "レイヤーモデル" in architecture
     assert "Cloud" in architecture
     assert "Bass" in architecture
     assert "Chord" in architecture
     assert "Track 8" in architecture
     assert "Track 8" in current_state
+
 
 def test_docs_do_not_overclaim_consumer_readiness_or_total_validation():
     text = "\n".join(

@@ -1,26 +1,26 @@
 # 生成 Artifact ポリシー
 
-Generated validation artifacts under `out/digitone-track8/` are currently kept for review and reproducibility during active release-candidate development.
+`out/digitone-track8/` 配下の generated validation artifact は、active release-candidate development 中の review と reproducibility のために現在は保持します。
 
-This is intentional for now.
+これは現時点では意図的な扱いです。
 
-They may be removed or relocated later when the workflow stabilizes beyond the current RC phase.
+workflow が現在の RC phase を越えて安定した時点で、削除または移動を検討します。
 
-Current retained artifacts:
+現在保持する artifact:
 
 - `changes_track8_export.events.yaml`
 - `changes_track8_export.syx`
 - `changes_track8_export_manifest.md`
 
-Recommended validation command for retained `.syx` artifacts:
+保持した `.syx` artifact の推奨 validation command:
 
 - `changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx`
 
-Recommended manifest-aware validation command for retained artifact sets:
+保持した artifact set の推奨 manifest-aware validation command:
 
 - `changes check digitone-syx --syx out/digitone-track8/changes_track8_export.syx --manifest out/digitone-track8/changes_track8_export_manifest.md`
 
-These artifacts are not the source of truth.
+これらの artifact は source of truth ではありません。
 
 Source of truth:
 
@@ -28,4 +28,4 @@ Source of truth:
 - export code
 - validation logs
 
-Do not treat generated artifacts as permanent release assets yet.
+generated artifact を permanent release asset として扱わないでください。

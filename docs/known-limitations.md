@@ -2,57 +2,55 @@
 
 ## Scope
 
-The current release-candidate workflow is focused on Chord export to Digitone II Track 8 and guarded SysEx sending.
+現在の release-candidate workflow は、Digitone II Track 8 向け Chord export と guarded SysEx sending に集中しています。
 
-The Chord workflow on Digitone Track 8 is currently the stabilized RC path, but the intended product architecture prioritizes Track 1-6 Harmony Cloud and Track 7 Bass before this Chord subset.
+これは stabilized subset であり、full product architecture ではありません。
 
-The current Track 8 emphasis in docs and validation should be read as subset status for Chord workflow, not as the product priority order.
+## 既知の制約
 
-## Known limitations
+### hardware validation の範囲は狭い
 
-### Hardware validation is narrow
+Digitone II で manual validation 済みなのは II-V-I fixture のみです。
 
-Only the II-V-I fixture has been manually validated on Digitone II.
+### SongModel coverage は限定的
 
-### SongModel coverage is limited
+software fixture には multi-bar / multi-section example を含めています。
 
-Broader software fixtures now include multi-bar and multi-section examples.
+hardware validation は引き続き II-V-I fixture に限定されています。
 
-Hardware validation is still limited to the II-V-I fixture.
+現在の workflow は、すべての SongModel input を support することを意味しません。
 
-The current workflow still does not imply that all SongModel inputs are supported.
+fixture ごとの正確な scope は `docs/validation-matrix.md` を参照してください。
 
-See `docs/validation-matrix.md` for exact fixture-by-fixture scope.
+### Manifest validation は metadata-level
 
-### Manifest validation is metadata-level
+`changes check digitone-syx --manifest` は envelope と metadata consistency を検証します。
 
-`changes check digitone-syx --manifest` validates envelope and metadata consistency.
+full Digitone payload semantics は検証しません。
 
-It does not validate full Digitone payload semantics.
+### Real-send は意図的に guarded
 
-### Real-send is intentionally guarded
-
-Real-send requires:
+Real-send には次が必要です。
 
 - explicit `.syx`
 - explicit `--port`
 - `--real-send`
 - `--yes-i-understand-this-writes-to-hardware`
 
-This is intentional and should not be weakened.
+これは意図的な安全境界であり、弱めてはいけません。
 
-### MIDI backend is optional
+### MIDI backend は optional
 
-`mido` and `python-rtmidi` are required only for port listing and real-send.
+`mido` と `python-rtmidi` は port listing と real-send の場合のみ必要です。
 
-### Generated artifacts are temporary development assets
+### generated artifact は一時的な development asset
 
-Files under `out/digitone-track8/` are retained temporarily for reproducibility.
+`out/digitone-track8/` 配下の file は reproducibility のため一時的に保持しています。
 
-They are not permanent release assets yet.
+現時点では permanent release asset ではありません。
 
-### Not a consumer installer
+### consumer installer ではない
 
-This is still a developer/technical CLI workflow.
+現在は developer / technical CLI workflow です。
 
-A consumer-facing app or installer is out of scope for the current RC.
+consumer-facing app や installer は現在の RC scope 外です。

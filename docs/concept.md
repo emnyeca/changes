@@ -1,6 +1,6 @@
 # コンセプト
 
-## Purpose
+## 目的
 
 EUB Changes は、iReal Pro / MusicXML 由来の楽曲データを、Digitone II で machine-live performance に使いやすいNOTE情報へ変換するための和声変換・生成ツールです。
 

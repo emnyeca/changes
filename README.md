@@ -132,7 +132,7 @@ The hardware-validated fixture remains `examples/song_models/demo_ii_v_i.changes
 Validation scope references:
 
 - `docs/validation-matrix.md`
-- `docs/fixture-inventory.md`
+- `docs/current-state.md`
 
 See:
 
@@ -146,4 +146,4 @@ See docs/known-limitations.md.
 
 ## Documentation index
 
-See docs/index.md for product architecture, current state, release-candidate status, workflow docs, and safety references.
+See docs/index.md for product architecture, current state, workflow docs, and safety references.

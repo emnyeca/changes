@@ -91,4 +91,4 @@ MIDI backend のトラブルシュート時は `docs/real-send-workflow.md` の 
 
 manifest-aware check の詳細と警告挙動は `docs/manifest-aware-validation.md` を参照してください。
 
-現在の RC 範囲と検証済み fixture 状態は `docs/release-candidate-status.md` と `docs/current-state.md` を参照してください。
+現在の RC 範囲と検証済み fixture 状態は `docs/current-state.md` と `docs/validation-matrix.md` を参照してください。

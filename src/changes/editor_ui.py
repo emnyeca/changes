@@ -509,6 +509,7 @@ def _render_songlist() -> None:
             lines.append(
                 f"\n**Tempo source:**\n"
                 f"- MusicXML: {sc.get('musicxml', 0)}\n"
+                f"- Style default: {sc.get('style_default', 0)}\n"
                 f"- MIDI fallback: {sc.get('midi', 0)}\n"
                 f"- Default: {sc.get('default', 0)}"
             )

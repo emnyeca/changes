@@ -594,6 +594,39 @@ def extract_musicxml_tempo(xml_text: str) -> float | None:
     return None
 
 
+def extract_musicxml_groove(xml_text: str) -> str | None:
+    """Return the first groove/style value found in MusicXML, or None.
+
+    v1 reads only:
+      direction/sound/play/other-play[@type="groove"]
+    """
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+
+    part = _first(root, "part")
+    if part is None:
+        return None
+
+    for measure in _children(part, "measure"):
+        for direction in _children(measure, "direction"):
+            sound = _first(direction, "sound")
+            if sound is None:
+                continue
+            play = _first(sound, "play")
+            if play is None:
+                continue
+            for other_play in _children(play, "other-play"):
+                if (other_play.attrib.get("type") or "").strip().lower() != "groove":
+                    continue
+                value = _text(other_play)
+                if value:
+                    return value.strip()
+
+    return None
+
+
 def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int | str = 120) -> SongModel:
     meter = imported.initial_time_signature or {"beats": 4, "beat_type": 4}
     beats = int(meter.get("beats", 4))

@@ -12,20 +12,23 @@ import pytest
 
 from changes.importers.import_bundle import (
     DEFAULT_TEMPO,
+    IREAL_JAZZ_STYLE_DEFAULT_TEMPO,
     MIDI_EXTS,
     MUSICXML_EXTS,
     ImportBundleResult,
     MidiMetadata,
     MidiUpdateCandidate,
+    choose_import_tempo,
     extract_zip,
     find_midi_update_candidates,
     group_files_by_basename,
+    ireal_style_default_tempo,
     import_files,
     import_musicxml_with_midi,
     import_zip,
     parse_midi_metadata,
 )
-from changes.importers.musicxml import extract_musicxml_tempo
+from changes.importers.musicxml import extract_musicxml_groove, extract_musicxml_tempo
 from changes.library import SongEntry, save_song
 from changes.models.song_model import SongModel
 
@@ -97,6 +100,32 @@ def _make_zip(pairs: dict[str, bytes]) -> bytes:
     return buf.getvalue()
 
 
+def _make_musicxml_with_groove(groove: str, *, include_tempo: float | None = None) -> bytes:
+        tempo_attr = f' tempo="{include_tempo}"' if include_tempo is not None else ""
+        xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+    <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+    <part id="P1">
+        <measure number="1">
+            <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+            <direction>
+                <sound{tempo_attr}>
+                    <play>
+                        <other-play type="groove">{groove}</other-play>
+                    </play>
+                </sound>
+            </direction>
+            <harmony>
+                <root><root-step>C</root-step></root>
+                <kind text="7">dominant</kind>
+            </harmony>
+        </measure>
+    </part>
+</score-partwise>
+"""
+        return xml.encode("utf-8")
+
+
 # ── extract_musicxml_tempo ────────────────────────────────────────────────────
 
 def test_extract_tempo_from_sound_element() -> None:
@@ -105,6 +134,81 @@ def test_extract_tempo_from_sound_element() -> None:
 
 def test_extract_tempo_returns_none_when_absent() -> None:
     assert extract_musicxml_tempo(_NO_TEMPO_XML.decode()) is None
+
+
+def test_extract_musicxml_groove_reads_other_play_groove() -> None:
+    xml = _make_musicxml_with_groove("Ballad")
+    assert extract_musicxml_groove(xml.decode("utf-8")) == "Ballad"
+
+
+def test_extract_musicxml_groove_strips_whitespace() -> None:
+    xml = _make_musicxml_with_groove("   Medium Swing   ")
+    assert extract_musicxml_groove(xml.decode("utf-8")) == "Medium Swing"
+
+
+def test_extract_musicxml_groove_returns_none_when_absent() -> None:
+    xml = b"""<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="7">dominant</kind></harmony>
+    </measure>
+  </part>
+</score-partwise>
+"""
+    assert extract_musicxml_groove(xml.decode("utf-8")) is None
+
+
+@pytest.mark.parametrize(
+    ("style", "expected_tempo"),
+    [
+        ("Ballad", 60),
+        ("Medium Swing", 120),
+        ("Medium Up Swing", 160),
+        ("Up Tempo Swing", 240),
+        ("Bossa Nova", 140),
+        ("Slow Swing", 80),
+    ],
+)
+def test_ireal_style_default_mapping(style: str, expected_tempo: int) -> None:
+    canonical, tempo = ireal_style_default_tempo(style)
+    assert canonical == style
+    assert tempo == float(expected_tempo)
+    assert IREAL_JAZZ_STYLE_DEFAULT_TEMPO[style] == expected_tempo
+
+
+def test_ireal_style_mapping_normalization_is_case_and_whitespace_tolerant() -> None:
+    canonical, tempo = ireal_style_default_tempo("   mEdIUm   sWinG   ")
+    assert canonical == "Medium Swing"
+    assert tempo == 120.0
+
+
+@pytest.mark.parametrize(
+    ("musicxml_tempo", "style_default_tempo", "midi_tempo", "default_tempo", "expected"),
+    [
+        (None, 60.0, 120.0, 120, (60.0, "style_default")),
+        (None, 60.0, 95.0, 120, (95.0, "midi")),
+        (100.0, 60.0, None, 120, (100.0, "musicxml")),
+        (120.0, 120.0, 120.0, 120, (120.0, "midi")),
+        (None, 120.0, None, 120, (120.0, "style_default")),
+        (None, None, None, 120, (120.0, "default")),
+    ],
+)
+def test_choose_import_tempo_rule(
+    musicxml_tempo: float | None,
+    style_default_tempo: float | None,
+    midi_tempo: float | None,
+    default_tempo: int,
+    expected: tuple[float, str],
+) -> None:
+    assert choose_import_tempo(
+        musicxml_tempo=musicxml_tempo,
+        style_default_tempo=style_default_tempo,
+        midi_tempo=midi_tempo,
+        default_tempo=default_tempo,
+    ) == expected
 
 
 # ── parse_midi_metadata ───────────────────────────────────────────────────────
@@ -198,12 +302,12 @@ def test_extract_zip_strips_directory_prefix() -> None:
 
 # ── Tempo fallback priority ───────────────────────────────────────────────────
 
-def test_musicxml_tempo_wins_over_midi() -> None:
-    # MusicXML has 120, MIDI has 80 → should use 120
+def test_non_120_midi_wins_when_musicxml_is_120() -> None:
+    # MusicXML has 120, MIDI has 80 -> non-120 preference picks MIDI.
     mid = _make_midi(tempo_bpm=80.0)
     c = import_musicxml_with_midi("t", _WITH_TEMPO_XML, mid, default_tempo=60)
-    assert float(c.song.performance_tempo) == pytest.approx(120.0, abs=0.5)
-    assert c.tempo_source == "musicxml"
+    assert float(c.song.performance_tempo) == pytest.approx(80.0, abs=0.5)
+    assert c.tempo_source == "midi"
 
 
 def test_midi_tempo_fallback_when_xml_has_none() -> None:
@@ -224,6 +328,39 @@ def test_default_tempo_when_no_midi_at_all() -> None:
     c = import_musicxml_with_midi("t", _NO_TEMPO_XML, None, default_tempo=55)
     assert float(c.song.performance_tempo) == pytest.approx(55.0, abs=0.5)
     assert c.tempo_source == "default"
+
+
+def test_groove_ballad_with_midi_120_uses_style_default_60() -> None:
+    xml = _make_musicxml_with_groove("Ballad")
+    mid = _make_midi(tempo_bpm=120.0)
+    c = import_musicxml_with_midi("ballad", xml, mid, default_tempo=120)
+    assert float(c.song.performance_tempo) == pytest.approx(60.0, abs=0.5)
+    assert c.tempo_source == "style_default"
+
+
+def test_groove_medium_up_swing_with_midi_120_uses_style_default_160() -> None:
+    xml = _make_musicxml_with_groove("Medium Up Swing")
+    mid = _make_midi(tempo_bpm=120.0)
+    c = import_musicxml_with_midi("mus", xml, mid, default_tempo=120)
+    assert float(c.song.performance_tempo) == pytest.approx(160.0, abs=0.5)
+    assert c.tempo_source == "style_default"
+
+
+def test_groove_medium_swing_120_with_midi_120_prefers_midi_tiebreak() -> None:
+    xml = _make_musicxml_with_groove("Medium Swing")
+    mid = _make_midi(tempo_bpm=120.0)
+    c = import_musicxml_with_midi("ms", xml, mid, default_tempo=120)
+    assert float(c.song.performance_tempo) == pytest.approx(120.0, abs=0.5)
+    assert c.tempo_source == "midi"
+
+
+def test_unknown_groove_with_midi_120_falls_back_to_midi_and_warns() -> None:
+    xml = _make_musicxml_with_groove("Totally Unknown Style")
+    mid = _make_midi(tempo_bpm=120.0)
+    c = import_musicxml_with_midi("unk", xml, mid, default_tempo=120)
+    assert float(c.song.performance_tempo) == pytest.approx(120.0, abs=0.5)
+    assert c.tempo_source == "midi"
+    assert any("Unsupported iReal style default tempo" in w for w in c.warnings)
 
 
 # ── Mismatch warnings ─────────────────────────────────────────────────────────
@@ -317,8 +454,35 @@ def test_import_zip_tempo_source_counts() -> None:
     result = import_zip(zb, default_tempo=120)
     sc = result.tempo_source_counts
     assert sc.get("musicxml", 0) == 1
+    assert sc.get("style_default", 0) == 0
     assert sc.get("midi", 0) == 1
     assert sc.get("default", 0) == 2
+
+
+def test_import_zip_uses_style_default_for_ballad_and_up_tempo_swing() -> None:
+    mid_120 = _make_midi(tempo_bpm=120.0)
+    zb = _make_zip(
+        {
+            "ballad.musicxml": _make_musicxml_with_groove("Ballad"),
+            "ballad.mid": mid_120,
+            "up.musicxml": _make_musicxml_with_groove("Up Tempo Swing"),
+            "up.mid": mid_120,
+        }
+    )
+
+    result = import_zip(zb, default_tempo=120)
+
+    assert len(result.failed) == 0
+    assert len(result.songs) == 2
+
+    by_name = {s.source_name: s for s in result.songs}
+    assert float(by_name["ballad"].song.performance_tempo) == pytest.approx(60.0, abs=0.5)
+    assert by_name["ballad"].tempo_source == "style_default"
+
+    assert float(by_name["up"].song.performance_tempo) == pytest.approx(240.0, abs=0.5)
+    assert by_name["up"].tempo_source == "style_default"
+
+    assert result.tempo_source_counts.get("style_default", 0) == 2
 
 
 def test_import_zip_accepts_no_chord_harmony_without_failure() -> None:

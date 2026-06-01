@@ -20,6 +20,7 @@ from pathlib import Path
 
 from changes.importers.musicxml import (
     ImportedSong,
+    extract_musicxml_groove,
     extract_musicxml_tempo,
     import_musicxml_text,
     imported_song_to_song_model,
@@ -34,6 +35,80 @@ _IGNORE_EXTS = frozenset({".mscx"})
 _KNOWN_EXTS = MUSICXML_EXTS | MIDI_EXTS | _IGNORE_EXTS
 
 DEFAULT_TEMPO = 120
+
+IREAL_JAZZ_STYLE_DEFAULT_TEMPO: dict[str, int] = {
+    "Afro": 110,
+    "Ballad": 60,
+    "Bossa Nova": 140,
+    "Calypso": 120,
+    "Even 16ths": 90,
+    "Even 8ths": 140,
+    "Funk": 140,
+    "Latin": 180,
+    "Latin-Swing": 180,
+    "Medium Slow": 120,
+    "Medium Swing": 120,
+    "Medium Up Swing": 160,
+    "Rock Pop": 115,
+    "Samba": 200,
+    "Slow Rock": 70,
+    "Slow Swing": 80,
+    "Up Tempo Swing": 240,
+    "Waltz": 120,
+}
+
+_TEMPO_TIEBREAK_RANK: dict[str, int] = {
+    "midi": 0,
+    "musicxml": 1,
+    "style_default": 2,
+}
+
+
+def _normalize_ireal_style_name(style_name: str) -> str:
+    return " ".join(style_name.strip().split()).lower()
+
+
+_IREAL_STYLE_DEFAULT_BY_NORMALIZED: dict[str, tuple[str, int]] = {
+    _normalize_ireal_style_name(style): (style, tempo)
+    for style, tempo in IREAL_JAZZ_STYLE_DEFAULT_TEMPO.items()
+}
+
+
+def ireal_style_default_tempo(style_name: str | None) -> tuple[str | None, float | None]:
+    if style_name is None:
+        return None, None
+    normalized = _normalize_ireal_style_name(style_name)
+    if not normalized:
+        return None, None
+    matched = _IREAL_STYLE_DEFAULT_BY_NORMALIZED.get(normalized)
+    if matched is None:
+        return style_name.strip(), None
+    canonical_style, tempo = matched
+    return canonical_style, float(tempo)
+
+
+def choose_import_tempo(
+    *,
+    musicxml_tempo: float | None,
+    style_default_tempo: float | None,
+    midi_tempo: float | None,
+    default_tempo: int,
+) -> tuple[float, str]:
+    candidates: list[tuple[str, float]] = []
+    if musicxml_tempo is not None:
+        candidates.append(("musicxml", float(musicxml_tempo)))
+    if style_default_tempo is not None:
+        candidates.append(("style_default", float(style_default_tempo)))
+    if midi_tempo is not None:
+        candidates.append(("midi", float(midi_tempo)))
+
+    if not candidates:
+        return float(default_tempo), "default"
+
+    non_120 = [(source, value) for source, value in candidates if value != 120.0]
+    pool = non_120 if non_120 else candidates
+    source, value = sorted(pool, key=lambda item: _TEMPO_TIEBREAK_RANK[item[0]])[0]
+    return float(value), source
 
 # ── Data classes ─────────────────────────────────────────────────────────────
 
@@ -55,7 +130,7 @@ class ImportWarning:
 class ImportedSongCandidate:
     source_name: str
     song: SongModel
-    tempo_source: str   # "musicxml" | "midi" | "default"
+    tempo_source: str   # "musicxml" | "style_default" | "midi" | "default"
     key_source: str     # "musicxml" | "midi" | "unknown"
     meter_source: str   # "musicxml" | "midi" | "default"
     warnings: list[str]
@@ -66,7 +141,7 @@ class ImportBundleResult:
     songs: list[ImportedSongCandidate]
     failed: list[tuple[str, str]]       # (source_name, error_msg)
     warnings: list[ImportWarning]
-    tempo_source_counts: dict[str, int]  # {"musicxml": N, "midi": N, "default": N}
+    tempo_source_counts: dict[str, int]  # {"musicxml": N, "style_default": N, "midi": N, "default": N}
 
 
 @dataclass
@@ -282,7 +357,7 @@ def import_musicxml_with_midi(
 ) -> ImportedSongCandidate:
     """Build one ImportedSongCandidate from MusicXML + optional MIDI.
 
-    Tempo priority: MusicXML → MIDI → default.
+    Tempo selection: non-120 candidate preference with source tiebreak.
     Key/meter: MusicXML preferred; MIDI used as fallback or mismatch warning.
     """
     xml_text = xml_bytes.decode("utf-8", errors="replace")
@@ -291,17 +366,24 @@ def import_musicxml_with_midi(
 
     midi_meta = parse_midi_metadata(mid_bytes) if mid_bytes else MidiMetadata()
 
-    # Tempo
+    # Tempo candidates
     xml_tempo = extract_musicxml_tempo(xml_text)
-    if xml_tempo is not None:
-        tempo = xml_tempo
-        tempo_source = "musicxml"
-    elif midi_meta.tempo_bpm is not None:
-        tempo = midi_meta.tempo_bpm
-        tempo_source = "midi"
-    else:
-        tempo = float(default_tempo)
-        tempo_source = "default"
+    groove = extract_musicxml_groove(xml_text)
+    canonical_style, style_default_tempo = ireal_style_default_tempo(groove)
+    midi_tempo = midi_meta.tempo_bpm
+
+    tempo, tempo_source = choose_import_tempo(
+        musicxml_tempo=xml_tempo,
+        style_default_tempo=style_default_tempo,
+        midi_tempo=midi_tempo,
+        default_tempo=default_tempo,
+    )
+
+    if groove is not None and style_default_tempo is None:
+        xml_is_120_or_missing = xml_tempo is None or float(xml_tempo) == 120.0
+        midi_is_120_or_missing = midi_tempo is None or float(midi_tempo) == 120.0
+        if xml_is_120_or_missing and midi_is_120_or_missing:
+            warnings.append(f"Unsupported iReal style default tempo: {groove}")
 
     # Key
     xml_key, key_source = _musicxml_working_key(imported)
@@ -363,7 +445,7 @@ def import_files(
     songs: list[ImportedSongCandidate] = []
     failed: list[tuple[str, str]] = []
     bundle_warnings: list[ImportWarning] = []
-    tempo_counts: dict[str, int] = {"musicxml": 0, "midi": 0, "default": 0}
+    tempo_counts: dict[str, int] = {"musicxml": 0, "style_default": 0, "midi": 0, "default": 0}
 
     for base, exts in sorted(groups.items()):
         xml_bytes: bytes | None = None

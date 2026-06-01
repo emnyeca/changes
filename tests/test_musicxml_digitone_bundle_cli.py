@@ -134,7 +134,7 @@ def test_direct_vs_converted_generate_semantically_identical_diagnostics_and_eve
     )
 
 
-def test_500_miles_high_measure3_gm7_uses_current_only_diatonic_after_restriction(tmp_path: Path, monkeypatch):
+def test_500_miles_high_measure3_gm7_may_fall_back_to_dominant_blues(tmp_path: Path, monkeypatch):
     direct_xml = _musicxml_path("direct")
     out_dir = tmp_path / "direct"
 
@@ -156,13 +156,13 @@ def test_500_miles_high_measure3_gm7_uses_current_only_diatonic_after_restrictio
         if o["measure_number"] == "3" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "Gm7"
     )
 
-    assert gm7["retry_level"] == "current_only"
-    assert gm7["selected_collection_family"] == "diatonic_dorian"
-    assert gm7["selected_collection_name"].startswith("G_dorian")
-    assert gm7["output_chord_tone_set"] == ["G", "A#", "D", "E", "F", "A"]
+    assert gm7["retry_level"] == "current+previous+next"
+    assert gm7["selected_collection_family"] == "dominant_blues"
+    assert gm7["selected_collection_name"] == "G_dominant_blues"
+    assert gm7["output_chord_tone_set"] == ["G", "B", "D", "E", "F", "A#"]
 
 
-def test_500_miles_high_measure8_e7sharp9_prefers_harmonic_minor_with_soft_color_hint(tmp_path: Path, monkeypatch):
+def test_500_miles_high_measure8_e7sharp9_may_fall_back_to_dominant_blues(tmp_path: Path, monkeypatch):
     direct_xml = _musicxml_path("direct")
     out_dir = tmp_path / "direct"
 
@@ -184,16 +184,16 @@ def test_500_miles_high_measure8_e7sharp9_prefers_harmonic_minor_with_soft_color
         if o["measure_number"] == "8" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "E7#9"
     )
 
-    assert e7s9["retry_level"] == "current+previous"
-    assert e7s9["selected_collection_family"] == "harmonic_minor"
-    assert e7s9["selected_collection_name"].startswith("A_harmonic_minor")
-    assert e7s9["output_chord_tone_set"] == ["E", "G#", "B", "C", "D", "F"]
+    assert e7s9["retry_level"] == "current+previous+next"
+    assert e7s9["selected_collection_family"] == "dominant_blues"
+    assert e7s9["selected_collection_name"] == "D_dominant_blues"
+    assert e7s9["output_chord_tone_set"] == ["E", "G#", "B", "C#", "D", "G"]
     assert e7s9["color_hint_pitch_classes"] == ["G"]
     assert e7s9["color_hints_applied_to_constraint_set"] is False
-    assert e7s9["final_local_pitch_collection_used_for_selection"] == ["D", "E", "F", "G#", "A", "B"]
+    assert e7s9["final_local_pitch_collection_used_for_selection"] == ["C", "D", "E", "F", "G", "G#", "A", "B"]
 
 
-def test_unresolved_context_fails_with_actionable_message(tmp_path: Path, monkeypatch):
+def test_unresolved_context_may_resolve_via_dominant_blues_fallback(tmp_path: Path, monkeypatch):
     xml = tmp_path / "unresolved.musicxml"
     xml.write_text(
         """<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -220,15 +220,15 @@ def test_unresolved_context_fails_with_actionable_message(tmp_path: Path, monkey
         ["changes", "digitone-bundle", "--musicxml", str(xml), "--output", str(tmp_path / "out")],
     )
 
-    with pytest.raises(SystemExit) as exc:
-        cli.main()
+    cli.main()
 
-    msg = str(exc.value)
-    assert "MusicXML conversion failed" in msg
-    assert "measure=1" in msg
-    assert "event=1" in msg
-    assert "symbol=Cmaj9/C#" in msg
-    assert "local_pitch_collection" in msg
+    diag = _read_json(tmp_path / "out" / "musicxml_harmony_resolution.json")
+    occurrence = next(
+        o
+        for o in diag["occurrences"]
+        if o["measure_number"] == "1" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "Cmaj9/C#"
+    )
+    assert occurrence["selected_collection_family"] == "dominant_blues"
 
 
 @pytest.mark.parametrize("variant", ["direct", "converted"])

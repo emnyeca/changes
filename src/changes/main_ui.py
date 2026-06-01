@@ -5,6 +5,8 @@ from __future__ import annotations
 import base64
 import functools
 import re
+from dataclasses import replace as _replace
+from fractions import Fraction as _Frac
 from pathlib import Path
 
 import streamlit as st
@@ -38,16 +40,16 @@ _QUALITY_ROWS: list[list[tuple[str, str]]] = [
     [("maj9","maj9"),("m9","m9"),("9","9"),("13","13"),("7b9","7b9"),("7#9","7#9"),("7#11","7#11"),("7b13","7b13"),("add9","add9")],
 ]
 _TEXT_INSTRUCTIONS = """\
-**有効なトークン** | トークン | 例 |
+**Valid Tokens** | Token | Example |
 |---|---|
-| コードシンボル | `Cmaj7` `Bbm7` `F#7` `Eb7b9` `G/B` |
-| 直前コード繰り返し | `%` |
-| 小節線 | `|` |
-| セクション区切り | `||` |
+| Chord symbol | `Cmaj7` `Bbm7` `F#7` `Eb7b9` `G/B` |
+| Repeat previous chord | `%` |
+| Bar line | `|` |
+| Section divider | `||` |
 
-- **Enter** でトークンを確定 / スペース区切りで複数確定可
-- **半角のみ** — `b` / `#` を使う（♭/♯ 不可）
-- ルートは自動大文字変換: `cmaj7` → `Cmaj7`
+- Press **Enter** to commit tokens / use spaces to commit multiple tokens
+- **ASCII only** — use `b` / `#` (do not use ♭/♯)
+- Root letter is auto-capitalized: `cmaj7` -> `Cmaj7`
 """
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
@@ -146,6 +148,8 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
+        ("_table_save_mode", None), ("_table_save_pending", None),
+        ("_table_save_suppressed_signature", None),
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
     ]:
@@ -322,65 +326,20 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
 
 def _render_songlist(show_import: bool = True) -> None:
     entries: list[SongEntry] = st.session_state._library
-
-    # ── MIDI-only metadata update confirmation ────────────────────────────────
-    if st.session_state.get("_midi_update_candidates") is not None:
-        _render_midi_update_confirm()
-        return
-
-    # ── Dirty warning (switching songs while Compose has unsaved edits) ────────
-    pending = st.session_state.get("_pending_switch")
-    if pending is not None:
-        st.warning(
-            f'**Unsaved changes will be discarded.**  Switch to "{pending.title}"?'
-        )
-        col_cancel, col_discard = st.columns([1, 1])
-        if col_cancel.button("Cancel", key="sw_cancel"):
-            st.session_state._pending_switch = None
-            st.rerun()
-        if col_discard.button("Discard and switch", type="primary", key="sw_discard"):
-            _do_switch_song(pending)
-            st.rerun()
-        return
-
-    # ── Delete confirmation ────────────────────────────────────────────────────
+    table_save_pending = st.session_state.get("_table_save_mode") == "pending"
+    pending_switch = st.session_state.get("_pending_switch")
     del_path = st.session_state.get("_delete_confirm")
-    if del_path is not None:
-        entry = next((e for e in entries if e.path == del_path), None)
-        name = entry.title if entry else del_path.name
-        st.warning(f'**Delete "{name}"?**  This removes the SongModel file.')
-        c1, c2 = st.columns([1, 1])
-        if c1.button("Cancel", key="del_cancel"):
-            st.session_state._delete_confirm = None
-            st.rerun()
-        if c2.button("Delete", type="primary", key="del_confirm"):
-            delete_song(del_path)
-            if st.session_state._selected_path == del_path:
-                st.session_state._selected_path = None
-            st.session_state._delete_confirm = None
-            _refresh_library()
-            st.rerun()
-        return
+    import_conflict_pending = st.session_state.get("_import_conflict_mode") == "pending"
+    midi_update_pending = st.session_state.get("_midi_update_candidates") is not None
 
-    # ── Import conflict dialog ─────────────────────────────────────────────────
-    if st.session_state.get("_import_conflict_mode") == "pending":
-        conflicts = st.session_state.get("_import_conflict_titles", [])
-        st.warning(
-            f"**Duplicate titles found:** {', '.join(conflicts)}\n\n"
-            "How should duplicates be handled?"
-        )
-        c1, c2, c3 = st.columns(3)
-        if c1.button("Overwrite all", type="primary", key="ic_over"):
-            st.session_state._import_conflict_mode = "overwrite"
-            st.rerun()
-        if c2.button("Keep both", key="ic_keep"):
-            st.session_state._import_conflict_mode = "keep_both"
-            st.rerun()
-        if c3.button("Cancel import", key="ic_cancel"):
-            st.session_state._import_conflict_mode = None
-            st.session_state._import_pending = []
-            st.rerun()
-        return
+    ui_locked = table_save_pending or pending_switch is not None or del_path is not None or import_conflict_pending or midi_update_pending
+
+    if st.session_state.get("_table_save_mode") in ("update", "keep_both"):
+        _execute_table_save(st.session_state._table_save_mode)
+        st.session_state._table_save_mode = None
+        st.session_state._table_save_pending = None
+        st.session_state._table_save_suppressed_signature = None
+        st.rerun()
 
     # Process resolved imports
     if st.session_state.get("_import_conflict_mode") in ("overwrite", "keep_both"):
@@ -391,7 +350,13 @@ def _render_songlist(show_import: bool = True) -> None:
         st.rerun()
 
     # ── Search ────────────────────────────────────────────────────────────────
-    search = st.text_input("Search songs", placeholder="Search With Title…", label_visibility="collapsed", key="_sl_search")
+    search = st.text_input(
+        "Search songs",
+        placeholder="Search With Title…",
+        label_visibility="collapsed",
+        key="_sl_search",
+        disabled=ui_locked,
+    )
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
     # ── Song table ────────────────────────────────────────────────────────────
@@ -402,6 +367,16 @@ def _render_songlist(show_import: bool = True) -> None:
             m = e.song.measures[0]
             return f"{m.meter_numerator}/{m.meter_denominator}"
         return "—"
+
+    def _parse_meter(text: str) -> tuple[int, int] | None:
+        m = re.match(r"^\s*(\d+)\s*/\s*(\d+)\s*$", text)
+        if not m:
+            return None
+        num = int(m.group(1))
+        den = int(m.group(2))
+        if num <= 0 or den not in (2, 4, 8):
+            return None
+        return num, den
 
     # Keep column dtypes stable even when filtered is empty; Streamlit data_editor
     # rejects text column configs if pandas infers float dtype from empty data.
@@ -419,20 +394,21 @@ def _render_songlist(show_import: bool = True) -> None:
         hide_index=True,
         use_container_width=True,
         num_rows="fixed",
+        disabled=ui_locked,
         key="_sl_table",
         column_config={
             "Select": st.column_config.CheckboxColumn("", width="small"),
             "Title": st.column_config.TextColumn("Title", width="large"),
             "Key":   st.column_config.TextColumn("Key", width="small"),
-            "Tempo": st.column_config.NumberColumn("Tempo", disabled=True, width="small"),
-            "Meter": st.column_config.TextColumn("Meter", disabled=True, width="small"),
+            "Tempo": st.column_config.NumberColumn("Tempo", min_value=30, max_value=300, width="small"),
+            "Meter": st.column_config.TextColumn("Meter", width="small"),
             "Delete": st.column_config.CheckboxColumn("🗑", width="small"),
         },
     )
 
     # Table-integrated single-row select (radio-like)
     selected_rows = [i for i in range(len(edited_df)) if bool(edited_df.at[i, "Select"])]
-    if selected_rows:
+    if selected_rows and not ui_locked:
         # Prefer a newly selected row when multiple rows are checked.
         newly_selected = [
             i for i in selected_rows
@@ -450,36 +426,177 @@ def _render_songlist(show_import: bool = True) -> None:
         i for i in range(len(edited_df))
         if bool(edited_df.at[i, "Delete"]) and (i < len(orig_df) and not bool(orig_df.at[i, "Delete"]))
     ]
-    if delete_rows:
+    if delete_rows and not ui_locked:
         delete_idx = delete_rows[-1]
         if 0 <= delete_idx < len(filtered):
             st.session_state._delete_confirm = filtered[delete_idx].path
             st.rerun()
 
-    # Persist inline edits (Title / Key)
-    for i, entry in enumerate(filtered):
-        if entry.song is None:
-            continue
-        new_title = edited_df.at[i, "Title"] if i < len(edited_df) else entry.title
-        new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else (entry.song.working_key or "")
-        if new_title != entry.title or new_key != (entry.song.working_key or ""):
-            updated = SongModel(
-                title=new_title or entry.song.title,
-                working_key=new_key or None,
-                performance_tempo=entry.song.performance_tempo,
-                measures=entry.song.measures,
-            )
-            overwrite_song(entry.path, updated)
-            _refresh_library()
-            st.rerun()
+    # Persist inline edits (Title / Key / Tempo / Meter)
+    if not table_save_pending and not ui_locked:
+        for i, entry in enumerate(filtered):
+            if entry.song is None:
+                continue
+            new_title = edited_df.at[i, "Title"] if i < len(edited_df) else entry.title
+            new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else (entry.song.working_key or "")
+            new_tempo = edited_df.at[i, "Tempo"] if i < len(edited_df) else int(entry.song.performance_tempo)
+            new_meter = edited_df.at[i, "Meter"] if i < len(edited_df) else _meter(entry)
+
+            title_val = str(new_title).strip()
+            key_val = str(new_key).strip()
+            tempo_val = int(new_tempo)
+            meter_val = str(new_meter).strip()
+
+            old_title = entry.title
+            old_key = (entry.song.working_key or "")
+            old_tempo = int(entry.song.performance_tempo)
+            old_meter = _meter(entry)
+
+            if (
+                title_val != old_title
+                or key_val != old_key
+                or tempo_val != old_tempo
+                or meter_val != old_meter
+            ):
+                if not title_val:
+                    st.error("Title cannot be empty")
+                    return
+                if tempo_val < 30 or tempo_val > 300:
+                    st.error("Tempo must be between 30 and 300")
+                    return
+                key_opts = {"", "C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"}
+                if key_val not in key_opts:
+                    st.error("Key must be one of: C, Db, D, Eb, E, F, F#, Gb, G, Ab, A, Bb, B")
+                    return
+
+                parsed_meter = _parse_meter(meter_val)
+                if parsed_meter is None:
+                    st.error("Meter must be in n/d format (e.g. 4/4) with denominator 2, 4, or 8")
+                    return
+
+                meter_num, meter_den = parsed_meter
+                changed_fields: list[tuple[str, str, str]] = []
+                if title_val != old_title:
+                    changed_fields.append(("Title", old_title, title_val))
+                if key_val != old_key:
+                    changed_fields.append(("Key", old_key or "(empty)", key_val or "(empty)"))
+                if tempo_val != old_tempo:
+                    changed_fields.append(("Tempo", str(old_tempo), str(tempo_val)))
+                if meter_val != old_meter:
+                    changed_fields.append(("Meter", old_meter, meter_val))
+
+                updated_measures = tuple(
+                    _replace(m, meter_numerator=meter_num, meter_denominator=meter_den)
+                    for m in entry.song.measures
+                )
+                updated_song = SongModel(
+                    title=title_val,
+                    working_key=key_val or None,
+                    performance_tempo=_Frac(tempo_val).limit_denominator(1000),
+                    measures=updated_measures,
+                )
+                signature = (
+                    str(entry.path),
+                    title_val,
+                    key_val,
+                    int(tempo_val),
+                    int(meter_num),
+                    int(meter_den),
+                )
+                if signature == st.session_state.get("_table_save_suppressed_signature"):
+                    continue
+                st.session_state._table_save_mode = "pending"
+                st.session_state._table_save_pending = {
+                    "path": entry.path,
+                    "song": updated_song,
+                    "existing_title": entry.title,
+                    "signature": signature,
+                    "changes": changed_fields,
+                }
+                st.rerun()
 
     st.caption(f"{len(filtered)} song(s)")
 
+    # ── Confirmation / warning panels (insert below table) ──────────────────
+    if table_save_pending:
+        pending = st.session_state.get("_table_save_pending")
+        if pending is not None:
+            existing_title = str(pending.get("existing_title") or "Untitled")
+            changes = pending.get("changes") or []
+            if changes:
+                details = "\n".join(
+                    f"- {field}: `{before}` -> `{after}`"
+                    for field, before, after in changes
+                )
+            else:
+                details = "- No field-level diff available"
+            st.warning(
+                f'**You are editing the existing song "{existing_title}". How would you like to save?**\n\n'
+                f"**Changed fields:**\n{details}"
+            )
+            c1, c2, c3 = st.columns(3)
+            if c1.button("Update", type="primary", key="tsd_update"):
+                st.session_state._table_save_mode = "update"
+                st.rerun()
+            if c2.button("Keep both", key="tsd_keep"):
+                st.session_state._table_save_mode = "keep_both"
+                st.rerun()
+            if c3.button("Cancel", key="tsd_cancel"):
+                st.session_state._table_save_suppressed_signature = pending.get("signature")
+                st.session_state._table_save_mode = None
+                st.session_state._table_save_pending = None
+                st.rerun()
+    elif pending_switch is not None:
+        st.warning(
+            f'**Unsaved changes will be discarded.**  Switch to "{pending_switch.title}"?'
+        )
+        col_cancel, col_discard = st.columns([1, 1])
+        if col_cancel.button("Cancel", key="sw_cancel"):
+            st.session_state._pending_switch = None
+            st.rerun()
+        if col_discard.button("Discard and switch", type="primary", key="sw_discard"):
+            _do_switch_song(pending_switch)
+            st.rerun()
+    elif del_path is not None:
+        entry = next((e for e in entries if e.path == del_path), None)
+        name = entry.title if entry else del_path.name
+        st.warning(f'**Delete "{name}"?**  This removes the SongModel file.')
+        c1, c2 = st.columns([1, 1])
+        if c1.button("Cancel", key="del_cancel"):
+            st.session_state._delete_confirm = None
+            st.rerun()
+        if c2.button("Delete", type="primary", key="del_confirm"):
+            delete_song(del_path)
+            if st.session_state._selected_path == del_path:
+                st.session_state._selected_path = None
+            st.session_state._delete_confirm = None
+            _refresh_library()
+            st.rerun()
+    elif import_conflict_pending:
+        conflicts = st.session_state.get("_import_conflict_titles", [])
+        st.warning(
+            f"**Duplicate titles found:** {', '.join(conflicts)}\n\n"
+            "How should duplicates be handled?"
+        )
+        c1, c2, c3 = st.columns(3)
+        if c1.button("Overwrite all", type="primary", key="ic_over"):
+            st.session_state._import_conflict_mode = "overwrite"
+            st.rerun()
+        if c2.button("Keep both", key="ic_keep"):
+            st.session_state._import_conflict_mode = "keep_both"
+            st.rerun()
+        if c3.button("Cancel import", key="ic_cancel"):
+            st.session_state._import_conflict_mode = None
+            st.session_state._import_pending = []
+            st.rerun()
+    elif midi_update_pending:
+        _render_midi_update_confirm()
+
     if show_import:
-        _render_import_section()
+        _render_import_section(disabled=ui_locked)
 
 
-def _render_import_section() -> None:
+def _render_import_section(disabled: bool = False) -> None:
     # ── Import ────────────────────────────────────────────────────────────────
     st.subheader("Import")
     uploaded = st.file_uploader(
@@ -487,8 +604,9 @@ def _render_import_section() -> None:
         type=["zip", "musicxml", "xml", "mid", "midi"],
         accept_multiple_files=True,
         key="_sl_uploader",
+        disabled=disabled,
     )
-    if uploaded and st.button("Import", type="primary", key="_sl_import_btn"):
+    if uploaded and st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled):
         _start_import(uploaded)
         st.rerun()
 
@@ -588,14 +706,14 @@ def _render_midi_update_confirm() -> None:
                 st.write(f"- `{fname}`: {reason}")
 
     mu1, mu2 = st.columns(2)
-    if mu1.button("全部更新", type="primary", key="_midi_upd_ok", disabled=not candidates):
+    if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates):
         _apply_midi_updates(candidates)
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
         _refresh_library()
         st.rerun()
-    if mu2.button("キャンセル", key="_midi_upd_cancel"):
+    if mu2.button("Cancel", key="_midi_upd_cancel"):
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
@@ -739,6 +857,29 @@ def _execute_compose_save(mode: str) -> None:
     st.success(f"Saved: {path.name}")
 
 
+def _execute_table_save(mode: str) -> None:
+    """Commit a pending Song Table metadata edit with the chosen mode."""
+    pending = st.session_state.get("_table_save_pending")
+    if pending is None:
+        return
+
+    path: Path = pending["path"]
+    song: SongModel = pending["song"]
+    s = st.session_state._settings
+    lib_path = Path(s.library_path)
+
+    if mode == "update":
+        overwrite_song(path, song)
+        saved_path = path
+    else:
+        saved_path = save_song(lib_path, song, mode="keep_both")
+
+    st.session_state._selected_path = saved_path
+    _refresh_library()
+    _load_song_into_editor(song)
+    st.success(f"Saved: {saved_path.name}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Page: Compose
 # ─────────────────────────────────────────────────────────────────────────────
@@ -752,40 +893,13 @@ def _render_compose() -> None:
     r1 = st.columns([1, 1,])
     with r1[0]:
         st.write("")
-        if st.button("△", key="key_up", use_container_width=True, help="半音上"):
+        if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone"):
             _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
     with r1[1]:
         st.write("")
-        if st.button("▽", key="key_down", use_container_width=True, help="半音下"):
+        if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone"):
             _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
 
-    # ── Save ──────────────────────────────────────────────────────────────────
-    if st.button("💾  Save", type="primary", use_container_width=True, key="compose_save"):
-        if not state.cells:
-            st.warning("コードを入力してください")
-        else:
-            try:
-                song = editor_to_song_model(state)
-                selected_path = st.session_state._selected_path
-                existing_titles = {e.title.lower() for e in st.session_state._library}
-                needs_dialog = (
-                    selected_path is not None
-                    or song.title.lower() in existing_titles
-                )
-                if needs_dialog:
-                    st.session_state._compose_save_mode = "pending"
-                    st.session_state._compose_save_pending = song
-                    st.rerun()
-                else:
-                    path = save_song(lib_path, song, mode="keep_both")
-                    st.session_state._selected_path = path
-                    st.session_state._editor_dirty = False
-                    _refresh_library()
-                    st.success(f"Saved: {path.name}")
-            except ValueError as exc:
-                st.error(f"変換エラー: {exc}")
-
-            
     # ── Cell display ───────────────────────────────────────────────────────────
     st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)
 
@@ -939,7 +1053,7 @@ def _render_settings() -> None:
                     _refresh_library()
                     st.rerun()
             except Exception:
-                st.info("フォルダパスを直接入力してください")
+                st.info("Please enter the folder path manually")
 
     if changed:
         save_settings(settings)
@@ -953,14 +1067,14 @@ def _render_settings() -> None:
         adv1, adv2 = st.columns(2)
         with adv1:
             if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx"):
-                with st.spinner("SYX生成中…"):
+                with st.spinner("Generating SYX..."):
                     try:
                         syx = _export_syx_bytes(song, settings)
                         st.session_state._syx_bytes = syx
                         st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
-                        st.success("完了")
+                        st.success("Done")
                     except ModuleNotFoundError:
-                        st.error("digitone-syx-toolkit が必要です:\n`pip install -e ../digitone-syx-toolkit`")
+                        st.error("digitone-syx-toolkit is required:\n`pip install -e ../digitone-syx-toolkit`")
                     except Exception as exc:
                         st.error(str(exc))
             if "_syx_bytes" in st.session_state:
@@ -970,7 +1084,7 @@ def _render_settings() -> None:
                                    key="_adv_syx_dl")
         with adv2:
             if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
-                with st.spinner("解析中…"):
+                with st.spinner("Analyzing..."):
                     try:
                         from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
                         from changes.ui_pipeline import compile_song_for_ui
@@ -998,9 +1112,7 @@ def _render_settings() -> None:
 
 def _render_main() -> None:
     _render_compose()
-    st.divider()
     _render_songlist(show_import=False)
-    st.divider()
     with st.expander("Import / Settings", expanded=False):
         _render_import_section()
         st.divider()
@@ -1045,7 +1157,7 @@ def _render_preview_send() -> None:
     with ps1:
         if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview"):
             if not song:
-                st.warning("曲がありません")
+                st.warning("No song loaded")
             else:
                 _run_preview(song, settings, dest)
 
@@ -1053,7 +1165,7 @@ def _render_preview_send() -> None:
     with ps2:
         if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send"):
             if not song:
-                st.warning("曲がありません")
+                st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:
                 st.session_state._send_confirm = True
                 st.rerun()
@@ -1104,13 +1216,13 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
         ))
 
     if not play_notes:
-        st.warning("ルーティングされたノートがありません（全voiceがNone？）")
+        st.warning("No routed notes found (are all voices set to None?)")
         return
 
     play_notes.sort(key=lambda n: n[0])
     port_name = "DEBUG" if "DEBUG" in dest else dest
 
-    with st.spinner("Preview中…"):
+    with st.spinner("Running preview..."):
         try:
             logs = _send_pipeline_preview(play_notes, port_name)
             if port_name == "DEBUG" or logs:
@@ -1165,13 +1277,13 @@ def _send_pipeline_preview(
 
 
 def _run_send(song: SongModel, settings: AppSettings, dest: str) -> None:
-    with st.spinner("SysEx生成中…"):
+    with st.spinner("Generating SysEx..."):
         try:
             syx = _export_syx_bytes(song, settings)
             st.session_state._syx_bytes = syx
             st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
         except ModuleNotFoundError:
-            st.error("digitone-syx-toolkit が必要です: `pip install -e ../digitone-syx-toolkit`")
+            st.error("digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`")
             return
         except Exception as exc:
             st.error(str(exc))
@@ -1181,14 +1293,14 @@ def _run_send(song: SongModel, settings: AppSettings, dest: str) -> None:
     port_name = "DEBUG" if "DEBUG" in dest else dest
 
     if port_name != "DEBUG":
-        with st.spinner(f"SysEx送信中 → {port_name}…"):
+        with st.spinner(f"Sending SysEx to {port_name}..."):
             err = _send_syx_via_midi(syx, port_name)
             if err:
                 st.error(err)
             else:
                 st.success(f"Sent to {port_name}")
     else:
-        st.info("Internal (DEBUG) — ダウンロードのみ")
+        st.info("Internal (DEBUG) - download only")
 
     st.download_button(
         "↓ Download .syx",
@@ -1206,7 +1318,7 @@ def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
     try:
         import mido
     except ImportError:
-        return "mido がインストールされていません"
+        return "mido is not installed"
 
     # Parse SysEx messages (F0 ... F7 sequences)
     messages: list[list[int]] = []
@@ -1223,7 +1335,7 @@ def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
             i += 1
 
     if not messages:
-        return "SysExメッセージが見つかりませんでした"
+        return "No SysEx messages found"
 
     try:
         with mido.open_output(port_name) as out:
@@ -1232,7 +1344,7 @@ def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
                 time.sleep(0.05)
         return None
     except Exception as exc:
-        return f"MIDI送信エラー: {exc}"
+        return f"MIDI send error: {exc}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

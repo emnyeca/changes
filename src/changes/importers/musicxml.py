@@ -484,7 +484,9 @@ def import_musicxml_text(xml_text: str) -> ImportedSong:
 
             key = _first(attributes, "key")
             if key is not None and initial_key is None:
-                initial_key = {"fifths": _parse_int(_text(_first(key, "fifths")), default=0)}
+                fifths = _parse_int(_text(_first(key, "fifths")), default=0)
+                mode = (_text(_first(key, "mode")) or "major").strip().lower()
+                initial_key = {"fifths": fifths, "mode": mode}
 
             time = _first(attributes, "time")
             if time is not None and initial_time_signature is None:

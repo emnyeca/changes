@@ -40,46 +40,53 @@ _NO_TEMPO_XML   = (_FIXTURES / "no_tempo.musicxml").read_bytes()
 
 def _make_midi(
     tempo_bpm: float | None = 120.0,
-    key_sf: int = 0,
+    key_sf: int | None = 0,
     key_minor: bool = False,
-    meter: tuple[int, int] = (4, 4),
+    meter: tuple[int, int] | None = (4, 4),
 ) -> bytes:
-    """Build a minimal MIDI type-0 file with requested meta events."""
-    import mido
-    mid = mido.MidiFile(type=0)
-    track = mido.MidiTrack()
-    mid.tracks.append(track)
-    if meter:
-        track.append(mido.MetaMessage(
-            "time_signature",
-            numerator=meter[0],
-            denominator=meter[1],
-            time=0,
-        ))
+    """Build a minimal MIDI type-0 file without external dependencies.
+
+    Uses the MIDI binary format directly so the test suite works even
+    when the optional 'midi' extras (mido) are not installed in CI.
+    """
+    _DENOM_BYTE = {1: 0, 2: 1, 4: 2, 8: 3, 16: 4, 32: 5}
+
+    def _vlq(n: int) -> bytes:
+        if n == 0:
+            return b"\x00"
+        parts: list[int] = []
+        while n:
+            parts.append(n & 0x7F)
+            n >>= 7
+        parts.reverse()
+        for i in range(len(parts) - 1):
+            parts[i] |= 0x80
+        return bytes(parts)
+
+    def _meta(type_byte: int, data: bytes) -> bytes:
+        return b"\x00\xFF" + bytes([type_byte]) + _vlq(len(data)) + data
+
+    track = b""
+    if meter is not None:
+        db = _DENOM_BYTE.get(meter[1], 2)
+        track += _meta(0x58, bytes([meter[0], db, 24, 8]))
     if key_sf is not None:
-        track.append(mido.MetaMessage(
-            "key_signature",
-            key=_sf_to_key_str(key_sf, key_minor),
-            time=0,
-        ))
+        sf_byte = key_sf & 0xFF  # two's complement unsigned representation
+        track += _meta(0x59, bytes([sf_byte, 1 if key_minor else 0]))
     if tempo_bpm is not None:
         us = round(60_000_000 / tempo_bpm)
-        track.append(mido.MetaMessage("set_tempo", tempo=us, time=0))
-    track.append(mido.MetaMessage("end_of_track", time=0))
-    buf = io.BytesIO()
-    mid.save(file=buf)
-    return buf.getvalue()
+        track += _meta(0x51, us.to_bytes(3, "big"))
+    track += _meta(0x2F, b"")  # end of track
 
-
-def _sf_to_key_str(sf: int, is_minor: bool) -> str:
-    sharp_maj = ["C", "G", "D", "A", "E", "B", "F#", "C#"]
-    flat_maj  = ["C", "F", "Bb", "Eb", "Ab", "Db", "Gb", "Cb"]
-    sharp_min = ["A", "E", "B", "F#", "C#", "G#", "D#", "A#"]
-    flat_min  = ["A", "D", "G", "C", "F", "Bb", "Eb", "Ab"]
-    idx = min(abs(sf), 7)
-    if is_minor:
-        return (sharp_min[idx] if sf >= 0 else flat_min[idx]) + "m"
-    return sharp_maj[idx] if sf >= 0 else flat_maj[idx]
+    header = (
+        b"MThd"
+        + (6).to_bytes(4, "big")
+        + (0).to_bytes(2, "big")   # format 0
+        + (1).to_bytes(2, "big")   # 1 track
+        + (480).to_bytes(2, "big") # 480 PPQ
+    )
+    chunk = b"MTrk" + len(track).to_bytes(4, "big") + track
+    return header + chunk
 
 
 def _make_zip(pairs: dict[str, bytes]) -> bytes:
@@ -316,10 +323,12 @@ def test_import_zip_tempo_source_counts() -> None:
 
 # ── import_zip vs real sample ─────────────────────────────────────────────────
 
+# blues-50.zip is gitignored (real song data). Copy it to
+# examples/musicXML/ireal-musicxml/ locally to run this smoke test.
 _SAMPLE_ZIP = Path(__file__).parent.parent / "examples" / "musicXML" / "ireal-musicxml" / "blues-50.zip"
 
 
-@pytest.mark.skipif(not _SAMPLE_ZIP.exists(), reason="blues-50.zip not present")
+@pytest.mark.skipif(not _SAMPLE_ZIP.exists(), reason="blues-50.zip not present (gitignored local sample)")
 def test_import_zip_real_sample_smoke() -> None:
     result = import_zip(_SAMPLE_ZIP.read_bytes())
     assert len(result.songs) > 0

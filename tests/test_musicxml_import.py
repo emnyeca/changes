@@ -95,7 +95,7 @@ def test_import_accepts_musicxml_31_direct_and_keeps_metadata():
     assert song.source_software == "iReal Pro 2026.5"
     assert song.title == "Normalization Case"
     assert song.composer == "Direct Composer"
-    assert song.initial_key == {"fifths": 0}
+    assert song.initial_key is not None and song.initial_key.get("fifths") == 0
     assert song.initial_time_signature == {"beats": 4, "beat_type": 4}
     assert len(song.bars) == 10
 
@@ -107,7 +107,7 @@ def test_import_accepts_musicxml_40_converted_and_keeps_metadata():
     assert song.source_software == "@infojunkie/ireal-musicxml 2.1.1"
     assert song.title == "Normalization Case"
     assert song.composer == "Converted Composer"
-    assert song.initial_key == {"fifths": 0}
+    assert song.initial_key is not None and song.initial_key.get("fifths") == 0
     assert song.initial_time_signature == {"beats": 4, "beat_type": 4}
     assert len(song.bars) == 10
 

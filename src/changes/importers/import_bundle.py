@@ -227,26 +227,42 @@ def extract_zip(zip_bytes: bytes) -> dict[str, bytes]:
             bare = Path(info.filename).name
             if not bare:
                 continue
-            files[bare] = zf.read(info.filename)
+            if bare not in files:  # first occurrence wins on duplicate bare names
+                files[bare] = zf.read(info.filename)
     return files
 
 
 # ── Key conversion helpers ────────────────────────────────────────────────────
 
-_FIFTHS_TO_KEY = {
+_FIFTHS_TO_MAJOR = {
     -7: "Cb", -6: "Gb", -5: "Db", -4: "Ab", -3: "Eb", -2: "Bb", -1: "F",
     0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F#", 7: "C#",
 }
 
+# Relative minor tonic for each major key (parallel: C major → A minor tonic).
+_RELATIVE_MINOR_TONIC = {
+    "C": "A", "G": "E", "D": "B", "A": "F#", "E": "C#", "B": "G#",
+    "F#": "D#", "C#": "A#",
+    "F": "D", "Bb": "G", "Eb": "C", "Ab": "F", "Db": "Bb", "Gb": "Eb", "Cb": "Ab",
+}
+
 
 def _musicxml_working_key(imported: ImportedSong) -> tuple[str | None, str]:
-    """Extract working_key from ImportedSong's key signature. Returns (key, source)."""
-    if imported.initial_key is not None:
-        fifths = imported.initial_key.get("fifths", 0)
-        key = _FIFTHS_TO_KEY.get(int(fifths))
-        if key:
-            return key, "musicxml"
-    return None, "unknown"
+    """Extract working_key from ImportedSong's key signature. Returns (key, source).
+
+    For minor mode keys, returns the actual minor tonic (not the relative major),
+    e.g. fifths=0, mode=minor → "A" (A minor), not "C" (C major).
+    """
+    if imported.initial_key is None:
+        return None, "unknown"
+    fifths = int(imported.initial_key.get("fifths", 0))
+    mode = str(imported.initial_key.get("mode", "major")).lower()
+    major_key = _FIFTHS_TO_MAJOR.get(fifths)
+    if major_key is None:
+        return None, "unknown"
+    if mode == "minor":
+        return _RELATIVE_MINOR_TONIC.get(major_key, major_key), "musicxml"
+    return major_key, "musicxml"
 
 
 def _midi_working_key(midi_key: str | None) -> str | None:

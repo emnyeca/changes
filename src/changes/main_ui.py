@@ -1,4 +1,4 @@
-"""Streamlit UI for EUB Changes — Songlist / Compose / Settings."""
+"""Initial release Streamlit UI for EUB Changes."""
 
 from __future__ import annotations
 
@@ -129,7 +129,7 @@ def _hdr_item(label: str, value: str) -> str:
 
 def _ss_init() -> None:
     if "_page" not in st.session_state:
-        st.session_state._page = "Songlist"
+        st.session_state._page = "Main"
     if "_settings" not in st.session_state:
         st.session_state._settings = load_settings()
     if "_library" not in st.session_state:
@@ -217,26 +217,6 @@ def _render_header() -> None:
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-
-def _render_sidebar() -> None:
-    with st.sidebar:
-        st.markdown("<div style='padding:20px 16px 8px;text-align:center'>", unsafe_allow_html=True)
-        if _LOGO_PATH.exists():
-            st.image(str(_LOGO_PATH), width=110)
-        else:
-            st.markdown("### EUB Changes")
-        st.markdown("</div>", unsafe_allow_html=True)
-        st.divider()
-
-        pages = ["Songlist", "Compose", "Settings"]
-        current_idx = pages.index(st.session_state._page) if st.session_state._page in pages else 0
-        choice = st.radio("nav", pages, index=current_idx, label_visibility="collapsed")
-        if choice != st.session_state._page:
-            st.session_state._page = choice
-            st.rerun()
-
-        st.markdown(f"<div class='sidebar-version'>{_APP_VERSION}</div>", unsafe_allow_html=True)
-
 
 # ── Chord helpers (editor) ────────────────────────────────────────────────────
 
@@ -524,7 +504,7 @@ def _render_songlist() -> None:
 
 
 def _try_select_song(entry: SongEntry) -> None:
-    if st.session_state._editor_dirty and st.session_state._page == "Songlist":
+    if st.session_state._editor_dirty:
         st.session_state._pending_switch = entry
     else:
         _do_switch_song(entry)
@@ -754,171 +734,18 @@ def _render_compose() -> None:
     s = st.session_state._settings
     lib_path = Path(s.library_path)
 
-    # ── Compose save confirmation dialog ─────────────────────────────────────
-    if st.session_state._compose_save_mode == "pending":
-        song = st.session_state._compose_save_pending
-        selected_path = st.session_state._selected_path
-        if selected_path is not None:
-            existing_title = next(
-                (e.title for e in st.session_state._library if e.path == selected_path),
-                selected_path.name,
-            )
-            st.warning(
-                f'**既存の曲 "{existing_title}" を編集しています。どのように保存しますか？**'
-            )
-        else:
-            st.warning(f'**同名の曲 "{song.title}" が既に存在します。どのように保存しますか？**')
-        csd1, csd2, csd3 = st.columns(3)
-        if csd1.button("更新する", type="primary", key="csd_update"):
-            st.session_state._compose_save_mode = "update"
-            st.rerun()
-        if csd2.button("両方保持する", key="csd_keep"):
-            st.session_state._compose_save_mode = "keep_both"
-            st.rerun()
-        if csd3.button("キャンセル", key="csd_cancel"):
-            st.session_state._compose_save_mode = None
-            st.session_state._compose_save_pending = None
-            st.rerun()
-        return
-
-    # Execute resolved Compose save
-    if st.session_state._compose_save_mode in ("update", "keep_both"):
-        _execute_compose_save(st.session_state._compose_save_mode)
-        st.session_state._compose_save_mode = None
-        st.session_state._compose_save_pending = None
-        st.rerun()
-
-    # ── Row 1: Title / Tempo / Key + transpose ────────────────────────────────
-    r1 = st.columns([4, 1, 2, 1, 1])
+    # ── Row 1: transpose ────────────────────────────────
+    r1 = st.columns([1, 1,])
     with r1[0]:
-        title = st.text_input("Title", key="editor_title")
-        if title != state.title:
-            state.title = title
-            st.session_state._editor_dirty = True
-    with r1[1]:
-        tempo = st.number_input("Tempo", min_value=30, max_value=300, step=1, key="editor_tempo")
-        if int(tempo) != state.tempo:
-            state.tempo = int(tempo)
-            st.session_state._editor_dirty = True
-    with r1[2]:
-        _KEY_OPTS = ["C","Db","D","Eb","E","F","F#","Gb","G","Ab","A","Bb","B"]
-        ki = _KEY_OPTS.index(state.working_key) if state.working_key in _KEY_OPTS else 0
-        kv = st.selectbox("Key", _KEY_OPTS, index=ki, key="working_key_input")
-        if kv != state.working_key:
-            state.working_key = kv
-            st.session_state._editor_dirty = True
-    with r1[3]:
         st.write("")
         if st.button("△", key="key_up", use_container_width=True, help="半音上"):
             _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
-    with r1[4]:
+    with r1[1]:
         st.write("")
         if st.button("▽", key="key_down", use_container_width=True, help="半音下"):
             _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
 
-    # ── Row 2: Meter ──────────────────────────────────────────────────────────
-    r2 = st.columns([1, 1, 1, 1, 1, 2, 3])
-    r2[0].write("**Meter**")
-    if r2[1].button("−", key="meter_minus", use_container_width=True):
-        st.session_state.meter_num = max(1, st.session_state.meter_num - 1)
-        st.session_state._editor_dirty = True; st.rerun()
-    r2[2].write(f"**{st.session_state.meter_num}**")
-    if r2[3].button("+", key="meter_plus", use_container_width=True):
-        st.session_state.meter_num += 1
-        st.session_state._editor_dirty = True; st.rerun()
-    r2[4].write("**/**")
-    den_opts = [2, 4, 8]
-    den_idx = den_opts.index(st.session_state.meter_den) if st.session_state.meter_den in den_opts else 1
-    new_den = r2[5].selectbox("den", den_opts, index=den_idx, key="meter_den_widget", label_visibility="collapsed")
-    if new_den != st.session_state.meter_den:
-        st.session_state.meter_den = new_den
-        st.session_state._editor_dirty = True
-    state.meter = f"{st.session_state.meter_num}/{st.session_state.meter_den}"
-
-    # ── Mode toggle ────────────────────────────────────────────────────────────
-    mode = st.session_state.editor_mode
-    if st.button("テキスト入力に切り替え" if mode == "button" else "ボタン入力に切り替え", key="mode_toggle"):
-        st.session_state.editor_mode = "text" if mode == "button" else "button"; st.rerun()
-
-    # ── Cell display ───────────────────────────────────────────────────────────
-    st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)
-
-    # ── Input area ─────────────────────────────────────────────────────────────
-    def _mark_dirty() -> None:
-        st.session_state._editor_dirty = True
-
-    if mode == "text":
-        st.text_input("コード入力 — Enter で確定", key="ti", on_change=_process_text_input,
-                      placeholder="例: Cmaj7  または  |  または  %")
-        with st.expander("入力インストラクション"):
-            st.markdown(_TEXT_INSTRUCTIONS)
-        sc = st.columns(5)
-        if sc[0].button("← 左", key="t_left", use_container_width=True): state.move_left(); st.rerun()
-        if sc[1].button("右 →", key="t_right", use_container_width=True): state.move_right(); st.rerun()
-        if sc[2].button("Undo", key="t_undo", use_container_width=True): state.undo(); st.rerun()
-        if sc[3].button("Delete", key="t_del", use_container_width=True): state.delete(); _mark_dirty(); st.rerun()
-        if sc[4].button("Clear", key="t_clear", use_container_width=True): state.clear(); _mark_dirty(); st.rerun()
-    else:
-        pr = st.session_state.pending_root
-        pa = st.session_state.pending_acc
-        if pr:
-            st.info(f"Pending: **{pr}{pa}** — quality を選択")
-        else:
-            st.caption("Root → (Accidental) → Quality")
-        st.write("**Root**")
-        rc = st.columns(len(ROOTS))
-        for i, r in enumerate(ROOTS):
-            if rc[i].button(r, key=f"root_{r}", use_container_width=True):
-                st.session_state.pending_root = r; st.session_state.pending_acc = ""; st.rerun()
-        st.write("**Accidental**")
-        ac = st.columns([1, 1, 3])
-        if ac[0].button("♭", key="acc_b", use_container_width=True): st.session_state.pending_acc = "b"; st.rerun()
-        if ac[1].button("♯", key="acc_s", use_container_width=True): st.session_state.pending_acc = "#"; st.rerun()
-        ac[2].caption(f"{'♭ (b)' if pa=='b' else '♯ (#)' if pa=='#' else '♮ natural'} selected")
-        st.write("**Quality**")
-        for row in _QUALITY_ROWS:
-            qc = st.columns(len(row))
-            for i, (label, suffix) in enumerate(row):
-                if qc[i].button(label, key=f"q_{label}", use_container_width=True):
-                    if pr:
-                        state.insert(f"{pr}{pa}{suffix}")
-                        st.session_state.pending_root = None; st.session_state.pending_acc = ""
-                        _mark_dirty()
-                    else:
-                        st.warning("Root を選んでから Quality を押してください")
-                    st.rerun()
-        st.write("**Structure**")
-        s2 = st.columns(8)
-        if s2[0].button("|",     key="s_bar",   use_container_width=True): state.insert("|");  _mark_dirty(); st.rerun()
-        if s2[1].button("||",    key="s_sec",   use_container_width=True): state.insert("||"); _mark_dirty(); st.rerun()
-        if s2[2].button("%",     key="s_rep",   use_container_width=True): state.insert("%");  _mark_dirty(); st.rerun()
-        if s2[3].button("←",     key="s_left",  use_container_width=True): state.move_left();  st.rerun()
-        if s2[4].button("→",     key="s_right", use_container_width=True): state.move_right(); st.rerun()
-        if s2[5].button("Undo",  key="s_undo",  use_container_width=True): state.undo();       st.rerun()
-        if s2[6].button("Delete",key="s_del",   use_container_width=True): state.delete(); _mark_dirty(); st.rerun()
-        if s2[7].button("Clear", key="s_clear", use_container_width=True): state.clear(); _mark_dirty(); st.rerun()
-
-    # ── Preview ────────────────────────────────────────────────────────────────
-    st.divider()
-    st.subheader("Preview — SongModel")
-    if state.cells:
-        try:
-            song = editor_to_song_model(state)
-            lines = [
-                f"[{m.section_id}]  m{m.number}:  " +
-                "  ".join(f"{h.symbol}({h.duration_quarters}q)" for h in m.harmony)
-                for m in song.measures
-            ]
-            st.code("\n".join(lines), language=None)
-            with st.expander("SongModel JSON"):
-                st.json(song_model_to_dict(song))
-        except ValueError as exc:
-            st.warning(f"変換エラー: {exc}")
-    else:
-        st.caption("No input yet.")
-
     # ── Save ──────────────────────────────────────────────────────────────────
-    st.divider()
     if st.button("💾  Save", type="primary", use_container_width=True, key="compose_save"):
         if not state.cells:
             st.warning("コードを入力してください")
@@ -943,6 +770,10 @@ def _render_compose() -> None:
                     st.success(f"Saved: {path.name}")
             except ValueError as exc:
                 st.error(f"変換エラー: {exc}")
+
+            
+    # ── Cell display ───────────────────────────────────────────────────────────
+    st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1150,6 +981,14 @@ def _render_settings() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 # Preview / Send area
 # ─────────────────────────────────────────────────────────────────────────────
+
+def _render_main() -> None:
+    _render_compose()
+    st.divider()
+    _render_songlist()
+    st.divider()
+    _render_settings()
+
 
 def _render_preview_send() -> None:
     song = _playback_song()
@@ -1392,17 +1231,8 @@ def main() -> None:
     )
     st.markdown(_CSS, unsafe_allow_html=True)
     _ss_init()
-    _render_sidebar()
     _render_header()
-
-    page = st.session_state._page
-    if page == "Songlist":
-        _render_songlist()
-    elif page == "Compose":
-        _render_compose()
-    else:
-        _render_settings()
-
+    _render_main()
     _render_preview_send()
 
 

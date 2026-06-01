@@ -20,17 +20,17 @@ These layers can be used independently or together depending on the performance 
 
 ## UI
 
-Start the Streamlit editor UI:
+Start the initial release Streamlit UI:
 
 ```powershell
 python -m pip install -e ".[ui]"
-python -m streamlit run src/changes/editor_ui.py
+python -m streamlit run src/changes/main_ui.py
 ```
 
 If `streamlit` is not recognized in PowerShell, use:
 
 ```powershell
-d:/emnye/Documents/GitHub/changes/.venv/Scripts/python.exe -m streamlit run src/changes/editor_ui.py
+d:/emnye/Documents/GitHub/changes/.venv/Scripts/python.exe -m streamlit run src/changes/main_ui.py
 ```
 
 ## Product architecture

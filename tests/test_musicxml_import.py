@@ -15,6 +15,7 @@ from changes.harmonic_context import (
 from changes.importers.musicxml import (
     UnsupportedMusicXMLHarmonyError,
     import_musicxml_text,
+    imported_song_to_song_model,
     load_musicxml_song,
     load_musicxml_song_model,
 )
@@ -29,6 +30,17 @@ REAL_PAIR_CONVERTED = Path("examples/musicXML/ireal-musicxml")
 
 def _event_semantic_signature(event) -> tuple:
     chord = event.chord
+    if chord is None:
+        return (
+            event.source_order_in_measure,
+            "NO_CHORD",
+            event.raw_kind_value,
+            event.raw_kind_text,
+            tuple(event.raw_degrees),
+            event.raw_root,
+            event.raw_bass,
+        )
+
     return (
         event.source_order_in_measure,
         chord.root_pc,
@@ -70,7 +82,7 @@ def _inline_musicxml(kind_blocks: str, *, version: str = "4.0") -> str:
 
 
 def _flatten_imported_symbols(song) -> list[str]:
-    return [event.chord.symbol for bar in song.bars for event in bar.events]
+    return [event.symbol for bar in song.bars for event in bar.events]
 
 
 def _resolve_occurrence(progression: list[str], index: int) -> tuple:
@@ -95,7 +107,7 @@ def test_import_accepts_musicxml_31_direct_and_keeps_metadata():
     assert song.source_software == "iReal Pro 2026.5"
     assert song.title == "Normalization Case"
     assert song.composer == "Direct Composer"
-    assert song.initial_key == {"fifths": 0}
+    assert song.initial_key is not None and song.initial_key.get("fifths") == 0
     assert song.initial_time_signature == {"beats": 4, "beat_type": 4}
     assert len(song.bars) == 10
 
@@ -107,7 +119,7 @@ def test_import_accepts_musicxml_40_converted_and_keeps_metadata():
     assert song.source_software == "@infojunkie/ireal-musicxml 2.1.1"
     assert song.title == "Normalization Case"
     assert song.composer == "Converted Composer"
-    assert song.initial_key == {"fifths": 0}
+    assert song.initial_key is not None and song.initial_key.get("fifths") == 0
     assert song.initial_time_signature == {"beats": 4, "beat_type": 4}
     assert len(song.bars) == 10
 
@@ -145,6 +157,62 @@ def test_unknown_kind_raises_explicit_error_not_silent_7():
         )
         with pytest.raises(UnsupportedMusicXMLHarmonyError):
                 import_musicxml_text(xml)
+
+
+def test_no_chord_kind_none_text_nc_is_imported_as_nc_symbol():
+        xml = _inline_musicxml(
+                """
+            <harmony>
+                <kind text="N.C.">none</kind>
+            </harmony>
+                """
+        )
+        song = import_musicxml_text(xml)
+        event = song.bars[0].events[0]
+        assert event.symbol == "N.C."
+        assert event.chord is None
+        assert event.raw_kind_value == "none"
+        assert event.raw_kind_text == "N.C."
+
+
+def test_song_model_keeps_no_chord_duration_without_collapsing_measure_slots():
+        xml = _inline_musicxml(
+                """
+            <harmony>
+                <root><root-step>C</root-step></root>
+                <kind text="7">dominant</kind>
+            </harmony>
+            <harmony>
+                <kind text="N.C.">none</kind>
+            </harmony>
+            <harmony>
+                <root><root-step>F</root-step></root>
+                <kind text="7">dominant</kind>
+            </harmony>
+            <harmony>
+                <root><root-step>B</root-step><root-alter>-1</root-alter></root>
+                <kind text="7">dominant</kind>
+            </harmony>
+                """
+        )
+        imported = import_musicxml_text(xml)
+        song_model = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+
+        assert len(song_model.measures) == 1
+        harmony = song_model.measures[0].harmony
+        assert [event.symbol for event in harmony] == ["C7", "N.C.", "F7", "A#7"]
+        assert [event.duration_quarters for event in harmony] == [
+            Fraction(1, 1),
+            Fraction(1, 1),
+            Fraction(1, 1),
+            Fraction(1, 1),
+        ]
+        assert [event.offset_quarters for event in harmony] == [
+            Fraction(0, 1),
+            Fraction(1, 1),
+            Fraction(2, 1),
+            Fraction(3, 1),
+        ]
 
 
 def test_dominant_add_sharp9_alter_flat5_maps_to_7sharp9b5():

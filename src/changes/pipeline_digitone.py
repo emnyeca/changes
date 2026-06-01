@@ -27,6 +27,7 @@ from changes.harmonic_context import (
     extract_output_chord_tone_set,
     resolve_scale_collection_with_retry_details,
 )
+from changes.no_chord import is_no_chord_symbol
 from changes.note import semitone_to_pitch_class
 from changes.models.digitone_compile_plan import DigitoneCompilePlan, digitone_compile_plan_to_dict
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
@@ -46,14 +47,16 @@ def _pc_names(pcs: tuple[int, ...] | frozenset[int]) -> list[str]:
 
 
 def build_musicxml_harmony_resolution_diagnostic(imported_song: ImportedSong) -> dict:
-    progression = [event.chord.symbol for bar in imported_song.bars for event in bar.events]
+    progression = [event.symbol for bar in imported_song.bars for event in bar.events if not is_no_chord_symbol(event.symbol)]
 
     occurrences: list[dict] = []
     cursor = 0
 
     for bar in imported_song.bars:
         for event in bar.events:
-            symbol = event.chord.symbol
+            symbol = event.symbol
+            if is_no_chord_symbol(symbol):
+                continue
             try:
                 resolved = resolve_scale_collection_with_retry_details(
                     progression,

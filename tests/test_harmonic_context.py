@@ -11,6 +11,7 @@ from changes.harmonic_context import (
     extract_output_chord_tone_set,
     hard_context_pitch_classes,
     normalized_harmonic_identity,
+    output_chord_tone_names,
     resolve_scale_collection_with_retry,
     resolve_scale_collection_with_retry_details,
     select_scale_collection,
@@ -178,9 +179,12 @@ def test_retry_policy_resolves_only_from_current_chord():
     assert _pcs_to_names(local) == ["B", "C", "E", "G"]
 
 
-def test_retry_policy_raises_explicit_unsupported_when_current_only_fails():
-    with pytest.raises(UnsupportedHarmonicContextError, match="Unsupported harmonic context"):
-        resolve_scale_collection_with_retry(["Cmaj7/A#"], 0, circular=True)
+def test_current_only_case_may_fall_back_to_dominant_blues_without_eligibility_gate():
+    local, selected = resolve_scale_collection_with_retry(["Cmaj7/A#"], 0, circular=True)
+
+    assert _pcs_to_names(local) == ["A#", "B", "C", "E", "G"]
+    assert selected.family == "dominant_blues"
+    assert selected.name == "G_dominant_blues"
 
 
 def test_normalized_identity_enharmonic_roots_are_equal():
@@ -216,16 +220,16 @@ def test_repeated_section_occurrences_are_position_sensitive_not_template_reused
     assert local_1 != local_2
 
 
-def test_plain_gm7_in_500_miles_high_phrase_cannot_select_diminished_and_falls_back_to_current_only():
+def test_plain_gm7_in_500_miles_high_phrase_may_fall_back_to_dominant_blues():
     progression = ["Em7", "Em7", "Gm7", "Gm7", "A#maj7"]
 
     resolved = resolve_scale_collection_with_retry_details(progression, 2, circular=True)
     output = extract_output_chord_tone_set("Gm7", resolved.selected_collection)
 
-    assert resolved.retry_level == "current_only"
-    assert resolved.selected_collection.family == "diatonic_dorian"
-    assert "diminished" not in resolved.selected_collection.name
-    assert output == (7, 10, 2, 4, 5, 9)  # G, A#, D, E, F, A
+    assert resolved.retry_level == "current+previous+next"
+    assert resolved.selected_collection.family == "dominant_blues"
+    assert resolved.selected_collection.name == "G_dominant_blues"
+    assert output == (7, 11, 2, 4, 5, 10)  # G, B, D, E, F, A#
 
 
 @pytest.mark.parametrize("symbol", ["Cmaj7", "Cm7", "Cm", "Cm9"])
@@ -253,20 +257,35 @@ def test_altered_dominant_remains_eligible_for_symmetric_collection():
     assert selected.family == "diminished"
 
 
-def test_minor_ii_v_e7sharp9_prefers_harmonic_minor_on_current_plus_previous():
+def test_a7_over_c_is_not_unsupported_in_blues_context():
+    progression = ["A7/C"]
+
+    local, selected = resolve_scale_collection_with_retry(progression, 0, circular=True)
+
+    assert _pcs_to_names(local) == ["A", "C", "C#", "E", "G"]
+    assert selected.family == "dominant_blues"
+
+
+def test_output_chord_tone_names_for_a7_over_c_use_dominant_blues_extraction():
+    output = output_chord_tone_names("A7/C", ["A7/C"], 0)
+
+    assert output == ("A", "C#", "E", "F#", "G", "C")
+
+
+def test_minor_ii_v_e7sharp9_may_fall_back_to_dominant_blues_without_eligibility_gate():
     progression = ["Bm7b5", "E7#9", "Am7"]
 
     resolved = resolve_scale_collection_with_retry_details(progression, 1, circular=True)
     output = extract_output_chord_tone_set("E7#9", resolved.selected_collection)
 
-    assert resolved.retry_level == "current+previous"
-    assert resolved.selected_collection.family == "harmonic_minor"
-    assert resolved.selected_collection.name.startswith("A_")
+    assert resolved.retry_level == "current+previous+next"
+    assert resolved.selected_collection.family == "dominant_blues"
+    assert resolved.selected_collection.name == "D_dominant_blues"
     assert resolved.selected_collection.family != "diminished"
-    assert _pcs_to_names(output) == ["B", "C", "D", "E", "F", "G#"]
+    assert _pcs_to_names(output) == ["B", "C#", "D", "E", "G", "G#"]
     assert _pcs_to_names(resolved.color_hint_pitch_classes) == ["G"]
     assert resolved.color_hints_applied_to_constraint_set is False
-    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "D", "E", "F", "G#"]
+    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "C", "D", "E", "F", "G", "G#"]
 
 
 def test_standalone_e7sharp9_applies_color_hints_on_current_only_attempt():

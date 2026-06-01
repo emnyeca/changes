@@ -16,6 +16,7 @@ from changes.importers.compact_progression import compact_progression_to_song_mo
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
 from changes.models.render_profile import default_render_profile
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
+from changes.models.song_model import HarmonyEvent, Measure, SongModel
 from changes.pipeline_digitone import compile_digitone_pipeline
 from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
 from changes.rendering.arrangement_renderer import render_arrangement
@@ -451,3 +452,112 @@ def test_rendered_timeline_chord_and_bass_events_are_within_profile_register_bou
             assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
         if event.role == "bass":
             assert rp.bass_min_midi <= event.note_midi <= rp.bass_max_midi
+
+
+def test_no_chord_event_generates_no_notes_but_keeps_duration_boundary():
+    song = SongModel(
+        title="NC",
+        working_key="C",
+        performance_tempo=Fraction(120, 1),
+        measures=(
+            Measure(
+                number=1,
+                section_id="A",
+                meter_numerator=4,
+                meter_denominator=4,
+                absolute_start_quarters=Fraction(0, 1),
+                harmony=(
+                    HarmonyEvent(
+                        id="m1_h1",
+                        symbol="C7",
+                        measure_number=1,
+                        offset_quarters=Fraction(0, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h2",
+                        symbol="N.C.",
+                        measure_number=1,
+                        offset_quarters=Fraction(1, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h3",
+                        symbol="F7",
+                        measure_number=1,
+                        offset_quarters=Fraction(2, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h4",
+                        symbol="Bb7",
+                        measure_number=1,
+                        offset_quarters=Fraction(3, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    arrangement = render_arrangement(song)
+    assert [occ.source_harmony_id for occ in arrangement.occurrences] == ["m1_h1", "m1_h3", "m1_h4"]
+
+    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=default_render_profile())
+    assert all(event.source_harmony_id != "m1_h2" for event in timeline.events)
+
+
+def test_no_chord_breaks_hold_merge_boundary_for_same_pitch_before_after_gap():
+    song = SongModel(
+        title="NC Hold",
+        working_key="C",
+        performance_tempo=Fraction(120, 1),
+        measures=(
+            Measure(
+                number=1,
+                section_id="A",
+                meter_numerator=4,
+                meter_denominator=4,
+                absolute_start_quarters=Fraction(0, 1),
+                harmony=(
+                    HarmonyEvent(
+                        id="m1_h1",
+                        symbol="C7",
+                        measure_number=1,
+                        offset_quarters=Fraction(0, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h2",
+                        symbol="N.C.",
+                        measure_number=1,
+                        offset_quarters=Fraction(1, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h3",
+                        symbol="C7",
+                        measure_number=1,
+                        offset_quarters=Fraction(2, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                    HarmonyEvent(
+                        id="m1_h4",
+                        symbol="C7",
+                        measure_number=1,
+                        offset_quarters=Fraction(3, 1),
+                        duration_quarters=Fraction(1, 1),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song), render_profile=default_render_profile())
+    cloud_events = [e for e in timeline.events if e.role == "cloud" and e.voice_id == "cloud_voice_1"]
+
+    assert len(cloud_events) == 2
+    assert cloud_events[0].onset_quarters == Fraction(0, 1)
+    assert cloud_events[0].duration_quarters == Fraction(1, 1)
+    assert cloud_events[1].onset_quarters == Fraction(2, 1)
+    assert cloud_events[1].duration_quarters == Fraction(2, 1)

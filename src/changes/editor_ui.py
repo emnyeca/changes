@@ -4,19 +4,16 @@ from __future__ import annotations
 
 import base64
 import functools
-import os
 import re
-import tempfile
 from pathlib import Path
 
 import streamlit as st
-import yaml
 
 from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
-from changes.library import delete_song, import_musicxml_bytes, list_songs, overwrite_song, save_song, SongEntry
-from changes.models.render_profile import RenderProfile
+from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
+from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -112,42 +109,8 @@ def _name_to_midi(name: str) -> int:
     pc = _NOTE_NAMES.index(note_part) if note_part in _NOTE_NAMES else 0
     return (int(oct_part) + 1) * 12 + pc
 
-# ── Render profile builder ────────────────────────────────────────────────────
+# settings_to_render_profile is imported from ui_pipeline
 
-def _settings_to_render_profile(s: AppSettings) -> RenderProfile:
-    cc = s.cloud_center_midi
-    bc = s.bass_center_midi
-    ch = s.chord_center_midi
-    return RenderProfile(
-        name="ui_custom",
-        voices=6,
-        voice_leading_strategy="minimum_motion",
-        bass_enabled=True,
-        bass_strategy="slash_or_root_in_window",
-        cloud_trigger_policy=s.cloud_trigger_policy,
-        bass_trigger_policy=s.bass_trigger_policy,
-        chord_trigger_policy=s.chord_trigger_policy,
-        cloud_min_midi=cc - 12,
-        cloud_max_midi=cc + 12,
-        chord_min_midi=ch - 12,
-        chord_max_midi=ch + 12,
-        bass_min_midi=bc,
-        bass_max_midi=bc + 11,
-    )
-
-# ── SongModel → playback data ─────────────────────────────────────────────────
-
-def _song_to_bars(song: SongModel) -> tuple[list[list[str]], list[dict]]:
-    """Extract chord_bars and bar_meta from a SongModel."""
-    bars: list[list[str]] = []
-    meta: list[dict] = []
-    for m in song.measures:
-        symbols = [h.symbol for h in m.harmony]
-        if symbols:
-            bars.append(symbols)
-            label = m.section_id.split("__OCC")[0] if m.section_id else "A"
-            meta.append({"section": label, "bar_in_section": m.number})
-    return bars, meta
 
 # ── Icon ──────────────────────────────────────────────────────────────────────
 
@@ -182,6 +145,9 @@ def _ss_init() -> None:
         ("editor_title", ""), ("editor_tempo", 120), ("meter_num", 4),
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
+        ("_compose_save_mode", None), ("_compose_save_pending", None),
+        ("_midi_update_candidates", None), ("_midi_update_unmatched", None),
+        ("_import_bundle_result", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -360,54 +326,14 @@ def _cell_strip(state: EditorState) -> str:
     return " ".join(parts) if parts else "▸  (empty)"
 
 
-# ── SYX export helper ─────────────────────────────────────────────────────────
+# ── SYX / pattern-count helpers (delegates to ui_pipeline) ───────────────────
 
 def _export_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
-    from changes.rendering.arrangement_renderer import render_arrangement
-    from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
-    from changes.digitone.planner import compile_timeline_to_digitone_plan
-    from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
-    from changes.models.digitone_target_profile import default_digitone_target_profile
-    from changes.digitone_backend import build_digitone_syx_from_events_yaml
-
-    rp = _settings_to_render_profile(settings)
-    tp = default_digitone_target_profile()
-    arrangement = render_arrangement(song, rp)
-    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-    plan = compile_timeline_to_digitone_plan(timeline, tp)
-    events_payload = digitone_compile_plan_to_events_yaml_payload(
-        plan, track_default_velocity=tp.track_default_velocity
-    )
-    yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
-    syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")
-    try:
-        os.close(syx_fd)
-        with os.fdopen(yaml_fd, "w") as f:
-            yaml.safe_dump(events_payload, f, allow_unicode=False, sort_keys=False)
-        build_digitone_syx_from_events_yaml(yaml_path, syx_path)
-        return Path(syx_path).read_bytes()
-    finally:
-        for p in (yaml_path, syx_path):
-            try:
-                os.unlink(p)
-            except OSError:
-                pass
+    return song_to_syx_bytes(song, settings)
 
 
 def _count_patterns(song: SongModel, settings: AppSettings) -> int:
-    try:
-        from changes.rendering.arrangement_renderer import render_arrangement
-        from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
-        from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-        from changes.models.digitone_target_profile import default_digitone_target_profile
-        rp = _settings_to_render_profile(settings)
-        tp = default_digitone_target_profile()
-        arrangement = render_arrangement(song, rp)
-        timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-        bundle_plan = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
-        return len(bundle_plan.patterns)
-    except Exception:
-        return 1
+    return count_auto_split_patterns(song, settings)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -416,6 +342,11 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
 
 def _render_songlist() -> None:
     entries: list[SongEntry] = st.session_state._library
+
+    # ── MIDI-only metadata update confirmation ────────────────────────────────
+    if st.session_state.get("_midi_update_candidates") is not None:
+        _render_midi_update_confirm()
+        return
 
     # ── Dirty warning (switching songs while Compose has unsaved edits) ────────
     pending = st.session_state.get("_pending_switch")
@@ -492,12 +423,14 @@ def _render_songlist() -> None:
             return f"{m.meter_numerator}/{m.meter_denominator}"
         return "—"
 
+    # Keep column dtypes stable even when filtered is empty; Streamlit data_editor
+    # rejects text column configs if pandas infers float dtype from empty data.
     orig_df = pd.DataFrame({
-        "Title": [e.title for e in filtered],
-        "Key":   [e.song.working_key or "" if e.song else "" for e in filtered],
-        "Tempo": [int(e.song.performance_tempo) if e.song else 0 for e in filtered],
-        "Meter": [_meter(e) for e in filtered],
-        "⚠":    ["⚠" if e.error else "" for e in filtered],
+        "Title": pd.Series([e.title for e in filtered], dtype="string"),
+        "Key":   pd.Series([e.song.working_key or "" if e.song else "" for e in filtered], dtype="string"),
+        "Tempo": pd.Series([int(e.song.performance_tempo) if e.song else 0 for e in filtered], dtype="Int64"),
+        "Meter": pd.Series([_meter(e) for e in filtered], dtype="string"),
+        "⚠":    pd.Series(["⚠" if e.error else "" for e in filtered], dtype="string"),
     })
 
     edited_df = st.data_editor(
@@ -548,25 +481,46 @@ def _render_songlist() -> None:
             st.session_state._delete_confirm = entry.path
             st.rerun()
 
-    # ── Import MusicXML ───────────────────────────────────────────────────────
+    # ── Import ────────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Import MusicXML")
+    st.subheader("Import")
+    st.caption("Accepts: .zip (iReal-musicxml), .musicxml, .xml, .mid, .midi — multiple files OK")
     uploaded = st.file_uploader(
-        "Upload MusicXML files", type=["musicxml", "xml", "mxl"],
-        accept_multiple_files=True, key="_sl_uploader",
+        "Upload files",
+        type=["zip", "musicxml", "xml", "mid", "midi"],
+        accept_multiple_files=True,
+        key="_sl_uploader",
     )
-    tempo_for_import = st.number_input("Default tempo for imported files", min_value=30, max_value=300, value=120, step=1)
+    tempo_for_import = st.number_input(
+        "Default tempo (used when MusicXML and MIDI have no tempo)",
+        min_value=30, max_value=300, value=120, step=1,
+    )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn"):
         _start_import(uploaded, int(tempo_for_import))
         st.rerun()
 
     # Show last import result
+    bundle_result = st.session_state.get("_import_bundle_result")
     result = st.session_state.get("_import_result")
     if result:
-        st.info(
-            f"**Import completed.**\n\nSuccess: {result['ok']}\nFailed: {len(result['failed'])}"
-            + ("\n\n**Failed files:**\n" + "\n".join(f"- {n}: {e}" for n, e in result["failed"]) if result["failed"] else "")
-        )
+        lines = [f"**Import completed.**\n\nSuccess: {result['ok']}  Failed: {len(result['failed'])}"]
+        if bundle_result is not None:
+            sc = bundle_result.tempo_source_counts
+            lines.append(
+                f"\n**Tempo source:**\n"
+                f"- MusicXML: {sc.get('musicxml', 0)}\n"
+                f"- MIDI fallback: {sc.get('midi', 0)}\n"
+                f"- Default: {sc.get('default', 0)}"
+            )
+            if bundle_result.warnings:
+                lines.append("\n**Warnings:**\n" + "\n".join(
+                    f"- {w.song_name}: {w.message}" for w in bundle_result.warnings[:20]
+                ))
+        if result["failed"]:
+            lines.append("\n**Failed:**\n" + "\n".join(
+                f"- {n}: {e}" for n, e in result["failed"]
+            ))
+        st.info("\n".join(lines))
 
 
 def _try_select_song(entry: SongEntry) -> None:
@@ -605,35 +559,119 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state._editor_dirty = False
 
 
+def _render_midi_update_confirm() -> None:
+    """Show before/after tempo for matched MIDI files and let user confirm update."""
+    candidates = st.session_state.get("_midi_update_candidates") or []
+    unmatched = st.session_state.get("_midi_update_unmatched") or []
+
+    st.subheader("MIDI Metadata Update")
+    if candidates:
+        st.write(f"**{len(candidates)} song(s) matched** — tempo will be updated:")
+        for c in candidates:
+            st.write(f"- **{c.matched_title}**: {c.old_tempo:.0f} → {c.new_tempo:.0f} BPM")
+    else:
+        st.warning("No matching songs found in library.")
+    if unmatched:
+        with st.expander(f"{len(unmatched)} unmatched / skipped"):
+            for fname, reason in unmatched:
+                st.write(f"- `{fname}`: {reason}")
+
+    mu1, mu2 = st.columns(2)
+    if mu1.button("全部更新", type="primary", key="_midi_upd_ok", disabled=not candidates):
+        _apply_midi_updates(candidates)
+        st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_unmatched = None
+        _refresh_library()
+        st.rerun()
+    if mu2.button("キャンセル", key="_midi_upd_cancel"):
+        st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_unmatched = None
+        st.rerun()
+
+
+def _apply_midi_updates(candidates: list) -> None:
+    import json
+    from fractions import Fraction as _Frac
+    from dataclasses import replace as _replace
+    from changes.models.song_model import song_model_from_dict
+
+    updated = 0
+    failed = []
+    for c in candidates:
+        try:
+            data = json.loads(c.matched_path.read_text(encoding="utf-8"))
+            song = song_model_from_dict(data)
+            song = _replace(song, performance_tempo=_Frac(c.new_tempo).limit_denominator(1000))
+            overwrite_song(c.matched_path, song)
+            updated += 1
+        except Exception as exc:
+            failed.append((c.matched_title, str(exc)))
+
+    if failed:
+        st.warning(f"Updated {updated}, failed {len(failed)}: " +
+                   ", ".join(t for t, _ in failed))
+    else:
+        st.success(f"{updated} song(s) updated.")
+
+
 def _start_import(files: list, tempo: int) -> None:
-    from changes.library import SongEntry, list_songs
+    from changes.importers.import_bundle import (
+        MIDI_EXTS,
+        MUSICXML_EXTS,
+        extract_zip,
+        find_midi_update_candidates,
+        import_files,
+    )
+    from changes.library import list_songs
+
     s = st.session_state._settings
     lib_path = Path(s.library_path)
+
+    # Read all uploaded bytes; separate ZIPs from direct files
+    file_data: dict[str, bytes] = {}
+    for f in files:
+        raw = f.read()
+        ext = Path(f.name).suffix.lower()
+        if ext == ".zip":
+            try:
+                file_data.update(extract_zip(raw))
+            except Exception as exc:
+                st.warning(f"ZIP extraction failed for {f.name}: {exc}")
+        else:
+            file_data[f.name] = raw
+
+    has_xml = any(Path(n).suffix.lower() in MUSICXML_EXTS for n in file_data)
+    has_mid = any(Path(n).suffix.lower() in MIDI_EXTS for n in file_data)
+
+    if not has_xml and has_mid:
+        # MIDI-only → metadata update flow
+        mid_files = {n: d for n, d in file_data.items()
+                     if Path(n).suffix.lower() in MIDI_EXTS}
+        candidates, unmatched = find_midi_update_candidates(mid_files, list_songs(lib_path))
+        st.session_state._midi_update_candidates = candidates
+        st.session_state._midi_update_unmatched = unmatched
+        st.session_state._import_bundle_result = None
+        return
+
+    # MusicXML (± MIDI) import
+    bundle_result = import_files(file_data, default_tempo=tempo)
+    st.session_state._import_bundle_result = bundle_result
+
+    pending = [(c.source_name, c.song) for c in bundle_result.songs]
     existing_titles = {e.title.lower() for e in list_songs(lib_path)}
 
-    pending = []
-    failed = []
-    for f in files:
-        try:
-            song = import_musicxml_bytes(f.name, f.read(), tempo=tempo)
-            pending.append((f.name, song))
-        except Exception as exc:
-            failed.append((f.name, str(exc)))
-
     st.session_state._import_pending = pending
-    st.session_state._import_pending_failed = failed
+    st.session_state._import_pending_failed = list(bundle_result.failed)
 
-    conflict_titles = [song.title for _, song in pending if song.title.lower() in existing_titles]
+    conflict_titles = [
+        song.title for _, song in pending if song.title.lower() in existing_titles
+    ]
     if conflict_titles:
         st.session_state._import_conflict_mode = "pending"
         st.session_state._import_conflict_titles = conflict_titles
     else:
         _do_import("keep_both")
         _refresh_library()
-        st.session_state._import_result = {
-            "ok": len(pending),
-            "failed": failed,
-        }
 
 
 def _do_import(mode: str) -> None:
@@ -645,15 +683,42 @@ def _do_import(mode: str) -> None:
     ok = 0
     for filename, song in pending:
         try:
-            if mode == "overwrite":
-                save_song(lib_path, song)
-            else:
-                save_song(lib_path, song)
+            save_song(lib_path, song, mode=mode)
             ok += 1
         except Exception as exc:
             failed.append((filename, str(exc)))
 
     st.session_state._import_result = {"ok": ok, "failed": failed}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Page: Compose — save helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _execute_compose_save(mode: str) -> None:
+    """Commit a pending Compose save with the chosen mode."""
+    song: SongModel | None = st.session_state.get("_compose_save_pending")
+    if song is None:
+        return
+    s = st.session_state._settings
+    lib_path = Path(s.library_path)
+    selected_path = st.session_state._selected_path
+
+    if mode == "update":
+        if selected_path is not None:
+            # Editing an existing song: overwrite its file directly
+            overwrite_song(selected_path, song)
+            path = selected_path
+        else:
+            # New composition whose title matches an existing song: find and overwrite it
+            path = save_song(lib_path, song, mode="overwrite")
+    else:
+        path = save_song(lib_path, song, mode="keep_both")
+
+    st.session_state._selected_path = path
+    st.session_state._editor_dirty = False
+    _refresh_library()
+    st.success(f"Saved: {path.name}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -664,6 +729,40 @@ def _render_compose() -> None:
     state: EditorState = st.session_state.editor
     s = st.session_state._settings
     lib_path = Path(s.library_path)
+
+    # ── Compose save confirmation dialog ─────────────────────────────────────
+    if st.session_state._compose_save_mode == "pending":
+        song = st.session_state._compose_save_pending
+        selected_path = st.session_state._selected_path
+        if selected_path is not None:
+            existing_title = next(
+                (e.title for e in st.session_state._library if e.path == selected_path),
+                selected_path.name,
+            )
+            st.warning(
+                f'**既存の曲 "{existing_title}" を編集しています。どのように保存しますか？**'
+            )
+        else:
+            st.warning(f'**同名の曲 "{song.title}" が既に存在します。どのように保存しますか？**')
+        csd1, csd2, csd3 = st.columns(3)
+        if csd1.button("更新する", type="primary", key="csd_update"):
+            st.session_state._compose_save_mode = "update"
+            st.rerun()
+        if csd2.button("両方保持する", key="csd_keep"):
+            st.session_state._compose_save_mode = "keep_both"
+            st.rerun()
+        if csd3.button("キャンセル", key="csd_cancel"):
+            st.session_state._compose_save_mode = None
+            st.session_state._compose_save_pending = None
+            st.rerun()
+        return
+
+    # Execute resolved Compose save
+    if st.session_state._compose_save_mode in ("update", "keep_both"):
+        _execute_compose_save(st.session_state._compose_save_mode)
+        st.session_state._compose_save_mode = None
+        st.session_state._compose_save_pending = None
+        st.rerun()
 
     # ── Row 1: Title / Tempo / Key + transpose ────────────────────────────────
     r1 = st.columns([4, 1, 2, 1, 1])
@@ -797,18 +896,29 @@ def _render_compose() -> None:
     # ── Save ──────────────────────────────────────────────────────────────────
     st.divider()
     if st.button("💾  Save", type="primary", use_container_width=True, key="compose_save"):
-        if state.cells:
+        if not state.cells:
+            st.warning("コードを入力してください")
+        else:
             try:
                 song = editor_to_song_model(state)
-                path = save_song(lib_path, song)
-                st.session_state._selected_path = path
-                st.session_state._editor_dirty = False
-                _refresh_library()
-                st.success(f"Saved: {path.name}")
+                selected_path = st.session_state._selected_path
+                existing_titles = {e.title.lower() for e in st.session_state._library}
+                needs_dialog = (
+                    selected_path is not None
+                    or song.title.lower() in existing_titles
+                )
+                if needs_dialog:
+                    st.session_state._compose_save_mode = "pending"
+                    st.session_state._compose_save_pending = song
+                    st.rerun()
+                else:
+                    path = save_song(lib_path, song, mode="keep_both")
+                    st.session_state._selected_path = path
+                    st.session_state._editor_dirty = False
+                    _refresh_library()
+                    st.success(f"Saved: {path.name}")
             except ValueError as exc:
                 st.error(f"変換エラー: {exc}")
-        else:
-            st.warning("コードを入力してください")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -843,12 +953,25 @@ def _render_settings() -> None:
         if new_cloud_midi != settings.cloud_center_midi:
             settings.cloud_center_midi = new_cloud_midi; changed = True
     with c3:
-        st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, 12, 11)}`")
-        st.caption(f"Voices 1-6 → Tracks {settings.cloud_track_base}–{settings.cloud_track_base+5}")
-    new_cloud_base = st.number_input("Track base (voice 1 → this track)", min_value=1, max_value=3,
-                                      value=settings.cloud_track_base, step=1, key="_s_cloud_base")
-    if int(new_cloud_base) != settings.cloud_track_base:
-        settings.cloud_track_base = int(new_cloud_base); changed = True
+        st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, 12, 12)}`")
+
+    # Per-voice track assignment (None = don't send)
+    _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 17)]
+    st.caption("Track per voice — select **None** to exclude that voice from output")
+    cloud_cols = st.columns(6)
+    new_cloud_tracks = list(settings.cloud_tracks[:6])
+    while len(new_cloud_tracks) < 6:
+        new_cloud_tracks.append(None)
+    for vi in range(6):
+        cur = new_cloud_tracks[vi]
+        idx = 0 if cur is None else cur
+        sel = cloud_cols[vi].selectbox(
+            f"V{vi + 1}", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
+            label_visibility="visible",
+        )
+        new_cloud_tracks[vi] = None if sel == "None" else int(sel)
+    if new_cloud_tracks != list(settings.cloud_tracks[:6]):
+        settings.cloud_tracks = new_cloud_tracks; changed = True
 
     st.divider()
 
@@ -872,23 +995,14 @@ def _render_settings() -> None:
     with b3:
         st.markdown(f"**Range:** `{_range_display(settings.bass_center_midi, 0, 11)}`")
     bt1, _ = st.columns(2)
-    new_bass_track = bt1.number_input("Track", min_value=1, max_value=16,
-                                       value=settings.bass_track, step=1, key="_s_bass_track")
-    if int(new_bass_track) != settings.bass_track:
-        settings.bass_track = int(new_bass_track); changed = True
+    cur_bass = settings.bass_track
+    bass_idx = 0 if cur_bass is None else cur_bass
+    new_bass_sel = bt1.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
+    new_bass_track: int | None = None if new_bass_sel == "None" else int(new_bass_sel)
+    if new_bass_track != settings.bass_track:
+        settings.bass_track = new_bass_track; changed = True
 
-    st.write("**Bass playback options**")
-    new_sw_en = st.checkbox("Switch root/fifth (switch_enabled)", value=settings.bass_switch_enabled,
-                             key="_s_bass_sw_en")
-    if new_sw_en != settings.bass_switch_enabled:
-        settings.bass_switch_enabled = new_sw_en; changed = True
-    if settings.bass_switch_enabled:
-        new_sw_every = st.number_input(
-            "Switch after N same notes (switch_every)", min_value=1, max_value=32,
-            value=settings.bass_switch_every, step=1, key="_s_bass_sw_ev"
-        )
-        if int(new_sw_every) != settings.bass_switch_every:
-            settings.bass_switch_every = int(new_sw_every); changed = True
+    st.caption("Bass Repeat Variation: planned")
 
     st.divider()
 
@@ -910,11 +1024,13 @@ def _render_settings() -> None:
         if new_chord_midi != settings.chord_center_midi:
             settings.chord_center_midi = new_chord_midi; changed = True
     with ch3:
-        st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 11)}`")
-    new_chord_track = st.number_input("Track", min_value=1, max_value=16,
-                                       value=settings.chord_track, step=1, key="_s_chord_track")
-    if int(new_chord_track) != settings.chord_track:
-        settings.chord_track = int(new_chord_track); changed = True
+        st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 12)}`")
+    cur_chord = settings.chord_track
+    chord_idx = 0 if cur_chord is None else cur_chord
+    new_chord_sel = st.selectbox("Track", _TRACK_OPTS, index=chord_idx, key="_s_chord_track")
+    new_chord_track: int | None = None if new_chord_sel == "None" else int(new_chord_sel)
+    if new_chord_track != settings.chord_track:
+        settings.chord_track = new_chord_track; changed = True
 
     st.divider()
 
@@ -928,10 +1044,33 @@ def _render_settings() -> None:
     # ── Library path ──────────────────────────────────────────────────────────
     st.divider()
     st.subheader("Library")
-    new_lib_path = st.text_input("Library folder", value=settings.library_path, key="_s_lib_path")
-    if new_lib_path != settings.library_path:
-        settings.library_path = new_lib_path; changed = True
-        _refresh_library()
+    lib_col, browse_col = st.columns([5, 1])
+    with lib_col:
+        new_lib_path = st.text_input("Library folder", value=settings.library_path, key="_s_lib_path")
+        if new_lib_path != settings.library_path:
+            settings.library_path = new_lib_path; changed = True
+            _refresh_library()
+    with browse_col:
+        st.write("")
+        if st.button("Browse…", key="_s_lib_browse", use_container_width=True):
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                root.wm_attributes("-topmost", 1)
+                folder = filedialog.askdirectory(
+                    title="Select Library Folder",
+                    initialdir=settings.library_path,
+                )
+                root.destroy()
+                if folder:
+                    settings.library_path = folder
+                    changed = True
+                    _refresh_library()
+                    st.rerun()
+            except Exception:
+                st.info("フォルダパスを直接入力してください")
 
     if changed:
         save_settings(settings)
@@ -964,15 +1103,12 @@ def _render_settings() -> None:
                 if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
                     with st.spinner("解析中…"):
                         try:
-                            from changes.rendering.arrangement_renderer import render_arrangement
-                            from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
                             from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-                            from changes.models.digitone_target_profile import default_digitone_target_profile
-                            rp = _settings_to_render_profile(settings)
-                            tp = default_digitone_target_profile()
-                            arrangement = render_arrangement(song, rp)
-                            timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-                            bp = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
+                            from changes.ui_pipeline import compile_song_for_ui
+                            compiled = compile_song_for_ui(song, settings)
+                            bp = compile_timeline_to_digitone_bundle_plan(
+                                compiled.song, compiled.timeline, compiled.target_profile
+                            )
                             st.json({
                                 "pattern_count": len(bp.patterns),
                                 "patterns": [
@@ -1043,7 +1179,7 @@ def _render_preview_send() -> None:
                 st.session_state._send_confirm = True
                 st.rerun()
             else:
-                _run_send(song, settings)
+                _run_send(song, settings, dest)
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -1054,131 +1190,170 @@ def _render_preview_send() -> None:
         if cc2.button("Send", type="primary", key="_send_conf_ok"):
             st.session_state._send_confirm = False
             if song:
-                _run_send(song, settings)
+                _run_send(song, settings, dest)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
-    from math import lcm
-    from changes.voicing import progression_to_voicings
-    from changes.voice_leading import generate_voice_leading
+    from changes.ui_pipeline import compile_song_for_ui
 
-    bars, _ = _song_to_bars(song)
-    if not bars:
-        st.warning("再生可能なコードがありません"); return
+    try:
+        compiled = compile_song_for_ui(song, settings)
+    except Exception as exc:
+        st.error(f"Pipeline error: {exc}")
+        return
 
-    raw_voicings = progression_to_voicings(bars)
-    voicings = generate_voice_leading(raw_voicings)
+    voice_to_track = compiled.target_profile.voice_to_track
+    tempo_bpm = float(compiled.timeline.performance_tempo)
 
-    event_counts = [len(b) for b in bars if b]
-    steps_per_bar = 1
-    for cnt in event_counts:
-        steps_per_bar = lcm(steps_per_bar, cnt)
+    def _q_to_sec(q):
+        return float(q) * 60.0 / tempo_bpm
 
-    events = []
-    for bi, bar in enumerate(bars):
-        dur = steps_per_bar // len(bar)
-        bar_start = bi * steps_per_bar + 1
-        for ci, chord in enumerate(bar):
-            events.append({"step": bar_start + ci*dur, "duration_steps": dur, "chord": chord})
+    # Build note schedule: (onset_sec, offset_sec, note_midi, midi_ch_0based, voice_id)
+    play_notes = []
+    for ev in compiled.timeline.events:
+        track = voice_to_track.get(ev.voice_id)
+        if track is None:
+            continue
+        play_notes.append((
+            _q_to_sec(ev.onset_quarters),
+            _q_to_sec(ev.onset_quarters + ev.duration_quarters),
+            ev.note_midi,
+            track - 1,
+            ev.voice_id,
+        ))
 
-    bass_notes: list[int] = []
-    for ev in events:
-        chord_str = str(ev["chord"])
-        root_str = chord_str.split("/")[-1] if "/" in chord_str else chord_str
-        m = re.match(r"^([A-G][#b]?)", root_str)
-        root_name = m.group(1) if m else "C"
-        pc = _ROOT_PC.get(root_name, 0)
-        b = settings.bass_center_midi + ((pc - settings.bass_center_midi % 12) % 12)
-        while b < settings.bass_center_midi:
-            b += 12
-        while b > settings.bass_center_midi + 11:
-            b -= 12
-        bass_notes.append(b)
+    if not play_notes:
+        st.warning("ルーティングされたノートがありません（全voiceがNone？）")
+        return
 
-    # Channel map: cloud → 1..6, bass → 7
-    n_voices = max(len(v) for v in voicings) if voicings else 0
-    channel_map = list(range(1, min(n_voices, 6) + 1)) + [settings.bass_track]
-    out_voicings = [list(v) + [bass_notes[i]] for i, v in enumerate(voicings[:len(events)])]
-
+    play_notes.sort(key=lambda n: n[0])
     port_name = "DEBUG" if "DEBUG" in dest else dest
 
     with st.spinner("Preview中…"):
         try:
-            logs = _send_preview_impl(out_voicings, events, int(song.performance_tempo),
-                                      port_name, channel_map)
+            logs = _send_pipeline_preview(play_notes, port_name)
             if port_name == "DEBUG" or logs:
-                st.code("\n".join(logs[:30]), language="text")
+                st.code("\n".join(logs[:60]), language="text")
         except Exception as exc:
             st.error(str(exc))
 
 
-def _send_preview_impl(voicings, events, tempo, port_name, channel_map) -> list[str]:
-    step_seconds = 60.0 / float(tempo)
-    logs: list[str] = []
-    count = min(len(events), len(voicings))
-
+def _send_pipeline_preview(
+    play_notes: list[tuple[float, float, int, int, str]],
+    port_name: str,
+) -> list[str]:
+    """Send note events from the compiled timeline, or log them in DEBUG mode."""
     if port_name == "DEBUG":
-        logs.append("Transport:start")
-        elapsed = 0.0
-        for i in range(count):
-            ev = events[i]
-            notes = voicings[i]
-            parts = [f"ch{channel_map[vi] if vi < len(channel_map) else vi+1}:{_midi_name(int(n))}" for vi, n in enumerate(notes)]
-            dur = step_seconds * int(ev["duration_steps"])
-            logs.append(f"t+{elapsed:.2f}s chord:{ev['chord']} [{' '.join(parts)}] dur:{dur:.2f}s")
-            elapsed += dur
+        logs = ["Transport:start"]
+        for onset, offset, note, ch, voice_id in play_notes:
+            dur = offset - onset
+            logs.append(
+                f"t+{onset:.2f}s  ch{ch+1}:{_midi_name(note)}  ({voice_id})  dur:{dur:.2f}s"
+            )
         logs.append("Transport:stop")
         return logs
 
+    import time
+    import mido
+
     try:
-        import time
-        import mido
         with mido.open_output(port_name) as out:
-            out.send(mido.Message("start"))
-            prev = None
-            try:
-                for i in range(count):
-                    ev = events[i]
-                    notes = voicings[i]
-                    for vi, note in enumerate(notes):
-                        ch = (channel_map[vi] if vi < len(channel_map) else 1) - 1
-                        if prev is not None and vi < len(prev) and int(prev[vi]) == int(note):
-                            continue
-                        out.send(mido.Message("note_on", note=int(note), velocity=80, channel=ch))
-                    time.sleep(step_seconds * int(ev["duration_steps"]))
-                    for vi, note in enumerate(notes):
-                        ch = (channel_map[vi] if vi < len(channel_map) else 1) - 1
-                        out.send(mido.Message("note_off", note=int(note), velocity=0, channel=ch))
-                    prev = notes
-            finally:
-                out.send(mido.Message("stop"))
-        return ["Preview sent."]
+            active: list[tuple[float, int, int]] = []
+            start = time.time()
+            idx = 0
+            while idx < len(play_notes) or active:
+                now = time.time() - start
+                # note_off for expired notes
+                still_active = []
+                for (off_sec, note, ch) in active:
+                    if now >= off_sec:
+                        out.send(mido.Message("note_off", note=note, velocity=0, channel=ch))
+                    else:
+                        still_active.append((off_sec, note, ch))
+                active = still_active
+                # note_on for notes due now
+                while idx < len(play_notes) and play_notes[idx][0] <= now:
+                    _, off_sec, note, ch, _ = play_notes[idx]
+                    out.send(mido.Message("note_on", note=note, velocity=80, channel=ch))
+                    active.append((off_sec, note, ch))
+                    idx += 1
+                time.sleep(0.02)
+        return ["Preview complete."]
     except Exception as exc:
         return [f"MIDI error: {exc}"]
 
 
-def _run_send(song: SongModel, settings: AppSettings) -> None:
+def _run_send(song: SongModel, settings: AppSettings, dest: str) -> None:
     with st.spinner("SysEx生成中…"):
         try:
             syx = _export_syx_bytes(song, settings)
             st.session_state._syx_bytes = syx
             st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
-            st.success("SysEx ready for download")
         except ModuleNotFoundError:
             st.error("digitone-syx-toolkit が必要です: `pip install -e ../digitone-syx-toolkit`")
+            return
         except Exception as exc:
             st.error(str(exc))
-    if "_syx_bytes" in st.session_state:
-        st.download_button(
-            "↓ Download .syx",
-            data=st.session_state._syx_bytes,
-            file_name=st.session_state.get("_syx_fname", "changes.syx"),
-            mime="application/octet-stream",
-            use_container_width=True,
-            key="_ps_syx_dl",
-        )
+            return
+
+    syx = st.session_state._syx_bytes
+    port_name = "DEBUG" if "DEBUG" in dest else dest
+
+    if port_name != "DEBUG":
+        with st.spinner(f"SysEx送信中 → {port_name}…"):
+            err = _send_syx_via_midi(syx, port_name)
+            if err:
+                st.error(err)
+            else:
+                st.success(f"Sent to {port_name}")
+    else:
+        st.info("Internal (DEBUG) — ダウンロードのみ")
+
+    st.download_button(
+        "↓ Download .syx",
+        data=syx,
+        file_name=st.session_state.get("_syx_fname", "changes.syx"),
+        mime="application/octet-stream",
+        use_container_width=True,
+        key="_ps_syx_dl",
+    )
+
+
+def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
+    """Send raw SysEx bytes to a MIDI output port. Returns error string or None."""
+    import time
+    try:
+        import mido
+    except ImportError:
+        return "mido がインストールされていません"
+
+    # Parse SysEx messages (F0 ... F7 sequences)
+    messages: list[list[int]] = []
+    i = 0
+    while i < len(syx_bytes):
+        if syx_bytes[i] == 0xF0:
+            try:
+                j = syx_bytes.index(0xF7, i)
+            except ValueError:
+                break
+            messages.append(list(syx_bytes[i + 1 : j]))
+            i = j + 1
+        else:
+            i += 1
+
+    if not messages:
+        return "SysExメッセージが見つかりませんでした"
+
+    try:
+        with mido.open_output(port_name) as out:
+            for data in messages:
+                out.send(mido.Message("sysex", data=data))
+                time.sleep(0.05)
+        return None
+    except Exception as exc:
+        return f"MIDI送信エラー: {exc}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

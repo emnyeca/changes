@@ -320,7 +320,7 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
 # Page: Songlist
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _render_songlist() -> None:
+def _render_songlist(show_import: bool = True) -> None:
     entries: list[SongEntry] = st.session_state._library
 
     # ── MIDI-only metadata update confirmation ────────────────────────────────
@@ -391,7 +391,7 @@ def _render_songlist() -> None:
         st.rerun()
 
     # ── Search ────────────────────────────────────────────────────────────────
-    search = st.text_input("Search songs", placeholder="Title…", label_visibility="collapsed", key="_sl_search")
+    search = st.text_input("Search songs", placeholder="Search With Title…", label_visibility="collapsed", key="_sl_search")
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
     # ── Song table ────────────────────────────────────────────────────────────
@@ -475,6 +475,11 @@ def _render_songlist() -> None:
 
     st.caption(f"{len(filtered)} song(s)")
 
+    if show_import:
+        _render_import_section()
+
+
+def _render_import_section() -> None:
     # ── Import ────────────────────────────────────────────────────────────────
     st.subheader("Import")
     uploaded = st.file_uploader(
@@ -484,7 +489,7 @@ def _render_songlist() -> None:
         key="_sl_uploader",
     )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn"):
-        _start_import(uploaded, int(tempo_for_import))
+        _start_import(uploaded)
         st.rerun()
 
     # Show last import result
@@ -942,49 +947,49 @@ def _render_settings() -> None:
 
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
-    with st.expander("Advanced"):
-        song = _playback_song()
-        if song:
-            adv1, adv2 = st.columns(2)
-            with adv1:
-                if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx"):
-                    with st.spinner("SYX生成中…"):
-                        try:
-                            syx = _export_syx_bytes(song, settings)
-                            st.session_state._syx_bytes = syx
-                            st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
-                            st.success("完了")
-                        except ModuleNotFoundError:
-                            st.error("digitone-syx-toolkit が必要です:\n`pip install -e ../digitone-syx-toolkit`")
-                        except Exception as exc:
-                            st.error(str(exc))
-                if "_syx_bytes" in st.session_state:
-                    st.download_button("↓ Download .syx", data=st.session_state._syx_bytes,
-                                       file_name=st.session_state.get("_syx_fname","changes.syx"),
-                                       mime="application/octet-stream", use_container_width=True,
-                                       key="_adv_syx_dl")
-            with adv2:
-                if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
-                    with st.spinner("解析中…"):
-                        try:
-                            from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-                            from changes.ui_pipeline import compile_song_for_ui
-                            compiled = compile_song_for_ui(song, settings)
-                            bp = compile_timeline_to_digitone_bundle_plan(
-                                compiled.song, compiled.timeline, compiled.target_profile
-                            )
-                            st.json({
-                                "pattern_count": len(bp.patterns),
-                                "patterns": [
-                                    {"name": p.pattern_name, "steps": p.total_steps, "section": p.section_label}
-                                    for p in bp.patterns
-                                ],
-                                "warnings": list(bp.warnings),
-                            })
-                        except Exception as exc:
-                            st.error(str(exc))
-        else:
-            st.caption("No song loaded. Select or compose a song first.")
+    st.subheader("Advanced")
+    song = _playback_song()
+    if song:
+        adv1, adv2 = st.columns(2)
+        with adv1:
+            if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx"):
+                with st.spinner("SYX生成中…"):
+                    try:
+                        syx = _export_syx_bytes(song, settings)
+                        st.session_state._syx_bytes = syx
+                        st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
+                        st.success("完了")
+                    except ModuleNotFoundError:
+                        st.error("digitone-syx-toolkit が必要です:\n`pip install -e ../digitone-syx-toolkit`")
+                    except Exception as exc:
+                        st.error(str(exc))
+            if "_syx_bytes" in st.session_state:
+                st.download_button("↓ Download .syx", data=st.session_state._syx_bytes,
+                                   file_name=st.session_state.get("_syx_fname","changes.syx"),
+                                   mime="application/octet-stream", use_container_width=True,
+                                   key="_adv_syx_dl")
+        with adv2:
+            if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
+                with st.spinner("解析中…"):
+                    try:
+                        from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+                        from changes.ui_pipeline import compile_song_for_ui
+                        compiled = compile_song_for_ui(song, settings)
+                        bp = compile_timeline_to_digitone_bundle_plan(
+                            compiled.song, compiled.timeline, compiled.target_profile
+                        )
+                        st.json({
+                            "pattern_count": len(bp.patterns),
+                            "patterns": [
+                                {"name": p.pattern_name, "steps": p.total_steps, "section": p.section_label}
+                                for p in bp.patterns
+                            ],
+                            "warnings": list(bp.warnings),
+                        })
+                    except Exception as exc:
+                        st.error(str(exc))
+    else:
+        st.caption("No song loaded. Select or compose a song first.")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -994,16 +999,18 @@ def _render_settings() -> None:
 def _render_main() -> None:
     _render_compose()
     st.divider()
-    _render_songlist()
+    _render_songlist(show_import=False)
     st.divider()
-    _render_settings()
+    with st.expander("Import / Settings", expanded=False):
+        _render_import_section()
+        st.divider()
+        _render_settings()
 
 
 def _render_preview_send() -> None:
     song = _playback_song()
     settings: AppSettings = st.session_state._settings
 
-    st.markdown("<div class='send-area'>", unsafe_allow_html=True)
     st.markdown("**Preview / Send**")
 
     # Auto split warning

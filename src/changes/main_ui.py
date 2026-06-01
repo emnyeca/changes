@@ -150,6 +150,8 @@ def _ss_init() -> None:
         ("_compose_save_mode", None), ("_compose_save_pending", None),
         ("_table_save_mode", None), ("_table_save_pending", None),
         ("_table_save_suppressed_signature", None),
+        ("_songlist_table_reset_token", 0),
+        ("_songlist_error_message", None),
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
     ]:
@@ -211,8 +213,8 @@ def _render_header() -> None:
     dirty_badge = ' <span style="color:#E07000;font-size:11px;">●</span>' if st.session_state._editor_dirty else ""
     html = (
         f'<div class="common-header">'
-        f'{_hdr_item("Song", title + dirty_badge)}'
-        f'{_hdr_item("Key", key)}'
+        f'{_hdr_item("Song", title)}'
+        f'{_hdr_item("Key", key + dirty_badge)}'
         f'{_hdr_item("Tempo", tempo)}'
         f'{_hdr_item("Meter", meter)}'
         f'</div>'
@@ -267,6 +269,8 @@ def _transpose_chord(symbol: str, semitones: int) -> str:
 def _transpose_state(state: EditorState, semitones: int) -> None:
     state._snapshot()
     state.cells = [_transpose_chord(c, semitones) for c in state.cells]
+    if state.working_key:
+        state.working_key = _transpose_root(state.working_key, semitones)
 
 
 def _normalize_token(raw: str) -> str:
@@ -325,6 +329,9 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _render_songlist(show_import: bool = True) -> None:
+    def _reset_song_table_view() -> None:
+        st.session_state._songlist_table_reset_token += 1
+
     entries: list[SongEntry] = st.session_state._library
     table_save_pending = st.session_state.get("_table_save_mode") == "pending"
     pending_switch = st.session_state.get("_pending_switch")
@@ -350,6 +357,10 @@ def _render_songlist(show_import: bool = True) -> None:
         st.rerun()
 
     # ── Search ────────────────────────────────────────────────────────────────
+    if st.session_state.get("_songlist_error_message"):
+        st.error(str(st.session_state._songlist_error_message))
+        st.session_state._songlist_error_message = None
+
     search = st.text_input(
         "Search songs",
         placeholder="Search With Title…",
@@ -389,13 +400,14 @@ def _render_songlist(show_import: bool = True) -> None:
         "Delete": pd.Series([False for _ in filtered], dtype="bool"),
     })
 
+    table_key = f"_sl_table_{int(st.session_state._songlist_table_reset_token)}"
     edited_df = st.data_editor(
         orig_df,
         hide_index=True,
         use_container_width=True,
         num_rows="fixed",
         disabled=ui_locked,
-        key="_sl_table",
+        key=table_key,
         column_config={
             "Select": st.column_config.CheckboxColumn("", width="small"),
             "Title": st.column_config.TextColumn("Title", width="large"),
@@ -459,20 +471,24 @@ def _render_songlist(show_import: bool = True) -> None:
                 or meter_val != old_meter
             ):
                 if not title_val:
-                    st.error("Title cannot be empty")
-                    return
+                    st.session_state._songlist_error_message = "Title cannot be empty"
+                    _reset_song_table_view()
+                    st.rerun()
                 if tempo_val < 30 or tempo_val > 300:
-                    st.error("Tempo must be between 30 and 300")
-                    return
+                    st.session_state._songlist_error_message = "Tempo must be between 30 and 300"
+                    _reset_song_table_view()
+                    st.rerun()
                 key_opts = {"", "C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"}
                 if key_val not in key_opts:
-                    st.error("Key must be one of: C, Db, D, Eb, E, F, F#, Gb, G, Ab, A, Bb, B")
-                    return
+                    st.session_state._songlist_error_message = "Key must be one of: C, Db, D, Eb, E, F, F#, Gb, G, Ab, A, Bb, B"
+                    _reset_song_table_view()
+                    st.rerun()
 
                 parsed_meter = _parse_meter(meter_val)
                 if parsed_meter is None:
-                    st.error("Meter must be in n/d format (e.g. 4/4) with denominator 2, 4, or 8")
-                    return
+                    st.session_state._songlist_error_message = "Meter must be in n/d format (e.g. 4/4) with denominator 2, 4, or 8"
+                    _reset_song_table_view()
+                    st.rerun()
 
                 meter_num, meter_den = parsed_meter
                 changed_fields: list[tuple[str, str, str]] = []
@@ -545,6 +561,7 @@ def _render_songlist(show_import: bool = True) -> None:
                 st.session_state._table_save_suppressed_signature = pending.get("signature")
                 st.session_state._table_save_mode = None
                 st.session_state._table_save_pending = None
+                _reset_song_table_view()
                 st.rerun()
     elif pending_switch is not None:
         st.warning(
@@ -886,6 +903,7 @@ def _execute_table_save(mode: str) -> None:
 
 def _render_compose() -> None:
     state: EditorState = st.session_state.editor
+    has_selected_song = st.session_state.get("_selected_path") is not None
     s = st.session_state._settings
     lib_path = Path(s.library_path)
 
@@ -893,12 +911,13 @@ def _render_compose() -> None:
     r1 = st.columns([1, 1,])
     with r1[0]:
         st.write("")
-        if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone"):
-            _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
+        if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone", disabled=not has_selected_song):
+            _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
+        
     with r1[1]:
         st.write("")
-        if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone"):
-            _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
+        if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone", disabled=not has_selected_song):
+            _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
 
     # ── Cell display ───────────────────────────────────────────────────────────
     st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)
@@ -1121,6 +1140,7 @@ def _render_main() -> None:
 
 def _render_preview_send() -> None:
     song = _playback_song()
+    has_selected_song = st.session_state.get("_selected_path") is not None
     settings: AppSettings = st.session_state._settings
 
     st.markdown("**Preview / Send**")
@@ -1143,7 +1163,7 @@ def _render_preview_send() -> None:
         st.caption("⚠ Hardware write confirmation is OFF (see Settings)")
 
     # Destination
-    ports = ["Internal (DEBUG)"]
+    ports = ["(Select MIDI Port Destination)"]
     try:
         import mido
         ports += mido.get_output_names()
@@ -1155,7 +1175,7 @@ def _render_preview_send() -> None:
 
     # Preview (Realtime MIDI)
     with ps1:
-        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview"):
+        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=not has_selected_song):
             if not song:
                 st.warning("No song loaded")
             else:
@@ -1163,7 +1183,7 @@ def _render_preview_send() -> None:
 
     # Send SysEx
     with ps2:
-        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send"):
+        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=not has_selected_song):
             if not song:
                 st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:

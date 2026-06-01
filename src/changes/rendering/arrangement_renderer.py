@@ -20,6 +20,7 @@ from changes.models.rendered_arrangement import (
 from changes.models.song_model import HarmonyEvent, SongModel
 from changes.voice_leading import generate_voice_leading
 from changes.voicing import progression_to_voicings
+from changes.no_chord import is_no_chord_symbol
 
 
 def _collect_harmony_events(song: SongModel) -> list[tuple[HarmonyEvent, Fraction, Fraction]]:
@@ -48,21 +49,34 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
     active_profile = profile if profile is not None else default_render_profile()
 
     harmony_events = _collect_harmony_events(song)
-    progression = [h.symbol for h, _onset, _duration in harmony_events]
-    raw_cloud_voicings = progression_to_voicings(_to_bars(song))
+    playable_events = [
+        (harmony, onset, duration)
+        for harmony, onset, duration in harmony_events
+        if not is_no_chord_symbol(harmony.symbol)
+    ]
+    progression = [h.symbol for h, _onset, _duration in playable_events]
+
+    if not progression:
+        return RenderedArrangement(
+            title=song.title or "Untitled",
+            performance_tempo=song.performance_tempo,
+            occurrences=tuple(),
+        )
+
+    raw_cloud_voicings = progression_to_voicings([progression])
     cloud_voicings = generate_voice_leading(
         raw_cloud_voicings,
         min_midi=active_profile.cloud_min_midi,
         max_midi=active_profile.cloud_max_midi,
     )
 
-    if len(cloud_voicings) != len(harmony_events):
+    if len(cloud_voicings) != len(playable_events):
         raise ValueError("voicing count does not match harmony events")
 
     rendered_occurrences: list[RenderedHarmonyOccurrence] = []
 
     for index, ((harmony, onset, duration), cloud_notes_source) in enumerate(
-        zip(harmony_events, cloud_voicings)
+        zip(playable_events, cloud_voicings)
     ):
         core = parse_chord_core(harmony.symbol)
         resolved = resolve_scale_collection_with_retry_details(progression, index)

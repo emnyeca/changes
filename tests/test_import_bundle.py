@@ -321,6 +321,29 @@ def test_import_zip_tempo_source_counts() -> None:
     assert sc.get("default", 0) == 2
 
 
+def test_import_zip_accepts_no_chord_harmony_without_failure() -> None:
+        nc_xml = b"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<score-partwise version=\"4.0\">
+    <part-list><score-part id=\"P1\"><part-name>Music</part-name></score-part></part-list>
+    <part id=\"P1\">
+        <measure number=\"1\">
+            <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+            <harmony><kind text=\"N.C.\">none</kind></harmony>
+            <harmony><root><root-step>C</root-step></root><kind text=\"7\">dominant</kind></harmony>
+        </measure>
+    </part>
+</score-partwise>
+"""
+        zb = _make_zip({"nc-case.musicxml": nc_xml})
+
+        result = import_zip(zb)
+
+        assert len(result.failed) == 0
+        assert len(result.songs) == 1
+        harmony_symbols = [h.symbol for m in result.songs[0].song.measures for h in m.harmony]
+        assert harmony_symbols == ["N.C.", "C7"]
+
+
 # ── import_zip vs real sample ─────────────────────────────────────────────────
 
 # blues-50.zip is gitignored (real song data). Copy it to

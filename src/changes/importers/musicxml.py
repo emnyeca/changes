@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 from changes.chord_parser import ChordSymbolCore, parse_chord_core
 from changes.models.song_model import HarmonyEvent, Measure, SongModel
 from changes.note import pitch_class_to_semitone, semitone_to_pitch_class
+from changes.no_chord import is_no_chord_symbol
 
 
 @dataclass(frozen=True)
@@ -26,7 +27,8 @@ class RawMusicXMLDegree:
 
 @dataclass(frozen=True)
 class ImportedHarmonyEvent:
-    chord: ChordSymbolCore
+    symbol: str
+    chord: ChordSymbolCore | None
     source_order_in_measure: int
     source_position_quarters: Fraction | None
     raw_kind_value: str | None
@@ -125,6 +127,12 @@ def _contains_text(haystack: str | None, needle: str) -> bool:
     if haystack is None:
         return False
     return needle.lower() in haystack.lower()
+
+
+def _is_no_chord_harmony(kind_value: str | None, kind_text: str | None) -> bool:
+    if (kind_value or "").strip().lower() == "none":
+        return True
+    return is_no_chord_symbol(kind_text)
 
 
 def _classify_quality(
@@ -341,6 +349,26 @@ def _parse_harmony_event(
     kind_value = _text(kind)
     kind_text = None if kind is None else kind.attrib.get("text")
 
+    raw_degrees = _parse_degrees(harmony)
+
+    offset = _text(_first(harmony, "offset"))
+    source_position_quarters = cursor_quarters
+    if offset is not None:
+        source_position_quarters = cursor_quarters + Fraction(_parse_int(offset), divisions)
+
+    if _is_no_chord_harmony(kind_value, kind_text):
+        return ImportedHarmonyEvent(
+            symbol="N.C.",
+            chord=None,
+            source_order_in_measure=order_in_measure,
+            source_position_quarters=source_position_quarters,
+            raw_kind_value=kind_value,
+            raw_kind_text=kind_text,
+            raw_degrees=raw_degrees,
+            raw_root=None,
+            raw_bass=None,
+        )
+
     root = _first(harmony, "root")
     root_token = _pc_token(_text(_first(root, "root-step")), _text(_first(root, "root-alter")))
     if root_token is None:
@@ -352,7 +380,6 @@ def _parse_harmony_event(
     bass_name = None if bass_token is None else bass_token[0]
     bass_pc = None if bass_token is None else bass_token[1]
 
-    raw_degrees = _parse_degrees(harmony)
     canonical_quality = _classify_quality(kind_value, kind_text, raw_degrees)
 
     chord = _build_chord_core(
@@ -363,12 +390,8 @@ def _parse_harmony_event(
         slash_bass_pc=bass_pc,
     )
 
-    offset = _text(_first(harmony, "offset"))
-    source_position_quarters = cursor_quarters
-    if offset is not None:
-        source_position_quarters = cursor_quarters + Fraction(_parse_int(offset), divisions)
-
     return ImportedHarmonyEvent(
+        symbol=chord.symbol,
         chord=chord,
         source_order_in_measure=order_in_measure,
         source_position_quarters=source_position_quarters,
@@ -603,7 +626,7 @@ def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int
             harmony.append(
                 HarmonyEvent(
                     id=f"m{measure_index}_h{event_index}",
-                    symbol=event.chord.symbol,
+                    symbol=event.symbol,
                     measure_number=measure_index,
                     offset_quarters=offset,
                     duration_quarters=duration,

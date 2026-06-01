@@ -226,10 +226,10 @@ def test_plain_gm7_in_500_miles_high_phrase_may_fall_back_to_dominant_blues():
     resolved = resolve_scale_collection_with_retry_details(progression, 2, circular=True)
     output = extract_output_chord_tone_set("Gm7", resolved.selected_collection)
 
-    assert resolved.retry_level == "current+previous+next"
-    assert resolved.selected_collection.family == "dominant_blues"
-    assert resolved.selected_collection.name == "G_dominant_blues"
-    assert output == (7, 11, 2, 4, 5, 10)  # G, B, D, E, F, A#
+    assert resolved.retry_level == "current+next"
+    assert resolved.selected_collection.family == "diatonic_dorian"
+    assert resolved.selected_collection.name == "G_dorian_diatonic"
+    assert output == (7, 10, 2, 4, 5, 9)  # G, A#, D, E, F, A
 
 
 @pytest.mark.parametrize("symbol", ["Cmaj7", "Cm7", "Cm", "Cm9"])
@@ -272,20 +272,46 @@ def test_output_chord_tone_names_for_a7_over_c_use_dominant_blues_extraction():
     assert output == ("A", "C#", "E", "F#", "G", "C")
 
 
+def test_a7_d_d7_prefers_prev_current_non_blues_over_full_context_dominant_blues():
+    progression = ["A7", "D", "D7"]
+
+    resolved = resolve_scale_collection_with_retry_details(progression, 1, circular=True)
+    output = extract_output_chord_tone_set("D", resolved.selected_collection)
+
+    assert resolved.retry_level == "current+previous"
+    assert resolved.selected_collection.family == "diatonic_dorian"
+    assert resolved.selected_collection.name == "E_dorian_diatonic"
+    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "C#", "D", "E", "F#", "G"]
+    assert _pcs_to_names(output) == ["A", "B", "C#", "D", "E", "F#"]
+
+
+def test_a7_d7_g7_prefers_current_next_when_both_pair_contexts_remain_dominant_blues():
+    progression = ["A7", "D7", "G7"]
+
+    resolved = resolve_scale_collection_with_retry_details(progression, 1, circular=True)
+    output = extract_output_chord_tone_set("D7", resolved.selected_collection)
+
+    assert resolved.retry_level == "current+next"
+    assert resolved.selected_collection.family == "dominant_blues"
+    assert resolved.selected_collection.name == "D_dominant_blues"
+    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "C", "D", "F", "F#", "G"]
+    assert _pcs_to_names(output) == ["A", "B", "C", "D", "F", "F#"]
+
+
 def test_minor_ii_v_e7sharp9_may_fall_back_to_dominant_blues_without_eligibility_gate():
     progression = ["Bm7b5", "E7#9", "Am7"]
 
     resolved = resolve_scale_collection_with_retry_details(progression, 1, circular=True)
     output = extract_output_chord_tone_set("E7#9", resolved.selected_collection)
 
-    assert resolved.retry_level == "current+previous+next"
-    assert resolved.selected_collection.family == "dominant_blues"
-    assert resolved.selected_collection.name == "D_dominant_blues"
+    assert resolved.retry_level == "current+previous"
+    assert resolved.selected_collection.family == "harmonic_minor"
+    assert resolved.selected_collection.name == "A_harmonic_minor"
     assert resolved.selected_collection.family != "diminished"
-    assert _pcs_to_names(output) == ["B", "C#", "D", "E", "G", "G#"]
+    assert _pcs_to_names(output) == ["B", "C", "D", "E", "F", "G#"]
     assert _pcs_to_names(resolved.color_hint_pitch_classes) == ["G"]
     assert resolved.color_hints_applied_to_constraint_set is False
-    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "C", "D", "E", "F", "G", "G#"]
+    assert _pcs_to_names(resolved.final_local_pitch_collection_used_for_selection) == ["A", "B", "D", "E", "F", "G#"]
 
 
 def test_standalone_e7sharp9_applies_color_hints_on_current_only_attempt():

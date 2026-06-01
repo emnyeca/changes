@@ -623,7 +623,12 @@ def resolve_scale_collection_with_retry_details(
     last_error: UnsupportedHarmonicContextError | None = None
     current_color_hints = color_hint_pitch_classes(symbols[index])
 
-    for _label, indices, include_color_hints in attempts:
+    def _attempt_resolution(
+        label: str,
+        indices: tuple[int, ...],
+        *,
+        include_color_hints: bool,
+    ) -> RetryResolution:
         local: set[int] = set()
         hard_used: set[int] = set()
         for i in indices:
@@ -633,17 +638,68 @@ def resolve_scale_collection_with_retry_details(
         if include_color_hints:
             local.update(current_color_hints)
         local_frozen = frozenset(local)
+        selected = select_scale_collection(symbols[index], local_frozen)
+        return RetryResolution(
+            local_pitch_collection=local_frozen,
+            selected_collection=selected,
+            retry_level=label,
+            hard_context_pitch_classes_used=frozenset(hard_used),
+            color_hint_pitch_classes=current_color_hints,
+            color_hints_applied_to_constraint_set=include_color_hints and bool(current_color_hints),
+            final_local_pitch_collection_used_for_selection=local_frozen,
+        )
+
+    def _dominant_blues_refinement(
+        dominant_resolution: RetryResolution,
+    ) -> RetryResolution | None:
+        if dominant_resolution.selected_collection.family != "dominant_blues":
+            return None
+        if prev_idx is None or next_idx is None:
+            return None
+
+        left_resolution: RetryResolution | None = None
+        right_resolution: RetryResolution | None = None
+
         try:
-            selected = select_scale_collection(symbols[index], local_frozen)
-            return RetryResolution(
-                local_pitch_collection=local_frozen,
-                selected_collection=selected,
-                retry_level=_label,
-                hard_context_pitch_classes_used=frozenset(hard_used),
-                color_hint_pitch_classes=current_color_hints,
-                color_hints_applied_to_constraint_set=include_color_hints and bool(current_color_hints),
-                final_local_pitch_collection_used_for_selection=local_frozen,
+            left_resolution = _attempt_resolution(
+                "current+previous",
+                (index, prev_idx),
+                include_color_hints=False,
             )
+        except UnsupportedHarmonicContextError:
+            left_resolution = None
+
+        try:
+            right_resolution = _attempt_resolution(
+                "current+next",
+                (index, next_idx),
+                include_color_hints=False,
+            )
+        except UnsupportedHarmonicContextError:
+            right_resolution = None
+
+        if left_resolution is not None and left_resolution.selected_collection.family != "dominant_blues":
+            return left_resolution
+        if right_resolution is not None and right_resolution.selected_collection.family != "dominant_blues":
+            return right_resolution
+        if right_resolution is not None:
+            return right_resolution
+        if left_resolution is not None:
+            return left_resolution
+        return None
+
+    for _label, indices, include_color_hints in attempts:
+        try:
+            resolved = _attempt_resolution(
+                _label,
+                indices,
+                include_color_hints=include_color_hints,
+            )
+            if _label in {"current+previous+next", "current+previous"}:
+                refined = _dominant_blues_refinement(resolved)
+                if refined is not None:
+                    return refined
+            return resolved
         except UnsupportedHarmonicContextError as exc:
             last_error = exc
 

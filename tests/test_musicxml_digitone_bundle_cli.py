@@ -156,10 +156,10 @@ def test_500_miles_high_measure3_gm7_may_fall_back_to_dominant_blues(tmp_path: P
         if o["measure_number"] == "3" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "Gm7"
     )
 
-    assert gm7["retry_level"] == "current+previous+next"
-    assert gm7["selected_collection_family"] == "dominant_blues"
-    assert gm7["selected_collection_name"] == "G_dominant_blues"
-    assert gm7["output_chord_tone_set"] == ["G", "B", "D", "E", "F", "A#"]
+    assert gm7["retry_level"] == "current+next"
+    assert gm7["selected_collection_family"] == "diatonic_dorian"
+    assert gm7["selected_collection_name"] == "G_dorian_diatonic"
+    assert gm7["output_chord_tone_set"] == ["G", "A#", "D", "E", "F", "A"]
 
 
 def test_500_miles_high_measure8_e7sharp9_may_fall_back_to_dominant_blues(tmp_path: Path, monkeypatch):
@@ -184,13 +184,13 @@ def test_500_miles_high_measure8_e7sharp9_may_fall_back_to_dominant_blues(tmp_pa
         if o["measure_number"] == "8" and o["event_order_in_measure"] == 1 and o["canonical_chord_symbol"] == "E7#9"
     )
 
-    assert e7s9["retry_level"] == "current+previous+next"
-    assert e7s9["selected_collection_family"] == "dominant_blues"
-    assert e7s9["selected_collection_name"] == "D_dominant_blues"
-    assert e7s9["output_chord_tone_set"] == ["E", "G#", "B", "C#", "D", "G"]
+    assert e7s9["retry_level"] == "current+previous"
+    assert e7s9["selected_collection_family"] == "harmonic_minor"
+    assert e7s9["selected_collection_name"] == "A_harmonic_minor"
+    assert e7s9["output_chord_tone_set"] == ["E", "G#", "B", "C", "D", "F"]
     assert e7s9["color_hint_pitch_classes"] == ["G"]
     assert e7s9["color_hints_applied_to_constraint_set"] is False
-    assert e7s9["final_local_pitch_collection_used_for_selection"] == ["C", "D", "E", "F", "G", "G#", "A", "B"]
+    assert e7s9["final_local_pitch_collection_used_for_selection"] == ["D", "E", "F", "G#", "A", "B"]
 
 
 def test_unresolved_context_may_resolve_via_dominant_blues_fallback(tmp_path: Path, monkeypatch):

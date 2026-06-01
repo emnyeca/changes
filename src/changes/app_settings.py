@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import Any
 
 LIBRARY_PATH = Path.home() / "EUBChanges" / "library"
-SETTINGS_PATH = LIBRARY_PATH / ".eub_changes_settings.json"
+# Settings are stored in a fixed user-level location independent of library_path,
+# so changing the library folder does not orphan the settings file.
+SETTINGS_PATH = Path.home() / ".eub_changes_settings.json"
 
 
 @dataclass

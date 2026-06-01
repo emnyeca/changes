@@ -543,6 +543,32 @@ def load_musicxml_song(path: str | Path) -> ImportedSong:
     return import_musicxml_text(src.read_text(encoding="utf-8"))
 
 
+def extract_musicxml_tempo(xml_text: str) -> float | None:
+    """Return the first BPM value found in a MusicXML document, or None.
+
+    Searches for <sound tempo="..."/> attributes inside <direction> elements.
+    <metronome> support is planned for a future version.
+    """
+    try:
+        root = ET.fromstring(xml_text)
+    except ET.ParseError:
+        return None
+    part = _first(root, "part")
+    if part is None:
+        return None
+    for measure in _children(part, "measure"):
+        for direction in _children(measure, "direction"):
+            sound = _first(direction, "sound")
+            if sound is not None:
+                tempo_str = sound.attrib.get("tempo")
+                if tempo_str:
+                    try:
+                        return float(tempo_str)
+                    except ValueError:
+                        pass
+    return None
+
+
 def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int | str = 120) -> SongModel:
     meter = imported.initial_time_signature or {"beats": 4, "beat_type": 4}
     beats = int(meter.get("beats", 4))

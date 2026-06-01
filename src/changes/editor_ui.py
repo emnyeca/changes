@@ -11,7 +11,7 @@ import streamlit as st
 
 from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
-from changes.library import SongEntry, delete_song, import_musicxml_bytes, list_songs, overwrite_song, save_song
+from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
 
@@ -146,6 +146,8 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
+        ("_midi_update_candidates", None), ("_midi_update_unmatched", None),
+        ("_import_bundle_result", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -341,6 +343,11 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
 def _render_songlist() -> None:
     entries: list[SongEntry] = st.session_state._library
 
+    # ── MIDI-only metadata update confirmation ────────────────────────────────
+    if st.session_state.get("_midi_update_candidates") is not None:
+        _render_midi_update_confirm()
+        return
+
     # ── Dirty warning (switching songs while Compose has unsaved edits) ────────
     pending = st.session_state.get("_pending_switch")
     if pending is not None:
@@ -474,25 +481,46 @@ def _render_songlist() -> None:
             st.session_state._delete_confirm = entry.path
             st.rerun()
 
-    # ── Import MusicXML ───────────────────────────────────────────────────────
+    # ── Import ────────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Import MusicXML")
+    st.subheader("Import")
+    st.caption("Accepts: .zip (iReal-musicxml), .musicxml, .xml, .mid, .midi — multiple files OK")
     uploaded = st.file_uploader(
-        "Upload MusicXML files", type=["musicxml", "xml", "mxl"],
-        accept_multiple_files=True, key="_sl_uploader",
+        "Upload files",
+        type=["zip", "musicxml", "xml", "mid", "midi"],
+        accept_multiple_files=True,
+        key="_sl_uploader",
     )
-    tempo_for_import = st.number_input("Default tempo for imported files", min_value=30, max_value=300, value=120, step=1)
+    tempo_for_import = st.number_input(
+        "Default tempo (used when MusicXML and MIDI have no tempo)",
+        min_value=30, max_value=300, value=120, step=1,
+    )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn"):
         _start_import(uploaded, int(tempo_for_import))
         st.rerun()
 
     # Show last import result
+    bundle_result = st.session_state.get("_import_bundle_result")
     result = st.session_state.get("_import_result")
     if result:
-        st.info(
-            f"**Import completed.**\n\nSuccess: {result['ok']}\nFailed: {len(result['failed'])}"
-            + ("\n\n**Failed files:**\n" + "\n".join(f"- {n}: {e}" for n, e in result["failed"]) if result["failed"] else "")
-        )
+        lines = [f"**Import completed.**\n\nSuccess: {result['ok']}  Failed: {len(result['failed'])}"]
+        if bundle_result is not None:
+            sc = bundle_result.tempo_source_counts
+            lines.append(
+                f"\n**Tempo source:**\n"
+                f"- MusicXML: {sc.get('musicxml', 0)}\n"
+                f"- MIDI fallback: {sc.get('midi', 0)}\n"
+                f"- Default: {sc.get('default', 0)}"
+            )
+            if bundle_result.warnings:
+                lines.append("\n**Warnings:**\n" + "\n".join(
+                    f"- {w.song_name}: {w.message}" for w in bundle_result.warnings[:20]
+                ))
+        if result["failed"]:
+            lines.append("\n**Failed:**\n" + "\n".join(
+                f"- {n}: {e}" for n, e in result["failed"]
+            ))
+        st.info("\n".join(lines))
 
 
 def _try_select_song(entry: SongEntry) -> None:
@@ -531,35 +559,119 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state._editor_dirty = False
 
 
+def _render_midi_update_confirm() -> None:
+    """Show before/after tempo for matched MIDI files and let user confirm update."""
+    candidates = st.session_state.get("_midi_update_candidates") or []
+    unmatched = st.session_state.get("_midi_update_unmatched") or []
+
+    st.subheader("MIDI Metadata Update")
+    if candidates:
+        st.write(f"**{len(candidates)} song(s) matched** — tempo will be updated:")
+        for c in candidates:
+            st.write(f"- **{c.matched_title}**: {c.old_tempo:.0f} → {c.new_tempo:.0f} BPM")
+    else:
+        st.warning("No matching songs found in library.")
+    if unmatched:
+        with st.expander(f"{len(unmatched)} unmatched / skipped"):
+            for fname, reason in unmatched:
+                st.write(f"- `{fname}`: {reason}")
+
+    mu1, mu2 = st.columns(2)
+    if mu1.button("全部更新", type="primary", key="_midi_upd_ok", disabled=not candidates):
+        _apply_midi_updates(candidates)
+        st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_unmatched = None
+        _refresh_library()
+        st.rerun()
+    if mu2.button("キャンセル", key="_midi_upd_cancel"):
+        st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_unmatched = None
+        st.rerun()
+
+
+def _apply_midi_updates(candidates: list) -> None:
+    import json
+    from fractions import Fraction as _Frac
+    from dataclasses import replace as _replace
+    from changes.models.song_model import song_model_from_dict
+
+    updated = 0
+    failed = []
+    for c in candidates:
+        try:
+            data = json.loads(c.matched_path.read_text(encoding="utf-8"))
+            song = song_model_from_dict(data)
+            song = _replace(song, performance_tempo=_Frac(c.new_tempo).limit_denominator(1000))
+            overwrite_song(c.matched_path, song)
+            updated += 1
+        except Exception as exc:
+            failed.append((c.matched_title, str(exc)))
+
+    if failed:
+        st.warning(f"Updated {updated}, failed {len(failed)}: " +
+                   ", ".join(t for t, _ in failed))
+    else:
+        st.success(f"{updated} song(s) updated.")
+
+
 def _start_import(files: list, tempo: int) -> None:
+    from changes.importers.import_bundle import (
+        MIDI_EXTS,
+        MUSICXML_EXTS,
+        extract_zip,
+        find_midi_update_candidates,
+        import_files,
+    )
     from changes.library import list_songs
+
     s = st.session_state._settings
     lib_path = Path(s.library_path)
+
+    # Read all uploaded bytes; separate ZIPs from direct files
+    file_data: dict[str, bytes] = {}
+    for f in files:
+        raw = f.read()
+        ext = Path(f.name).suffix.lower()
+        if ext == ".zip":
+            try:
+                file_data.update(extract_zip(raw))
+            except Exception as exc:
+                st.warning(f"ZIP extraction failed for {f.name}: {exc}")
+        else:
+            file_data[f.name] = raw
+
+    has_xml = any(Path(n).suffix.lower() in MUSICXML_EXTS for n in file_data)
+    has_mid = any(Path(n).suffix.lower() in MIDI_EXTS for n in file_data)
+
+    if not has_xml and has_mid:
+        # MIDI-only → metadata update flow
+        mid_files = {n: d for n, d in file_data.items()
+                     if Path(n).suffix.lower() in MIDI_EXTS}
+        candidates, unmatched = find_midi_update_candidates(mid_files, list_songs(lib_path))
+        st.session_state._midi_update_candidates = candidates
+        st.session_state._midi_update_unmatched = unmatched
+        st.session_state._import_bundle_result = None
+        return
+
+    # MusicXML (± MIDI) import
+    bundle_result = import_files(file_data, default_tempo=tempo)
+    st.session_state._import_bundle_result = bundle_result
+
+    pending = [(c.source_name, c.song) for c in bundle_result.songs]
     existing_titles = {e.title.lower() for e in list_songs(lib_path)}
 
-    pending = []
-    failed = []
-    for f in files:
-        try:
-            song = import_musicxml_bytes(f.name, f.read(), tempo=tempo)
-            pending.append((f.name, song))
-        except Exception as exc:
-            failed.append((f.name, str(exc)))
-
     st.session_state._import_pending = pending
-    st.session_state._import_pending_failed = failed
+    st.session_state._import_pending_failed = list(bundle_result.failed)
 
-    conflict_titles = [song.title for _, song in pending if song.title.lower() in existing_titles]
+    conflict_titles = [
+        song.title for _, song in pending if song.title.lower() in existing_titles
+    ]
     if conflict_titles:
         st.session_state._import_conflict_mode = "pending"
         st.session_state._import_conflict_titles = conflict_titles
     else:
         _do_import("keep_both")
         _refresh_library()
-        st.session_state._import_result = {
-            "ok": len(pending),
-            "failed": failed,
-        }
 
 
 def _do_import(mode: str) -> None:

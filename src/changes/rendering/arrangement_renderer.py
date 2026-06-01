@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from fractions import Fraction
 
-from changes.chord_engine import construct_chord_pitch_classes
+from changes.chord_engine import ChordConstructionResult, construct_chord_pitch_classes
 from changes.chord_parser import parse_chord_core
 from changes.chord_realization import ChordRegisterPolicy, realize_chord_register
-from changes.harmonic_context import resolve_scale_collection_with_retry_details
+from changes.harmonic_context import extract_output_chord_tone_set, resolve_scale_collection_with_retry_details
 from changes.models.render_profile import RenderProfile, default_render_profile
 from changes.models.rendered_arrangement import (
     RenderedArrangement,
@@ -21,6 +21,36 @@ from changes.models.song_model import HarmonyEvent, SongModel
 from changes.voice_leading import generate_voice_leading
 from changes.voicing import progression_to_voicings
 from changes.no_chord import is_no_chord_symbol
+
+
+def _construction_from_fixed_output(
+    *,
+    source_symbol: str,
+    root_pc: int,
+    normalized_quality: str,
+    selected_collection_pitch_classes: tuple[int, ...],
+    final_pitch_classes: tuple[int, ...],
+    reason: str,
+) -> ChordConstructionResult:
+    return ChordConstructionResult(
+        source_symbol=source_symbol,
+        root_pc=root_pc,
+        normalized_quality=normalized_quality,
+        selected_collection_pitch_classes=selected_collection_pitch_classes,
+        mandatory_intervals=tuple(),
+        mandatory_pitch_classes=tuple(),
+        automatic_excluded_intervals=tuple(),
+        automatic_tension_intervals=tuple(),
+        automatic_tension_pitch_classes=tuple(),
+        final_pitch_classes=final_pitch_classes,
+        diagnostics=(
+            f"source_symbol={source_symbol}",
+            f"normalized_quality={normalized_quality}",
+            f"selected_collection_pitch_classes={selected_collection_pitch_classes}",
+            f"final_pitch_classes={final_pitch_classes}",
+            f"construction_strategy={reason}",
+        ),
+    )
 
 
 def _collect_harmony_events(song: SongModel) -> list[tuple[HarmonyEvent, Fraction, Fraction]]:
@@ -82,7 +112,21 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
         resolved = resolve_scale_collection_with_retry_details(progression, index)
         selected_pitch_classes = tuple(sorted(resolved.selected_collection.pitch_classes))
 
-        construction = construct_chord_pitch_classes(core, selected_pitch_classes)
+        if resolved.selected_collection.family == "dominant_blues":
+            fixed_output_pitch_classes = extract_output_chord_tone_set(
+                harmony.symbol,
+                resolved.selected_collection,
+            )
+            construction = _construction_from_fixed_output(
+                source_symbol=core.symbol,
+                root_pc=core.root_pc,
+                normalized_quality=core.normalized_quality,
+                selected_collection_pitch_classes=selected_pitch_classes,
+                final_pitch_classes=fixed_output_pitch_classes,
+                reason="dominant_blues_extracted_output",
+            )
+        else:
+            construction = construct_chord_pitch_classes(core, selected_pitch_classes)
         realization = realize_chord_register(
             construction,
             register_policy=ChordRegisterPolicy(

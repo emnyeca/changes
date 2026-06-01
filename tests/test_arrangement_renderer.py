@@ -36,6 +36,32 @@ def _minimal_cmaj7_song() -> SongModel:
     )
 
 
+def _minimal_a7_over_c_song() -> SongModel:
+    return SongModel(
+        title="DominantBlues",
+        working_key="A",
+        performance_tempo=Fraction(120, 1),
+        measures=(
+            Measure(
+                number=1,
+                section_id="A",
+                meter_numerator=4,
+                meter_denominator=4,
+                absolute_start_quarters=Fraction(0, 1),
+                harmony=(
+                    HarmonyEvent(
+                        id="h1",
+                        symbol="A7/C",
+                        measure_number=1,
+                        offset_quarters=Fraction(0, 1),
+                        duration_quarters=Fraction(4, 1),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
 def test_render_arrangement_single_cmaj7_occurrence_chord_layer_shape():
     song = _minimal_cmaj7_song()
 
@@ -90,3 +116,18 @@ def test_render_arrangement_roundtrip_via_dict_serialization():
     restored = rendered_arrangement_from_dict(as_dict)
 
     assert restored == arrangement
+
+
+def test_render_arrangement_chord_layer_uses_dominant_blues_extraction_for_a7_over_c():
+    arrangement = render_arrangement(_minimal_a7_over_c_song())
+
+    occ = arrangement.occurrences[0]
+    assert occ.chord is not None
+    chord = occ.chord
+
+    # Dominant blues extraction is 1,3,5,6,b7,#9 -> A,C#,E,F#,G,C.
+    assert chord.source_pitch_classes == (9, 1, 4, 6, 7, 0)
+    realized_pitch_classes = {note % 12 for note in chord.realized_midi_notes}
+    assert realized_pitch_classes == {9, 1, 4, 6, 7, 0}
+    assert 0 in realized_pitch_classes  # #9 (C)
+    assert 11 not in realized_pitch_classes  # 9 (B)

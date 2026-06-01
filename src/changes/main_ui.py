@@ -406,10 +406,12 @@ def _render_songlist() -> None:
     # Keep column dtypes stable even when filtered is empty; Streamlit data_editor
     # rejects text column configs if pandas infers float dtype from empty data.
     orig_df = pd.DataFrame({
+        "Select": pd.Series([st.session_state._selected_path == e.path for e in filtered], dtype="bool"),
         "Title": pd.Series([e.title+"⚠" if e.error else e.title for e in filtered], dtype="string"),
         "Key":   pd.Series([e.song.working_key or "" if e.song else "" for e in filtered], dtype="string"),
         "Tempo": pd.Series([int(e.song.performance_tempo) if e.song else 0 for e in filtered], dtype="Int64"),
         "Meter": pd.Series([_meter(e) for e in filtered], dtype="string"),
+        "Delete": pd.Series([False for _ in filtered], dtype="bool"),
     })
 
     edited_df = st.data_editor(
@@ -419,13 +421,40 @@ def _render_songlist() -> None:
         num_rows="fixed",
         key="_sl_table",
         column_config={
+            "Select": st.column_config.CheckboxColumn("", width="small"),
             "Title": st.column_config.TextColumn("Title", width="large"),
             "Key":   st.column_config.TextColumn("Key", width="small"),
             "Tempo": st.column_config.NumberColumn("Tempo", disabled=True, width="small"),
             "Meter": st.column_config.TextColumn("Meter", disabled=True, width="small"),
-            "⚠":    st.column_config.TextColumn("", disabled=True, width="small"),
+            "Delete": st.column_config.CheckboxColumn("🗑", width="small"),
         },
     )
+
+    # Table-integrated single-row select (radio-like)
+    selected_rows = [i for i in range(len(edited_df)) if bool(edited_df.at[i, "Select"])]
+    if selected_rows:
+        # Prefer a newly selected row when multiple rows are checked.
+        newly_selected = [
+            i for i in selected_rows
+            if i < len(orig_df) and (not bool(orig_df.at[i, "Select"]))
+        ]
+        target_idx = (newly_selected[-1] if newly_selected else selected_rows[0])
+        if 0 <= target_idx < len(filtered):
+            target_entry = filtered[target_idx]
+            if st.session_state._selected_path != target_entry.path:
+                _try_select_song(target_entry)
+                st.rerun()
+
+    # Table-integrated delete action (rightmost column)
+    delete_rows = [
+        i for i in range(len(edited_df))
+        if bool(edited_df.at[i, "Delete"]) and (i < len(orig_df) and not bool(orig_df.at[i, "Delete"]))
+    ]
+    if delete_rows:
+        delete_idx = delete_rows[-1]
+        if 0 <= delete_idx < len(filtered):
+            st.session_state._delete_confirm = filtered[delete_idx].path
+            st.rerun()
 
     # Persist inline edits (Title / Key)
     for i, entry in enumerate(filtered):
@@ -444,35 +473,15 @@ def _render_songlist() -> None:
             _refresh_library()
             st.rerun()
 
-    # ── Row actions ───────────────────────────────────────────────────────────
     st.caption(f"{len(filtered)} song(s)")
-    for i, entry in enumerate(filtered):
-        c1, c2, c3 = st.columns([6, 1, 1])
-        c1.markdown(
-            f"{'**→ ' if st.session_state._selected_path == entry.path else ''}"
-            f"{entry.title}"
-            f"{'** ✓' if st.session_state._selected_path == entry.path else ''}"
-        )
-        if c2.button("Select", key=f"sl_sel_{i}"):
-            _try_select_song(entry)
-            st.rerun()
-        if c3.button("🗑", key=f"sl_del_{i}", help=f'Delete "{entry.title}"'):
-            st.session_state._delete_confirm = entry.path
-            st.rerun()
 
     # ── Import ────────────────────────────────────────────────────────────────
-    st.divider()
     st.subheader("Import")
-    st.caption("Accepts: .zip (iReal-musicxml), .musicxml, .xml, .mid, .midi — multiple files OK")
     uploaded = st.file_uploader(
-        "Upload files",
+        "Accepts: .zip (iReal-musicxml), .musicxml, .xml / .mid, .midi is for tempo metadata only",
         type=["zip", "musicxml", "xml", "mid", "midi"],
         accept_multiple_files=True,
         key="_sl_uploader",
-    )
-    tempo_for_import = st.number_input(
-        "Default tempo (used when MusicXML and MIDI have no tempo)",
-        min_value=30, max_value=300, value=120, step=1,
     )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn"):
         _start_import(uploaded, int(tempo_for_import))
@@ -613,7 +622,7 @@ def _apply_midi_updates(candidates: list) -> None:
         st.success(f"{updated} song(s) updated.")
 
 
-def _start_import(files: list, tempo: int) -> None:
+def _start_import(files: list) -> None:
     from changes.importers.import_bundle import (
         MIDI_EXTS,
         MUSICXML_EXTS,
@@ -658,7 +667,7 @@ def _start_import(files: list, tempo: int) -> None:
     st.session_state._midi_update_kept = None
     st.session_state._midi_update_unmatched = None
 
-    bundle_result = import_files(file_data, default_tempo=tempo)
+    bundle_result = import_files(file_data, default_tempo=120)
     st.session_state._import_bundle_result = bundle_result
 
     pending = [(c.source_name, c.song) for c in bundle_result.songs]

@@ -416,12 +416,14 @@ def _render_songlist() -> None:
             return f"{m.meter_numerator}/{m.meter_denominator}"
         return "—"
 
+    # Keep column dtypes stable even when filtered is empty; Streamlit data_editor
+    # rejects text column configs if pandas infers float dtype from empty data.
     orig_df = pd.DataFrame({
-        "Title": [e.title for e in filtered],
-        "Key":   [e.song.working_key or "" if e.song else "" for e in filtered],
-        "Tempo": [int(e.song.performance_tempo) if e.song else 0 for e in filtered],
-        "Meter": [_meter(e) for e in filtered],
-        "⚠":    ["⚠" if e.error else "" for e in filtered],
+        "Title": pd.Series([e.title for e in filtered], dtype="string"),
+        "Key":   pd.Series([e.song.working_key or "" if e.song else "" for e in filtered], dtype="string"),
+        "Tempo": pd.Series([int(e.song.performance_tempo) if e.song else 0 for e in filtered], dtype="Int64"),
+        "Meter": pd.Series([_meter(e) for e in filtered], dtype="string"),
+        "⚠":    pd.Series(["⚠" if e.error else "" for e in filtered], dtype="string"),
     })
 
     edited_df = st.data_editor(

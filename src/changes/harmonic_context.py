@@ -185,19 +185,6 @@ def _family_rank(family: str) -> int:
     return 99
 
 
-def _dominant_blues_eligible(core: ChordSymbolCore, local_pitch_collection: set[int] | frozenset[int]) -> bool:
-    if core.normalized_quality not in {"7", "9", "13"}:
-        return False
-
-    dominant_hard_tones = {(core.root_pc + interval) % 12 for interval in (0, 4, 7, 10)}
-    if not dominant_hard_tones.issubset(local_pitch_collection):
-        return False
-
-    flat_three = (core.root_pc + 3) % 12
-    natural_three = (core.root_pc + 4) % 12
-    return flat_three in local_pitch_collection and natural_three in local_pitch_collection
-
-
 def _normalized_modifiers(core: ChordSymbolCore) -> tuple[str, ...]:
     parts: set[str] = set()
     parts.update(f"ext:{x}" for x in core.extensions)
@@ -559,8 +546,6 @@ def select_scale_collection(symbol: str, local_pitch_collection: set[int] | froz
         if candidate.family in _SYMMETRIC_COLLECTION_FAMILIES:
             if not allows_symmetric_collection_for_current_chord(core, candidate.family):
                 continue
-        if candidate.family == "dominant_blues" and not _dominant_blues_eligible(core, local):
-            continue
         if candidate.requires_signature_root_match and candidate.anchor_root_pc != core.root_pc:
             continue
         candidates.append(candidate)

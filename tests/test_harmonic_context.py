@@ -11,6 +11,7 @@ from changes.harmonic_context import (
     extract_output_chord_tone_set,
     hard_context_pitch_classes,
     normalized_harmonic_identity,
+    output_chord_tone_names,
     resolve_scale_collection_with_retry,
     resolve_scale_collection_with_retry_details,
     select_scale_collection,
@@ -251,6 +252,30 @@ def test_altered_dominant_remains_eligible_for_symmetric_collection():
     diminished_only_local = frozenset({0, 1, 3, 4, 6, 7, 9, 10})
     selected = select_scale_collection("C7b9", diminished_only_local)
     assert selected.family == "diminished"
+
+
+def test_a7_over_c_is_not_unsupported_in_blues_context():
+    progression = ["A7/C"]
+
+    local, selected = resolve_scale_collection_with_retry(progression, 0, circular=True)
+
+    assert _pcs_to_names(local) == ["A", "C", "C#", "E", "G"]
+    assert selected.family == "dominant_blues"
+
+
+def test_a7_over_c_local_collection_resolves_to_dominant_blues():
+    local = frozenset({9, 0, 1, 4, 7})  # A, C, C#, E, G
+
+    selected = select_scale_collection("A7/C", local)
+
+    assert selected.family == "dominant_blues"
+    assert selected.name == "A_dominant_blues"
+
+
+def test_output_chord_tone_names_for_a7_over_c_use_dominant_blues_extraction():
+    output = output_chord_tone_names("A7/C", ["A7/C"], 0)
+
+    assert output == ("A", "C#", "E", "F#", "G", "C")
 
 
 def test_minor_ii_v_e7sharp9_prefers_harmonic_minor_on_current_plus_previous():

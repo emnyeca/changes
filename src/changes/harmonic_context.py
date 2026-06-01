@@ -88,6 +88,7 @@ EXTRACTION_HEPTATONIC = "heptatonic_1351379"
 EXTRACTION_WHOLE_TONE = "whole_tone_13sharp11sharp5b79"
 EXTRACTION_DIM_HALF_WHOLE = "dim_half_whole_1b3b56b7b9"
 EXTRACTION_DIM_WHOLE_HALF = "dim_whole_half_1b3b5679"
+EXTRACTION_DOMINANT_BLUES = "dominant_blues_1356b7sharp9"
 
 _HEPTATONIC_DEGREE_INDEXES = (0, 2, 4, 5, 6, 1)
 
@@ -179,7 +180,22 @@ def _family_rank(family: str) -> int:
         return 4
     if family == "diminished":
         return 5
+    if family == "dominant_blues":
+        return 6
     return 99
+
+
+def _dominant_blues_eligible(core: ChordSymbolCore, local_pitch_collection: set[int] | frozenset[int]) -> bool:
+    if core.normalized_quality not in {"7", "9", "13"}:
+        return False
+
+    dominant_hard_tones = {(core.root_pc + interval) % 12 for interval in (0, 4, 7, 10)}
+    if not dominant_hard_tones.issubset(local_pitch_collection):
+        return False
+
+    flat_three = (core.root_pc + 3) % 12
+    natural_three = (core.root_pc + 4) % 12
+    return flat_three in local_pitch_collection and natural_three in local_pitch_collection
 
 
 def _normalized_modifiers(core: ChordSymbolCore) -> tuple[str, ...]:
@@ -320,6 +336,19 @@ def _all_scale_collections() -> tuple[ScaleCollection, ...]:
                 intervals_from_anchor=(0, 2, 3, 5, 6, 8, 9, 11),
                 extraction_rule=EXTRACTION_DIM_WHOLE_HALF,
                 requires_signature_root_match=True,
+            )
+        )
+
+    # Priority 6: Dominant blues fallback collections.
+    for root in range(12):
+        out.append(
+            _collection_from_intervals(
+                name=f"{semitone_to_pitch_class(root)}_dominant_blues",
+                family="dominant_blues",
+                priority=6,
+                anchor_root_pc=root,
+                intervals_from_anchor=(0, 2, 3, 4, 5, 6, 7, 9, 10),
+                extraction_rule=EXTRACTION_DOMINANT_BLUES,
             )
         )
 
@@ -530,6 +559,8 @@ def select_scale_collection(symbol: str, local_pitch_collection: set[int] | froz
         if candidate.family in _SYMMETRIC_COLLECTION_FAMILIES:
             if not allows_symmetric_collection_for_current_chord(core, candidate.family):
                 continue
+        if candidate.family == "dominant_blues" and not _dominant_blues_eligible(core, local):
+            continue
         if candidate.requires_signature_root_match and candidate.anchor_root_pc != core.root_pc:
             continue
         candidates.append(candidate)
@@ -661,6 +692,8 @@ def extract_output_chord_tone_set(symbol: str, selected_collection: ScaleCollect
         intervals = (0, 3, 6, 9, 10, 1)
     elif selected_collection.extraction_rule == EXTRACTION_DIM_WHOLE_HALF:
         intervals = (0, 3, 6, 9, 11, 2)
+    elif selected_collection.extraction_rule == EXTRACTION_DOMINANT_BLUES:
+        intervals = (0, 4, 7, 9, 10, 3)
     else:
         raise UnsupportedHarmonicContextError(
             f"Unknown extraction rule {selected_collection.extraction_rule} for {selected_collection.name}"

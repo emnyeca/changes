@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
+from typing import Literal
 
 from changes.models.song_model import SongModel, song_model_from_dict, song_model_to_dict
 
@@ -39,19 +40,32 @@ def _load_entry(path: Path) -> SongEntry:
         return SongEntry(path=path, title=stem, song=None, error=str(exc))
 
 
-def save_song(library: Path, song: SongModel) -> Path:
-    """Save SongModel to library. Overwrites if same title already exists."""
+def save_song(
+    library: Path,
+    song: SongModel,
+    *,
+    mode: Literal["keep_both", "overwrite"] = "keep_both",
+) -> Path:
+    """Save SongModel to library.
+
+    mode="overwrite": scan the library for an existing song with the same title;
+        overwrite that file. If none found, fall through to a fresh deduplicated path.
+    mode="keep_both": never touch existing files; always write to a fresh path,
+        appending (2), (3) … to avoid collisions.
+    """
     library.mkdir(parents=True, exist_ok=True)
+    if mode == "overwrite":
+        for p in sorted(library.glob(f"*{SONG_SUFFIX}")):
+            try:
+                existing = song_model_from_dict(json.loads(p.read_text(encoding="utf-8")))
+                if existing.title == song.title:
+                    _write(p, song)
+                    return p
+            except Exception:
+                continue
+    # keep_both, or overwrite found no match: write to a fresh deduplicated path
     base = _safe_filename(song.title)
     path = library / f"{base}{SONG_SUFFIX}"
-    if path.exists():
-        try:
-            existing = song_model_from_dict(json.loads(path.read_text(encoding="utf-8")))
-            if existing.title == song.title:
-                _write(path, song)
-                return path
-        except Exception:
-            pass
     if not path.exists():
         _write(path, song)
         return path

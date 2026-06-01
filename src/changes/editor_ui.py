@@ -4,19 +4,16 @@ from __future__ import annotations
 
 import base64
 import functools
-import os
 import re
-import tempfile
 from pathlib import Path
 
 import streamlit as st
-import yaml
 
 from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
-from changes.library import delete_song, import_musicxml_bytes, list_songs, overwrite_song, save_song, SongEntry
-from changes.models.render_profile import RenderProfile
+from changes.library import SongEntry, delete_song, import_musicxml_bytes, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
+from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -112,28 +109,7 @@ def _name_to_midi(name: str) -> int:
     pc = _NOTE_NAMES.index(note_part) if note_part in _NOTE_NAMES else 0
     return (int(oct_part) + 1) * 12 + pc
 
-# ── Render profile builder ────────────────────────────────────────────────────
-
-def _settings_to_render_profile(s: AppSettings) -> RenderProfile:
-    cc = s.cloud_center_midi
-    bc = s.bass_center_midi
-    ch = s.chord_center_midi
-    return RenderProfile(
-        name="ui_custom",
-        voices=6,
-        voice_leading_strategy="minimum_motion",
-        bass_enabled=True,
-        bass_strategy="slash_or_root_in_window",
-        cloud_trigger_policy=s.cloud_trigger_policy,
-        bass_trigger_policy=s.bass_trigger_policy,
-        chord_trigger_policy=s.chord_trigger_policy,
-        cloud_min_midi=cc - 12,
-        cloud_max_midi=cc + 12,
-        chord_min_midi=ch - 12,
-        chord_max_midi=ch + 12,
-        bass_min_midi=bc,
-        bass_max_midi=bc + 11,
-    )
+# settings_to_render_profile is imported from ui_pipeline
 
 # ── SongModel → playback data ─────────────────────────────────────────────────
 
@@ -182,6 +158,7 @@ def _ss_init() -> None:
         ("editor_title", ""), ("editor_tempo", 120), ("meter_num", 4),
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
+        ("_compose_save_mode", None), ("_compose_save_pending", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -360,54 +337,14 @@ def _cell_strip(state: EditorState) -> str:
     return " ".join(parts) if parts else "▸  (empty)"
 
 
-# ── SYX export helper ─────────────────────────────────────────────────────────
+# ── SYX / pattern-count helpers (delegates to ui_pipeline) ───────────────────
 
 def _export_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
-    from changes.rendering.arrangement_renderer import render_arrangement
-    from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
-    from changes.digitone.planner import compile_timeline_to_digitone_plan
-    from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
-    from changes.models.digitone_target_profile import default_digitone_target_profile
-    from changes.digitone_backend import build_digitone_syx_from_events_yaml
-
-    rp = _settings_to_render_profile(settings)
-    tp = default_digitone_target_profile()
-    arrangement = render_arrangement(song, rp)
-    timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-    plan = compile_timeline_to_digitone_plan(timeline, tp)
-    events_payload = digitone_compile_plan_to_events_yaml_payload(
-        plan, track_default_velocity=tp.track_default_velocity
-    )
-    yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
-    syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")
-    try:
-        os.close(syx_fd)
-        with os.fdopen(yaml_fd, "w") as f:
-            yaml.safe_dump(events_payload, f, allow_unicode=False, sort_keys=False)
-        build_digitone_syx_from_events_yaml(yaml_path, syx_path)
-        return Path(syx_path).read_bytes()
-    finally:
-        for p in (yaml_path, syx_path):
-            try:
-                os.unlink(p)
-            except OSError:
-                pass
+    return song_to_syx_bytes(song, settings)
 
 
 def _count_patterns(song: SongModel, settings: AppSettings) -> int:
-    try:
-        from changes.rendering.arrangement_renderer import render_arrangement
-        from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
-        from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-        from changes.models.digitone_target_profile import default_digitone_target_profile
-        rp = _settings_to_render_profile(settings)
-        tp = default_digitone_target_profile()
-        arrangement = render_arrangement(song, rp)
-        timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-        bundle_plan = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
-        return len(bundle_plan.patterns)
-    except Exception:
-        return 1
+    return count_auto_split_patterns(song, settings)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -606,7 +543,7 @@ def _load_song_into_editor(song: SongModel) -> None:
 
 
 def _start_import(files: list, tempo: int) -> None:
-    from changes.library import SongEntry, list_songs
+    from changes.library import list_songs
     s = st.session_state._settings
     lib_path = Path(s.library_path)
     existing_titles = {e.title.lower() for e in list_songs(lib_path)}
@@ -645,15 +582,37 @@ def _do_import(mode: str) -> None:
     ok = 0
     for filename, song in pending:
         try:
-            if mode == "overwrite":
-                save_song(lib_path, song)
-            else:
-                save_song(lib_path, song)
+            save_song(lib_path, song, mode=mode)
             ok += 1
         except Exception as exc:
             failed.append((filename, str(exc)))
 
     st.session_state._import_result = {"ok": ok, "failed": failed}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Page: Compose — save helpers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _execute_compose_save(mode: str) -> None:
+    """Commit a pending Compose save with the chosen mode."""
+    song: SongModel | None = st.session_state.get("_compose_save_pending")
+    if song is None:
+        return
+    s = st.session_state._settings
+    lib_path = Path(s.library_path)
+    selected_path = st.session_state._selected_path
+
+    if mode == "update" and selected_path is not None:
+        overwrite_song(selected_path, song)
+        path = selected_path
+    else:
+        path = save_song(lib_path, song, mode="keep_both")
+
+    st.session_state._selected_path = path
+    st.session_state._editor_dirty = False
+    _refresh_library()
+    st.success(f"Saved: {path.name}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -664,6 +623,40 @@ def _render_compose() -> None:
     state: EditorState = st.session_state.editor
     s = st.session_state._settings
     lib_path = Path(s.library_path)
+
+    # ── Compose save confirmation dialog ─────────────────────────────────────
+    if st.session_state._compose_save_mode == "pending":
+        song = st.session_state._compose_save_pending
+        selected_path = st.session_state._selected_path
+        if selected_path is not None:
+            existing_title = next(
+                (e.title for e in st.session_state._library if e.path == selected_path),
+                selected_path.name,
+            )
+            st.warning(
+                f'**既存の曲 "{existing_title}" を編集しています。どのように保存しますか？**'
+            )
+        else:
+            st.warning(f'**同名の曲 "{song.title}" が既に存在します。どのように保存しますか？**')
+        csd1, csd2, csd3 = st.columns(3)
+        if csd1.button("更新する", type="primary", key="csd_update"):
+            st.session_state._compose_save_mode = "update"
+            st.rerun()
+        if csd2.button("両方保持する", key="csd_keep"):
+            st.session_state._compose_save_mode = "keep_both"
+            st.rerun()
+        if csd3.button("キャンセル", key="csd_cancel"):
+            st.session_state._compose_save_mode = None
+            st.session_state._compose_save_pending = None
+            st.rerun()
+        return
+
+    # Execute resolved Compose save
+    if st.session_state._compose_save_mode in ("update", "keep_both"):
+        _execute_compose_save(st.session_state._compose_save_mode)
+        st.session_state._compose_save_mode = None
+        st.session_state._compose_save_pending = None
+        st.rerun()
 
     # ── Row 1: Title / Tempo / Key + transpose ────────────────────────────────
     r1 = st.columns([4, 1, 2, 1, 1])
@@ -797,18 +790,29 @@ def _render_compose() -> None:
     # ── Save ──────────────────────────────────────────────────────────────────
     st.divider()
     if st.button("💾  Save", type="primary", use_container_width=True, key="compose_save"):
-        if state.cells:
+        if not state.cells:
+            st.warning("コードを入力してください")
+        else:
             try:
                 song = editor_to_song_model(state)
-                path = save_song(lib_path, song)
-                st.session_state._selected_path = path
-                st.session_state._editor_dirty = False
-                _refresh_library()
-                st.success(f"Saved: {path.name}")
+                selected_path = st.session_state._selected_path
+                existing_titles = {e.title.lower() for e in st.session_state._library}
+                needs_dialog = (
+                    selected_path is not None
+                    or song.title.lower() in existing_titles
+                )
+                if needs_dialog:
+                    st.session_state._compose_save_mode = "pending"
+                    st.session_state._compose_save_pending = song
+                    st.rerun()
+                else:
+                    path = save_song(lib_path, song, mode="keep_both")
+                    st.session_state._selected_path = path
+                    st.session_state._editor_dirty = False
+                    _refresh_library()
+                    st.success(f"Saved: {path.name}")
             except ValueError as exc:
                 st.error(f"変換エラー: {exc}")
-        else:
-            st.warning("コードを入力してください")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -844,11 +848,24 @@ def _render_settings() -> None:
             settings.cloud_center_midi = new_cloud_midi; changed = True
     with c3:
         st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, 12, 11)}`")
-        st.caption(f"Voices 1-6 → Tracks {settings.cloud_track_base}–{settings.cloud_track_base+5}")
-    new_cloud_base = st.number_input("Track base (voice 1 → this track)", min_value=1, max_value=3,
-                                      value=settings.cloud_track_base, step=1, key="_s_cloud_base")
-    if int(new_cloud_base) != settings.cloud_track_base:
-        settings.cloud_track_base = int(new_cloud_base); changed = True
+
+    # Per-voice track assignment (None = don't send)
+    _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 17)]
+    st.caption("Track per voice — select **None** to exclude that voice from output")
+    cloud_cols = st.columns(6)
+    new_cloud_tracks = list(settings.cloud_tracks[:6])
+    while len(new_cloud_tracks) < 6:
+        new_cloud_tracks.append(None)
+    for vi in range(6):
+        cur = new_cloud_tracks[vi]
+        idx = 0 if cur is None else cur
+        sel = cloud_cols[vi].selectbox(
+            f"V{vi + 1}", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
+            label_visibility="visible",
+        )
+        new_cloud_tracks[vi] = None if sel == "None" else int(sel)
+    if new_cloud_tracks != list(settings.cloud_tracks[:6]):
+        settings.cloud_tracks = new_cloud_tracks; changed = True
 
     st.divider()
 
@@ -872,23 +889,14 @@ def _render_settings() -> None:
     with b3:
         st.markdown(f"**Range:** `{_range_display(settings.bass_center_midi, 0, 11)}`")
     bt1, _ = st.columns(2)
-    new_bass_track = bt1.number_input("Track", min_value=1, max_value=16,
-                                       value=settings.bass_track, step=1, key="_s_bass_track")
-    if int(new_bass_track) != settings.bass_track:
-        settings.bass_track = int(new_bass_track); changed = True
+    cur_bass = settings.bass_track
+    bass_idx = 0 if cur_bass is None else cur_bass
+    new_bass_sel = bt1.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
+    new_bass_track: int | None = None if new_bass_sel == "None" else int(new_bass_sel)
+    if new_bass_track != settings.bass_track:
+        settings.bass_track = new_bass_track; changed = True
 
-    st.write("**Bass playback options**")
-    new_sw_en = st.checkbox("Switch root/fifth (switch_enabled)", value=settings.bass_switch_enabled,
-                             key="_s_bass_sw_en")
-    if new_sw_en != settings.bass_switch_enabled:
-        settings.bass_switch_enabled = new_sw_en; changed = True
-    if settings.bass_switch_enabled:
-        new_sw_every = st.number_input(
-            "Switch after N same notes (switch_every)", min_value=1, max_value=32,
-            value=settings.bass_switch_every, step=1, key="_s_bass_sw_ev"
-        )
-        if int(new_sw_every) != settings.bass_switch_every:
-            settings.bass_switch_every = int(new_sw_every); changed = True
+    st.caption("Bass Repeat Variation: planned")
 
     st.divider()
 
@@ -911,10 +919,12 @@ def _render_settings() -> None:
             settings.chord_center_midi = new_chord_midi; changed = True
     with ch3:
         st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 11)}`")
-    new_chord_track = st.number_input("Track", min_value=1, max_value=16,
-                                       value=settings.chord_track, step=1, key="_s_chord_track")
-    if int(new_chord_track) != settings.chord_track:
-        settings.chord_track = int(new_chord_track); changed = True
+    cur_chord = settings.chord_track
+    chord_idx = 0 if cur_chord is None else cur_chord
+    new_chord_sel = st.selectbox("Track", _TRACK_OPTS, index=chord_idx, key="_s_chord_track")
+    new_chord_track: int | None = None if new_chord_sel == "None" else int(new_chord_sel)
+    if new_chord_track != settings.chord_track:
+        settings.chord_track = new_chord_track; changed = True
 
     st.divider()
 
@@ -964,15 +974,12 @@ def _render_settings() -> None:
                 if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
                     with st.spinner("解析中…"):
                         try:
-                            from changes.rendering.arrangement_renderer import render_arrangement
-                            from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
                             from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-                            from changes.models.digitone_target_profile import default_digitone_target_profile
-                            rp = _settings_to_render_profile(settings)
-                            tp = default_digitone_target_profile()
-                            arrangement = render_arrangement(song, rp)
-                            timeline = flatten_arrangement_to_timeline(arrangement, render_profile=rp)
-                            bp = compile_timeline_to_digitone_bundle_plan(song, timeline, tp)
+                            from changes.ui_pipeline import compile_song_for_ui
+                            compiled = compile_song_for_ui(song, settings)
+                            bp = compile_timeline_to_digitone_bundle_plan(
+                                compiled.song, compiled.timeline, compiled.target_profile
+                            )
                             st.json({
                                 "pattern_count": len(bp.patterns),
                                 "patterns": [
@@ -1097,10 +1104,17 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
             b -= 12
         bass_notes.append(b)
 
-    # Channel map: cloud → 1..6, bass → 7
+    # Channel map: cloud voices use per-voice track from settings (skip None),
+    # bass appended only when bass_track is not None
+    cloud_chs = [t for t in settings.cloud_tracks[:6] if t is not None]
     n_voices = max(len(v) for v in voicings) if voicings else 0
-    channel_map = list(range(1, min(n_voices, 6) + 1)) + [settings.bass_track]
-    out_voicings = [list(v) + [bass_notes[i]] for i, v in enumerate(voicings[:len(events)])]
+    cloud_map = (cloud_chs + list(range(1, 17)))[:n_voices]
+    if settings.bass_track is not None:
+        channel_map = cloud_map + [settings.bass_track]
+        out_voicings = [list(v) + [bass_notes[i]] for i, v in enumerate(voicings[:len(events)])]
+    else:
+        channel_map = cloud_map
+        out_voicings = [list(v) for v in voicings[:len(events)]]
 
     port_name = "DEBUG" if "DEBUG" in dest else dest
 

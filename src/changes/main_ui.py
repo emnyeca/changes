@@ -219,7 +219,19 @@ def _render_header() -> None:
         f'{_hdr_item("Meter", meter)}'
         f'</div>'
     )
-    st.markdown(html, unsafe_allow_html=True)
+    has_selected_song = st.session_state.get("_selected_path") is not None
+    state: EditorState = st.session_state.editor
+    h1, h2, h3 = st.columns([18, 1, 1])
+    with h1:
+        st.markdown(html, unsafe_allow_html=True)
+    with h2:
+        st.write("")
+        if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone", disabled=not has_selected_song):
+            _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
+    with h3:
+        st.write("")
+        if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone", disabled=not has_selected_song):
+            _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -903,21 +915,8 @@ def _execute_table_save(mode: str) -> None:
 
 def _render_compose() -> None:
     state: EditorState = st.session_state.editor
-    has_selected_song = st.session_state.get("_selected_path") is not None
     s = st.session_state._settings
     lib_path = Path(s.library_path)
-
-    # ── Row 1: transpose ────────────────────────────────
-    r1 = st.columns([1, 1,])
-    with r1[0]:
-        st.write("")
-        if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone", disabled=not has_selected_song):
-            _transpose_state(state, -1); st.session_state._editor_dirty = True; st.rerun()
-        
-    with r1[1]:
-        st.write("")
-        if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone", disabled=not has_selected_song):
-            _transpose_state(state, +1); st.session_state._editor_dirty = True; st.rerun()
 
     # ── Cell display ───────────────────────────────────────────────────────────
     st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)

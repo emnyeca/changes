@@ -146,7 +146,7 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
-        ("_midi_update_candidates", None), ("_midi_update_unmatched", None),
+        ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
     ]:
         if key not in st.session_state:
@@ -563,15 +563,32 @@ def _load_song_into_editor(song: SongModel) -> None:
 def _render_midi_update_confirm() -> None:
     """Show before/after tempo for matched MIDI files and let user confirm update."""
     candidates = st.session_state.get("_midi_update_candidates") or []
+    kept = st.session_state.get("_midi_update_kept") or []
     unmatched = st.session_state.get("_midi_update_unmatched") or []
 
     st.subheader("MIDI Metadata Update")
+    matched_count = len(candidates) + len(kept)
+    st.write(f"**Matched:** {matched_count}")
+    st.write(f"**Tempo updates:** {len(candidates)}")
+    st.write(f"**Kept existing tempo:** {len(kept)}")
+    st.write(f"**Unmatched:** {len(unmatched)}")
+
     if candidates:
-        st.write(f"**{len(candidates)} song(s) matched** — tempo will be updated:")
+        st.write("\n**Tempo updates:**")
         for c in candidates:
-            st.write(f"- **{c.matched_title}**: {c.old_tempo:.0f} → {c.new_tempo:.0f} BPM")
-    else:
+            st.write(f"- **{c.matched_title}**: {c.old_tempo:.0f} -> {c.new_tempo:.0f}")
+
+    if kept:
+        st.write("\n**Kept existing tempo:**")
+        for k in kept:
+            if k.reason.startswith("MIDI 120 ignored"):
+                st.write(f"- **{k.matched_title}**: kept {k.existing_tempo:.0f} (MIDI {k.midi_tempo:.0f} ignored)")
+            else:
+                st.write(f"- **{k.matched_title}**: kept {k.existing_tempo:.0f} ({k.reason})")
+
+    if not candidates and not kept:
         st.warning("No matching songs found in library.")
+
     if unmatched:
         with st.expander(f"{len(unmatched)} unmatched / skipped"):
             for fname, reason in unmatched:
@@ -581,11 +598,13 @@ def _render_midi_update_confirm() -> None:
     if mu1.button("全部更新", type="primary", key="_midi_upd_ok", disabled=not candidates):
         _apply_midi_updates(candidates)
         st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
         _refresh_library()
         st.rerun()
     if mu2.button("キャンセル", key="_midi_upd_cancel"):
         st.session_state._midi_update_candidates = None
+        st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
         st.rerun()
 
@@ -648,13 +667,18 @@ def _start_import(files: list, tempo: int) -> None:
         # MIDI-only → metadata update flow
         mid_files = {n: d for n, d in file_data.items()
                      if Path(n).suffix.lower() in MIDI_EXTS}
-        candidates, unmatched = find_midi_update_candidates(mid_files, list_songs(lib_path))
+        candidates, kept, unmatched = find_midi_update_candidates(mid_files, list_songs(lib_path))
         st.session_state._midi_update_candidates = candidates
+        st.session_state._midi_update_kept = kept
         st.session_state._midi_update_unmatched = unmatched
         st.session_state._import_bundle_result = None
         return
 
     # MusicXML (± MIDI) import
+    st.session_state._midi_update_candidates = None
+    st.session_state._midi_update_kept = None
+    st.session_state._midi_update_unmatched = None
+
     bundle_result = import_files(file_data, default_tempo=tempo)
     st.session_state._import_bundle_result = bundle_result
 

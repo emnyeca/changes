@@ -19,6 +19,7 @@ from changes.importers.import_bundle import (
     MidiMetadata,
     MidiUpdateCandidate,
     choose_import_tempo,
+    choose_midi_only_update_tempo,
     extract_zip,
     find_midi_update_candidates,
     group_files_by_basename,
@@ -535,10 +536,11 @@ def _make_song_entry(title: str, tempo: float, tmp_path: Path) -> SongEntry:
 def test_midi_update_matches_by_basename(tmp_path: Path) -> None:
     entry = _make_song_entry("Blue Moon", 120.0, tmp_path)
     mid = _make_midi(tempo_bpm=140.0)
-    candidates, unmatched = find_midi_update_candidates(
+    candidates, kept, unmatched = find_midi_update_candidates(
         {"blue_moon.mid": mid}, [entry]
     )
     assert len(candidates) == 1
+    assert len(kept) == 0
     assert candidates[0].old_tempo == pytest.approx(120.0)
     assert candidates[0].new_tempo == pytest.approx(140.0, abs=0.5)
     assert not unmatched
@@ -547,38 +549,102 @@ def test_midi_update_matches_by_basename(tmp_path: Path) -> None:
 def test_midi_update_matches_by_title(tmp_path: Path) -> None:
     entry = _make_song_entry("All The Things You Are", 200.0, tmp_path)
     mid = _make_midi(tempo_bpm=180.0)
-    candidates, _ = find_midi_update_candidates(
+    candidates, kept, _ = find_midi_update_candidates(
         {"all_the_things_you_are.mid": mid}, [entry]
     )
     assert len(candidates) == 1
+    assert len(kept) == 0
 
 
 def test_midi_update_unmatched_when_no_library_entry(tmp_path: Path) -> None:
     entry = _make_song_entry("Autumn Leaves", 120.0, tmp_path)
     mid = _make_midi(tempo_bpm=130.0)
-    candidates, unmatched = find_midi_update_candidates(
+    candidates, kept, unmatched = find_midi_update_candidates(
         {"completely_different_name.mid": mid}, [entry]
     )
     assert not candidates
+    assert not kept
     assert len(unmatched) == 1
 
 
 def test_midi_update_unmatched_when_no_tempo_in_midi(tmp_path: Path) -> None:
     entry = _make_song_entry("Blue Moon", 120.0, tmp_path)
     mid = _make_midi(tempo_bpm=None)
-    candidates, unmatched = find_midi_update_candidates(
+    candidates, kept, unmatched = find_midi_update_candidates(
         {"blue_moon.mid": mid}, [entry]
     )
     assert not candidates
+    assert not kept
     assert unmatched[0][1] == "no tempo information in MIDI"
 
 
 def test_midi_update_skips_non_midi_files(tmp_path: Path) -> None:
     entry = _make_song_entry("Blue Moon", 120.0, tmp_path)
-    candidates, unmatched = find_midi_update_candidates(
+    candidates, kept, unmatched = find_midi_update_candidates(
         {"blue_moon.musicxml": b"xml"}, [entry]
     )
     assert not candidates
+    assert not kept
+    assert not unmatched
+
+
+@pytest.mark.parametrize(
+    ("existing", "midi", "expected_tempo", "expected_source"),
+    [
+        (60.0, 120.0, 60.0, "existing"),
+        (120.0, 60.0, 60.0, "midi"),
+        (100.0, 95.0, 95.0, "midi"),
+        (120.0, 120.0, 120.0, "midi"),
+        (60.0, 60.0, 60.0, "midi"),
+    ],
+)
+def test_choose_midi_only_update_tempo(
+    existing: float,
+    midi: float,
+    expected_tempo: float,
+    expected_source: str,
+) -> None:
+    tempo, source = choose_midi_only_update_tempo(existing_tempo=existing, midi_tempo=midi)
+    assert tempo == pytest.approx(expected_tempo)
+    assert source == expected_source
+
+
+def test_midi_update_keeps_existing_when_existing_non120_and_midi_is_120(tmp_path: Path) -> None:
+    entry = _make_song_entry("A Blossom Fell", 60.0, tmp_path)
+    mid = _make_midi(tempo_bpm=120.0)
+
+    updates, kept, unmatched = find_midi_update_candidates({"a_blossom_fell.mid": mid}, [entry])
+
+    assert len(updates) == 0
+    assert len(kept) == 1
+    assert kept[0].existing_tempo == pytest.approx(60.0)
+    assert kept[0].midi_tempo == pytest.approx(120.0)
+    assert "MIDI 120 ignored" in kept[0].reason
+    assert not unmatched
+
+
+def test_midi_update_uses_midi_non120_when_existing_is_120(tmp_path: Path) -> None:
+    entry = _make_song_entry("Boom Boom", 120.0, tmp_path)
+    mid = _make_midi(tempo_bpm=166.0)
+
+    updates, kept, unmatched = find_midi_update_candidates({"boom_boom.mid": mid}, [entry])
+
+    assert len(updates) == 1
+    assert updates[0].old_tempo == pytest.approx(120.0)
+    assert updates[0].new_tempo == pytest.approx(166.0, abs=0.5)
+    assert len(kept) == 0
+    assert not unmatched
+
+
+def test_midi_update_kept_when_tempos_are_equal(tmp_path: Path) -> None:
+    entry = _make_song_entry("No Change", 60.0, tmp_path)
+    mid = _make_midi(tempo_bpm=60.0)
+
+    updates, kept, unmatched = find_midi_update_candidates({"no_change.mid": mid}, [entry])
+
+    assert len(updates) == 0
+    assert len(kept) == 1
+    assert kept[0].reason == "unchanged"
     assert not unmatched
 
 

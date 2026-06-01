@@ -110,6 +110,31 @@ def choose_import_tempo(
     source, value = sorted(pool, key=lambda item: _TEMPO_TIEBREAK_RANK[item[0]])[0]
     return float(value), source
 
+
+def choose_midi_only_update_tempo(
+    *,
+    existing_tempo: float,
+    midi_tempo: float,
+) -> tuple[float, str]:
+    """Select effective tempo for MIDI-only metadata update.
+
+    Priority:
+    - Between existing and MIDI tempos, prefer non-120 candidate.
+    - If both are non-120, prefer MIDI tempo.
+    - If both are 120, prefer MIDI tempo (effectively unchanged).
+    """
+    existing = float(existing_tempo)
+    midi = float(midi_tempo)
+
+    existing_non_120 = existing != 120.0
+    midi_non_120 = midi != 120.0
+
+    if midi_non_120 and not existing_non_120:
+        return midi, "midi"
+    if existing_non_120 and not midi_non_120:
+        return existing, "existing"
+    return midi, "midi"
+
 # ── Data classes ─────────────────────────────────────────────────────────────
 
 
@@ -151,6 +176,16 @@ class MidiUpdateCandidate:
     matched_title: str    # title of existing SongModel
     old_tempo: float
     new_tempo: float
+
+
+@dataclass
+class MidiTempoKeptCandidate:
+    midi_source: str
+    matched_path: Path
+    matched_title: str
+    existing_tempo: float
+    midi_tempo: float
+    reason: str
 
 
 # ── MIDI metadata parser ──────────────────────────────────────────────────────
@@ -516,11 +551,11 @@ def _normalize_for_match(name: str) -> str:
 def find_midi_update_candidates(
     midi_files: dict[str, bytes],
     library_entries: list,
-) -> tuple[list[MidiUpdateCandidate], list[tuple[str, str]]]:
+) -> tuple[list[MidiUpdateCandidate], list[MidiTempoKeptCandidate], list[tuple[str, str]]]:
     """Match MIDI files to existing SongModel library entries.
 
     Matching order: (1) normalised basename, (2) normalised song title.
-    Returns (candidates, unmatched) where unmatched is [(filename, reason)].
+    Returns (updates, kept_existing, unmatched) where unmatched is [(filename, reason)].
     """
     # Build lookup: normalised_name → SongEntry
     norm_to_entry: dict[str, object] = {}
@@ -531,6 +566,7 @@ def find_midi_update_candidates(
         norm_to_entry.setdefault(_normalize_for_match(entry.title), entry)
 
     candidates: list[MidiUpdateCandidate] = []
+    kept_existing: list[MidiTempoKeptCandidate] = []
     unmatched: list[tuple[str, str]] = []
 
     for fname, mid_bytes in midi_files.items():
@@ -547,14 +583,38 @@ def find_midi_update_candidates(
         if entry.song is None:
             unmatched.append((fname, "matched song file could not be loaded"))
             continue
-        candidates.append(
-            MidiUpdateCandidate(
+        existing_tempo = float(entry.song.performance_tempo)
+        selected_tempo, selected_source = choose_midi_only_update_tempo(
+            existing_tempo=existing_tempo,
+            midi_tempo=float(meta.tempo_bpm),
+        )
+
+        if selected_tempo != existing_tempo:
+            candidates.append(
+                MidiUpdateCandidate(
+                    midi_source=fname,
+                    matched_path=entry.path,
+                    matched_title=entry.title,
+                    old_tempo=existing_tempo,
+                    new_tempo=selected_tempo,
+                )
+            )
+            continue
+
+        if selected_source == "existing" and float(meta.tempo_bpm) == 120.0 and existing_tempo != 120.0:
+            reason = f"MIDI 120 ignored; kept {existing_tempo:.0f}"
+        else:
+            reason = "unchanged"
+
+        kept_existing.append(
+            MidiTempoKeptCandidate(
                 midi_source=fname,
                 matched_path=entry.path,
                 matched_title=entry.title,
-                old_tempo=float(entry.song.performance_tempo),
-                new_tempo=meta.tempo_bpm,
+                existing_tempo=existing_tempo,
+                midi_tempo=float(meta.tempo_bpm),
+                reason=reason,
             )
         )
 
-    return candidates, unmatched
+    return candidates, kept_existing, unmatched

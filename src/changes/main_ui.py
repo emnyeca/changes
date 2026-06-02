@@ -68,16 +68,11 @@ _CSS = """
 [data-testid="stSidebar"] [data-testid="stRadioOption"]:has(input:checked) p { color: #7C5CBF !important; font-weight: 700 !important; }
 [data-testid="stSidebar"] [data-testid="stRadioOption"] > div:first-child { display: none !important; }
 .sidebar-version { text-align:center; font-size:11px; color:#AFA0C4; padding:12px 0 4px; }
-.common-header { display:flex; align-items:center; gap:16px; background:white; border:1px solid #E2DAE8; border-radius:12px; padding:10px 16px; margin-bottom:0; flex-wrap:wrap; min-height:52px; }
-.hdr-item { display:flex; align-items:center; gap:6px; }
-.hdr-icon { width:20px; height:20px; }
-.hdr-label { font-size:11px; color:#9A8AB0; font-weight:500; margin-right:2px; }
-.hdr-val { font-size:14px; color:#2D2840; font-weight:600; }
-.header-row { margin-bottom:16px; }
-.hdr-transpose-wrap { margin-top:0; }
-.hdr-transpose-wrap [data-testid="stButton"] button { height:52px; }
+[data-testid="stHorizontalBlock"]:first-of-type [data-testid="stButton"] button { height:36px; }
 @media (max-width: 900px) {
-    .hdr-transpose-wrap { margin-top:10px; }
+    [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="stColumn"]:nth-child(2) {
+        margin-top:10px;
+    }
 }
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
@@ -212,26 +207,29 @@ def _playback_song() -> SongModel | None:
 def _render_header() -> None:
     song = _header_song()
     title = song.title if song else "Select a song"
-    key   = (song.working_key or "—") if song else "—"
+    key = (song.working_key or "—") if song else "—"
     tempo = str(int(song.performance_tempo)) if song else "—"
     meter = (f"{song.measures[0].meter_numerator}/{song.measures[0].meter_denominator}"
              if song and song.measures else "—")
-    dirty_badge = ' <span style="color:#E07000;font-size:11px;">●</span>' if st.session_state._editor_dirty else ""
     has_selected_song = st.session_state.get("_selected_path") is not None
-    html = (
-        f'<div class="common-header">'
-        f'{_hdr_item("Song", title)}'
-        f'{_hdr_item("Key", key + dirty_badge)}'
-        f'{_hdr_item("Tempo", tempo)}'
-        f'{_hdr_item("Meter", meter)}'
-        f'</div>'
-    )
-    header_col, transpose_col = st.columns([1, 0.18], gap="small")
+    header_col, transpose_col = st.columns([1, 0.18], gap="small", vertical_alignment="center")
     with header_col:
-        st.markdown(html, unsafe_allow_html=True)
+        with st.container(border=True):
+            song_col, key_col, tempo_col, meter_col = st.columns([3.2, 1.2, 1.2, 1.2], gap="small")
+            with song_col:
+                st.caption("Song")
+                st.write(f"**{title}**")
+            with key_col:
+                st.caption("Key")
+                st.write(f"**{key}{' ●' if st.session_state._editor_dirty else ''}**")
+            with tempo_col:
+                st.caption("Tempo")
+                st.write(f"**{tempo}**")
+            with meter_col:
+                st.caption("Meter")
+                st.write(f"**{meter}**")
     with transpose_col:
-        st.markdown('<div class="hdr-transpose-wrap">', unsafe_allow_html=True)
-        t1, t2 = st.columns(2, gap="small")
+        t1, t2 = st.columns(2, gap="small", vertical_alignment="center")
         with t1:
             if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone", disabled=not has_selected_song):
                 _transpose_state(st.session_state.editor, -1)
@@ -242,7 +240,6 @@ def _render_header() -> None:
                 _transpose_state(st.session_state.editor, +1)
                 st.session_state._editor_dirty = True
                 st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────

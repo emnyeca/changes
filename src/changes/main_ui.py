@@ -123,10 +123,29 @@ def _icon_b64() -> str:
         return base64.b64encode(_ICON_PATH.read_bytes()).decode()
     return ""
 
+
+@functools.lru_cache(maxsize=1)
+def _header_icon_bytes() -> bytes | None:
+    if _ICON_PATH.exists():
+        return _ICON_PATH.read_bytes()
+    return None
+
+
 def _hdr_item(label: str, value: str) -> str:
     ico = _icon_b64()
     img = f'<img src="data:image/png;base64,{ico}" class="hdr-icon"/>' if ico else ""
     return f'<span class="hdr-item">{img}<span class="hdr-label">{label}</span><span class="hdr-val">{value}</span></span>'
+
+
+def _render_header_field(label: str, value: str) -> None:
+    icon = _header_icon_bytes()
+    top_icon_col, top_label_col = st.columns([0.18, 1], gap="small", vertical_alignment="center")
+    with top_icon_col:
+        if icon is not None:
+            st.image(icon, width=18)
+    with top_label_col:
+        st.caption(label)
+    st.write(f"**{value}**")
 
 # ── Session state ─────────────────────────────────────────────────────────────
 
@@ -217,17 +236,13 @@ def _render_header() -> None:
         with st.container(border=True):
             song_col, key_col, tempo_col, meter_col = st.columns([3.2, 1.2, 1.2, 1.2], gap="small")
             with song_col:
-                st.caption("Song")
-                st.write(f"**{title}**")
+                _render_header_field("Song", title)
             with key_col:
-                st.caption("Key")
-                st.write(f"**{key}{' ●' if st.session_state._editor_dirty else ''}**")
+                _render_header_field("Key", f"{key}{' ●' if st.session_state._editor_dirty else ''}")
             with tempo_col:
-                st.caption("Tempo")
-                st.write(f"**{tempo}**")
+                _render_header_field("Tempo", tempo)
             with meter_col:
-                st.caption("Meter")
-                st.write(f"**{meter}**")
+                _render_header_field("Meter", meter)
     with transpose_col:
         t1, t2 = st.columns(2, gap="small", vertical_alignment="center")
         with t1:

@@ -1,6 +1,5 @@
 """Streamlit UI for EUB Changes — Songlist / Compose / Settings."""
-
-from __future__ import annotations
+# This file is a legacy UI implementation for the editor, don't add new features here. 
 
 import base64
 import functools

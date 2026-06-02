@@ -20,6 +20,7 @@ from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 _ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
+_LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo.png"
 _LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
 _ICON_PATH = _ASSETS / "icon_cloud.png"
 _APP_VERSION = "v0.1.0"
@@ -183,6 +184,10 @@ def _refresh_library() -> None:
     st.session_state._library = list_songs(Path(s.library_path))
 
 
+def _reset_song_table_view() -> None:
+    st.session_state._songlist_table_reset_token += 1
+
+
 # ── Header data sources ───────────────────────────────────────────────────────
 
 def _dirty_song() -> SongModel | None:
@@ -218,6 +223,13 @@ def _playback_song() -> SongModel | None:
         return _dirty_song()
     return _dirty_song()
 
+# ── Logo ─────────────────────────────────────────────────────────────
+st.logo(
+    _LOGO_PATH_HEADER, 
+    link="https://github.com/emnyeca/changes/", 
+    size="large", 
+    icon_image=_LOGO_PATH_HEADER
+    )
 
 # ── Common header ─────────────────────────────────────────────────────────────
 
@@ -359,14 +371,101 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
     return count_auto_split_patterns(song, settings)
 
 
+@st.dialog("Save Edited Song", dismissible=False)
+def _dialog_table_save() -> None:
+    pending = st.session_state.get("_table_save_pending")
+    if pending is None:
+        return
+
+    existing_title = str(pending.get("existing_title") or "Untitled")
+    changes = pending.get("changes") or []
+    st.warning(f'You are editing the existing song "{existing_title}". How would you like to save?')
+    st.markdown("**Changed fields:**")
+    if changes:
+        for field, before, after in changes:
+            st.write(f"- {field}: `{before}` -> `{after}`")
+    else:
+        st.write("- No field-level diff available")
+
+    c1, c2, c3 = st.columns(3, width = "stretch", gap="small")
+    if c1.button("Update", type="primary", key="tsd_update", use_container_width=True):
+        st.session_state._table_save_mode = "update"
+        st.rerun()
+    if c2.button("Keep both", key="tsd_keep", use_container_width=True):
+        st.session_state._table_save_mode = "keep_both"
+        st.rerun()
+    if c3.button("Cancel", key="tsd_cancel", use_container_width=True):
+        st.session_state._table_save_suppressed_signature = pending.get("signature")
+        st.session_state._table_save_mode = None
+        st.session_state._table_save_pending = None
+        _reset_song_table_view()
+        st.rerun()
+
+
+@st.dialog("Discard Unsaved Changes?", dismissible=False)
+def _dialog_pending_switch() -> None:
+    pending_switch = st.session_state.get("_pending_switch")
+    if pending_switch is None:
+        return
+
+    st.warning(f'Unsaved changes will be discarded. Switch to "{pending_switch.title}"?')
+    col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
+    if col_cancel.button("Cancel", key="sw_cancel", use_container_width=True):
+        st.session_state._pending_switch = None
+        st.rerun()
+    if col_discard.button("Discard and switch", type="primary", key="sw_discard", use_container_width=True):
+        _do_switch_song(pending_switch)
+        st.rerun()
+
+
+@st.dialog("Delete Song", dismissible=False)
+def _dialog_delete_confirm() -> None:
+    del_path = st.session_state.get("_delete_confirm")
+    if del_path is None:
+        return
+
+    entries: list[SongEntry] = st.session_state.get("_library", [])
+    entry = next((e for e in entries if e.path == del_path), None)
+    name = entry.title if entry else del_path.name
+    st.warning(f'Delete "{name}"? This removes the SongModel file.')
+    c1, c2 = st.columns([1, 1], width="stretch", gap="small")
+    if c1.button("Cancel", key="del_cancel", use_container_width=True):
+        st.session_state._delete_confirm = None
+        st.rerun()
+    if c2.button("Delete", type="primary", key="del_confirm", use_container_width=True):
+        delete_song(del_path)
+        if st.session_state._selected_path == del_path:
+            st.session_state._selected_path = None
+        st.session_state._delete_confirm = None
+        _refresh_library()
+        st.rerun()
+
+
+@st.dialog("Import Conflicts", dismissible=False)
+def _dialog_import_conflict() -> None:
+    conflicts = st.session_state.get("_import_conflict_titles", [])
+    st.warning(
+        f"Duplicate titles found: {', '.join(conflicts)}\n\n"
+        "How should duplicates be handled?"
+    )
+    c1, c2, c3 = st.columns(3, width="stretch", gap="small")
+    if c1.button("Overwrite all", type="primary", key="ic_over", use_container_width=True):
+        st.session_state._import_conflict_mode = "overwrite"
+        st.rerun()
+    if c2.button("Keep both", key="ic_keep", use_container_width=True):
+        st.session_state._import_conflict_mode = "keep_both"
+        st.rerun()
+    if c3.button("Cancel import", key="ic_cancel", use_container_width=True):
+        st.session_state._import_conflict_mode = None
+        st.session_state._import_pending = []
+        st.rerun()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Page: Songlist
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _render_songlist(show_import: bool = True) -> None:
-    def _reset_song_table_view() -> None:
-        st.session_state._songlist_table_reset_token += 1
-
     entries: list[SongEntry] = st.session_state._library
     table_save_pending = st.session_state.get("_table_save_mode") == "pending"
     pending_switch = st.session_state.get("_pending_switch")
@@ -568,79 +667,15 @@ def _render_songlist(show_import: bool = True) -> None:
 
     st.caption(f"{len(filtered)} song(s)")
 
-    # ── Confirmation / warning panels (insert below table) ──────────────────
+    # ── Confirmation / warning dialogs ──────────────────────────────────────
     if table_save_pending:
-        pending = st.session_state.get("_table_save_pending")
-        if pending is not None:
-            existing_title = str(pending.get("existing_title") or "Untitled")
-            changes = pending.get("changes") or []
-            if changes:
-                details = "\n".join(
-                    f"- {field}: `{before}` -> `{after}`"
-                    for field, before, after in changes
-                )
-            else:
-                details = "- No field-level diff available"
-            st.warning(
-                f'**You are editing the existing song "{existing_title}". How would you like to save?**\n\n'
-                f"**Changed fields:**\n{details}"
-            )
-            c1, c2, c3 = st.columns(3)
-            if c1.button("Update", type="primary", key="tsd_update"):
-                st.session_state._table_save_mode = "update"
-                st.rerun()
-            if c2.button("Keep both", key="tsd_keep"):
-                st.session_state._table_save_mode = "keep_both"
-                st.rerun()
-            if c3.button("Cancel", key="tsd_cancel"):
-                st.session_state._table_save_suppressed_signature = pending.get("signature")
-                st.session_state._table_save_mode = None
-                st.session_state._table_save_pending = None
-                _reset_song_table_view()
-                st.rerun()
+        _dialog_table_save()
     elif pending_switch is not None:
-        st.warning(
-            f'**Unsaved changes will be discarded.**  Switch to "{pending_switch.title}"?'
-        )
-        col_cancel, col_discard = st.columns([1, 1])
-        if col_cancel.button("Cancel", key="sw_cancel"):
-            st.session_state._pending_switch = None
-            st.rerun()
-        if col_discard.button("Discard and switch", type="primary", key="sw_discard"):
-            _do_switch_song(pending_switch)
-            st.rerun()
+        _dialog_pending_switch()
     elif del_path is not None:
-        entry = next((e for e in entries if e.path == del_path), None)
-        name = entry.title if entry else del_path.name
-        st.warning(f'**Delete "{name}"?**  This removes the SongModel file.')
-        c1, c2 = st.columns([1, 1])
-        if c1.button("Cancel", key="del_cancel"):
-            st.session_state._delete_confirm = None
-            st.rerun()
-        if c2.button("Delete", type="primary", key="del_confirm"):
-            delete_song(del_path)
-            if st.session_state._selected_path == del_path:
-                st.session_state._selected_path = None
-            st.session_state._delete_confirm = None
-            _refresh_library()
-            st.rerun()
+        _dialog_delete_confirm()
     elif import_conflict_pending:
-        conflicts = st.session_state.get("_import_conflict_titles", [])
-        st.warning(
-            f"**Duplicate titles found:** {', '.join(conflicts)}\n\n"
-            "How should duplicates be handled?"
-        )
-        c1, c2, c3 = st.columns(3)
-        if c1.button("Overwrite all", type="primary", key="ic_over"):
-            st.session_state._import_conflict_mode = "overwrite"
-            st.rerun()
-        if c2.button("Keep both", key="ic_keep"):
-            st.session_state._import_conflict_mode = "keep_both"
-            st.rerun()
-        if c3.button("Cancel import", key="ic_cancel"):
-            st.session_state._import_conflict_mode = None
-            st.session_state._import_pending = []
-            st.rerun()
+        _dialog_import_conflict()
     elif midi_update_pending:
         _render_midi_update_confirm()
 
@@ -723,13 +758,13 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state._editor_dirty = False
 
 
+@st.dialog("MIDI Metadata Update", dismissible=False)
 def _render_midi_update_confirm() -> None:
     """Show before/after tempo for matched MIDI files and let user confirm update."""
     candidates = st.session_state.get("_midi_update_candidates") or []
     kept = st.session_state.get("_midi_update_kept") or []
     unmatched = st.session_state.get("_midi_update_unmatched") or []
 
-    st.subheader("MIDI Metadata Update")
     matched_count = len(candidates) + len(kept)
     st.write(f"**Matched:** {matched_count}")
     st.write(f"**Tempo updates:** {len(candidates)}")
@@ -757,15 +792,15 @@ def _render_midi_update_confirm() -> None:
             for fname, reason in unmatched:
                 st.write(f"- `{fname}`: {reason}")
 
-    mu1, mu2 = st.columns(2)
-    if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates):
+    mu1, mu2 = st.columns(2, width="stretch", gap="small")
+    if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates, use_container_width=True):
         _apply_midi_updates(candidates)
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
         _refresh_library()
         st.rerun()
-    if mu2.button("Cancel", key="_midi_upd_cancel"):
+    if mu2.button("Cancel", key="_midi_upd_cancel", use_container_width=True):
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
@@ -1216,14 +1251,7 @@ def _render_preview_send() -> None:
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
-        st.warning("**Send SysEx to Digitone II?**")
-        cc1, cc2 = st.columns(2)
-        if cc1.button("Cancel", key="_send_conf_cancel"):
-            st.session_state._send_confirm = False; st.rerun()
-        if cc2.button("Send", type="primary", key="_send_conf_ok"):
-            st.session_state._send_confirm = False
-            if song:
-                _run_send(song, settings, dest)
+        _show_send_confirm_dialog(song, settings, dest)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1271,6 +1299,28 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
                 st.code("\n".join(logs[:60]), language="text")
         except Exception as exc:
             st.error(str(exc))
+
+
+@st.dialog("Send SysEx to Digitone II?", dismissible=False)
+def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, dest: str) -> None:
+    st.warning("This will write data to hardware.")
+    cc1, cc2, cc3 = st.columns(3, width="stretch", gap="small")
+    if cc1.button("Cancel", key="_send_conf_cancel", use_container_width=True):
+        st.session_state._send_confirm = False
+        st.rerun()
+    if cc2.button("Send", type="primary", key="_send_conf_ok", use_container_width=True):
+        st.session_state._send_confirm = False
+        if song:
+            _run_send(song, settings, dest)
+        st.rerun()
+    if cc3.button("Always Send", key="_send_conf_no_confirm", use_container_width=True):
+        settings.confirm_before_hardware_write = False
+        save_settings(settings)
+        st.session_state._settings = settings
+        st.session_state._send_confirm = False
+        if song:
+            _run_send(song, settings, dest)
+        st.rerun()
 
 
 def _send_pipeline_preview(

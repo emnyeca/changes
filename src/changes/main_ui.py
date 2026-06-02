@@ -168,6 +168,7 @@ def _ss_init() -> None:
     for key, default in [
         ("editor_title", ""), ("editor_tempo", 120), ("meter_num", 4),
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
+        ("_editor_working_key_mode", None),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
         ("_table_save_mode", None), ("_table_save_pending", None),
@@ -198,10 +199,34 @@ def _dirty_song() -> SongModel | None:
     state: EditorState = st.session_state.get("editor")
     if state and state.cells:
         try:
-            return editor_to_song_model(state)
+            song = editor_to_song_model(state)
+            mode = st.session_state.get("_editor_working_key_mode")
+            if mode is not None:
+                return _replace(song, working_key_mode=mode)
+            return song
         except Exception:
             pass
     return None
+
+
+def _display_section_label(section_id: str | None) -> str:
+    if section_id is None:
+        return ""
+    text = str(section_id).strip()
+    if not text:
+        return ""
+    match = _SECTION_OCC_RE.match(text)
+    if not match:
+        return text
+    label = match.group("label") or text
+    occ = int(match.group("occ"))
+    if occ <= 1 and len(label) > 1:
+        return label
+    return f"{label}{occ}"
+
+
+def _section_filter_label(section_id: str) -> str:
+    return _display_section_label(section_id)
 
 
 def _header_song() -> SongModel | None:
@@ -278,6 +303,7 @@ def _render_header() -> None:
 # ── Chord helpers (editor) ────────────────────────────────────────────────────
 
 _ROOT_RE = re.compile(r"^([A-G][#b]?)(.*)")
+_SECTION_OCC_RE = re.compile(r"^(?P<label>.+?)(?:__|_)OCC(?P<occ>\d+)$")
 
 
 def _is_valid_chord(token: str) -> bool:
@@ -368,7 +394,7 @@ def _chord_display_html(state: EditorState) -> str:
 
     initial = section_labels.get("initial", "")
     if initial:
-        parts.append(f'<mark class="section-lbl">{initial}</mark>||')
+        parts.append(f'<mark class="section-lbl">{_display_section_label(str(initial))}</mark>||')
 
     for i, cell in enumerate(state.cells):
         if i == state.cursor:
@@ -376,7 +402,7 @@ def _chord_display_html(state: EditorState) -> str:
         if cell == "||":
             label = section_labels.get(i, "")
             if label:
-                parts.append(f'<mark class="section-lbl">{label}</mark>||')
+                parts.append(f'<mark class="section-lbl">{_display_section_label(str(label))}</mark>||')
             else:
                 parts.append("||")
         else:
@@ -935,6 +961,7 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state.editor_title = state.title
     st.session_state.editor_tempo = state.tempo
     st.session_state.working_key_input = state.working_key
+    st.session_state._editor_working_key_mode = song.working_key_mode
     st.session_state._editor_dirty = False
 
 
@@ -1468,7 +1495,7 @@ def _render_section_filter(song: SongModel) -> None:
 
     cols = st.columns(min(len(sections), 8))
     for i, sec_id in enumerate(sections):
-        if cols[i % len(cols)].checkbox(sec_id, value=sec_id in selected, key=f"_sf_{sec_id}"):
+        if cols[i % len(cols)].checkbox(_section_filter_label(sec_id), value=sec_id in selected, key=f"_sf_{sec_id}"):
             new_selected.add(sec_id)
 
     st.session_state._section_filter_selected = new_selected
@@ -1517,7 +1544,7 @@ def _render_preview_send() -> None:
                     try:
                         n = _count_patterns(sec_song, settings)
                         if n > 1:
-                            autosplit_warnings.append(f"⚠ {sec_id} Auto Split → {n} patterns")
+                            autosplit_warnings.append(f"⚠ {_display_section_label(sec_id)} Auto Split → {n} patterns")
                     except Exception:
                         pass
                 if autosplit_warnings:
@@ -1587,7 +1614,7 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
         try:
             combined_syx += _export_syx_bytes(sec_song, settings)
         except Exception as exc:
-            st.warning(f"Section {sec_id}: {exc}")
+            st.warning(f"Section {_display_section_label(sec_id)}: {exc}")
     if combined_syx:
         st.session_state._syx_bytes = combined_syx
         st.session_state._syx_fname = f"{song.title or 'changes'}_bundle.syx"

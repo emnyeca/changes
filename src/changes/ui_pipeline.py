@@ -142,6 +142,23 @@ def count_auto_split_patterns(song: SongModel, settings: AppSettings) -> int:
         return 1
 
 
+def count_linear_patterns(song: SongModel, settings: AppSettings) -> int:
+    """Return how many 128-step linear pattern chunks the song needs.
+
+    This intentionally does not call the bundle planner, because the Linear UI
+    must not count section-based bundle splits.
+    """
+    try:
+        from changes.digitone.bundle_planner import MAX_PATTERN_STEPS
+        from changes.digitone.planner import choose_shared_timing_plan
+
+        compiled = compile_song_for_ui(song, settings)
+        timing = choose_shared_timing_plan(compiled.timeline, compiled.target_profile)
+        return max(1, (timing.total_steps + MAX_PATTERN_STEPS - 1) // MAX_PATTERN_STEPS)
+    except Exception:
+        return 1
+
+
 def song_to_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
     """Compile song to a Digitone SysEx blob using the current settings routing."""
     import yaml

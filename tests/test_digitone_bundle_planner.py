@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from dataclasses import replace
+from fractions import Fraction
 
 import pytest
 import json
@@ -14,10 +15,49 @@ from changes.digitone.bundle_planner import (
 )
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.models.digitone_target_profile import default_digitone_target_profile
+from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
+from changes.models.song_model import HarmonyEvent, Measure, SongModel
 from changes.models.render_profile import default_render_profile
 from changes.pipeline_digitone import compile_digitone_bundle_pipeline, save_digitone_bundle_artifacts
 from changes.rendering.arrangement_flattener import flatten_arrangement_to_timeline
 from changes.rendering.arrangement_renderer import render_arrangement
+
+
+def _synthetic_song_with_steps(title: str, steps: int) -> SongModel:
+    measures = tuple(
+        Measure(
+            number=i + 1,
+            section_id="A1",
+            meter_numerator=1,
+            meter_denominator=4,
+            absolute_start_quarters=Fraction(i, 1),
+            harmony=(
+                HarmonyEvent(
+                    id=f"h{i}",
+                    symbol="Cmaj7",
+                    measure_number=i + 1,
+                    offset_quarters=Fraction(0, 1),
+                    duration_quarters=Fraction(1, 1),
+                ),
+            ),
+        )
+        for i in range(steps)
+    )
+    return SongModel(title=title, working_key="C", performance_tempo=120, measures=measures)
+
+
+def _rendered_event(event_id: str, voice_id: str, onset: int, note: int = 60) -> RenderedNoteEvent:
+    return RenderedNoteEvent(
+        id=event_id,
+        voice_id=voice_id,
+        role="chord",
+        note_midi=note,
+        onset_quarters=Fraction(onset, 1),
+        duration_quarters=Fraction(1, 1),
+        source_harmony_id=f"h{onset}",
+        retrigger=True,
+        velocity=80,
+    )
 
 
 def test_bundle_single_pattern_uses_song_title_only():
@@ -107,6 +147,75 @@ def test_bundle_capacity_split_without_named_sections_uses_p_prefix():
     assert len(names) == 2
     assert names[0] == "P1 BLUE MOON"
     assert names[1] == "P2 BLUE MOON"
+
+
+def test_bundle_does_not_split_80_steps_with_more_than_300_polyphonic_events():
+    song = _synthetic_song_with_steps("DENSE POLY", 80)
+    events = tuple(
+        _rendered_event(
+            event_id=f"e{step}_{voice}",
+            voice_id=f"chord_note_{voice + 1}",
+            onset=step,
+            note=60 + voice,
+        )
+        for step in range(80)
+        for voice in range(4)
+    )
+    timeline = RenderedTimeline(title=song.title, performance_tempo=Fraction(120, 1), events=events)
+
+    bundle = compile_timeline_to_digitone_bundle_plan(
+        song,
+        timeline,
+        default_digitone_target_profile(),
+    )
+
+    assert len(events) == 320
+    assert len(bundle.patterns) == 1
+    assert bundle.patterns[0].total_steps == 80
+    assert len(bundle.patterns[0].events) == 320
+
+
+def test_bundle_polyphonic_same_track_same_step_does_not_force_event_capacity_split():
+    song = _synthetic_song_with_steps("POLY SAME STEP", 80)
+    events = tuple(
+        _rendered_event(
+            event_id=f"e{step}_{voice}",
+            voice_id=f"chord_note_{voice + 1}",
+            onset=step,
+            note=60 + voice,
+        )
+        for step in range(80)
+        for voice in range(6)
+    )
+    timeline = RenderedTimeline(title=song.title, performance_tempo=Fraction(120, 1), events=events)
+
+    bundle = compile_timeline_to_digitone_bundle_plan(
+        song,
+        timeline,
+        default_digitone_target_profile(),
+    )
+
+    assert len(events) == 480
+    assert len(bundle.patterns) == 1
+    assert {(e.track, e.step) for e in bundle.patterns[0].events} == {
+        (8, step) for step in range(1, 81)
+    }
+
+
+def test_bundle_non_polyphonic_same_track_same_step_is_compile_conflict():
+    song = _synthetic_song_with_steps("NON POLY CONFLICT", 2)
+    target = replace(
+        default_digitone_target_profile(),
+        polyphonic_tracks=(),
+    )
+    events = (
+        _rendered_event("e1", "cloud_voice_1", 0, 60),
+        _rendered_event("e2", "cloud_voice_1", 0, 64),
+    )
+    timeline = RenderedTimeline(title=song.title, performance_tempo=Fraction(120, 1), events=events)
+
+    with pytest.raises(ValueError, match="duplicate track/step"):
+        compile_timeline_to_digitone_bundle_plan(song, timeline, target)
 
 
 def test_bundle_long_title_truncation_keeps_prefix_and_length_16():

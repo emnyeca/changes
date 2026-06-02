@@ -17,7 +17,7 @@ from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections
-from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
+from changes.ui_pipeline import count_auto_split_patterns, count_linear_patterns, song_to_syx_bytes
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -178,6 +178,8 @@ def _ss_init() -> None:
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
         ("_import_progress_request", None), ("_import_progress_status", None),
+        ("_import_uploader_reset_token", 0),
+        ("_send_confirm_mode", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -209,12 +211,24 @@ def _dirty_song() -> SongModel | None:
     return None
 
 
+def _selected_library_song() -> SongModel | None:
+    path = st.session_state.get("_selected_path")
+    if path:
+        for e in st.session_state.get("_library", []):
+            if e.path == path and e.song:
+                return e.song
+    return None
+
+
 def _display_section_label(section_id: str | None) -> str:
     if section_id is None:
         return ""
     text = str(section_id).strip()
     if not text:
         return ""
+    coda_match = re.match(r"^(coda)(.*)$", text, flags=re.IGNORECASE)
+    if coda_match:
+        return f"CODA{coda_match.group(2)}"
     match = _SECTION_OCC_RE.match(text)
     if not match:
         return text
@@ -230,27 +244,17 @@ def _section_filter_label(section_id: str) -> str:
 
 
 def _header_song() -> SongModel | None:
-    page = st.session_state._page
-    if page == "Songlist":
-        path = st.session_state._selected_path
-        if path:
-            for e in st.session_state._library:
-                if e.path == path and e.song:
-                    return e.song
-        return None
-    return _dirty_song()
+    selected = _selected_library_song()
+    if selected is not None and not st.session_state.get("_editor_dirty"):
+        return selected
+    return _dirty_song() or selected
 
 
 def _playback_song() -> SongModel | None:
-    page = st.session_state._page
-    if page == "Songlist":
-        path = st.session_state._selected_path
-        if path:
-            for e in st.session_state._library:
-                if e.path == path and e.song:
-                    return e.song
-        return _dirty_song()
-    return _dirty_song()
+    selected = _selected_library_song()
+    if selected is not None and not st.session_state.get("_editor_dirty"):
+        return selected
+    return _dirty_song() or selected
 
 # ── Logo ─────────────────────────────────────────────────────────────
 st.logo(
@@ -424,6 +428,10 @@ def _count_patterns(song: SongModel, settings: AppSettings) -> int:
     return count_auto_split_patterns(song, settings)
 
 
+def _count_linear_patterns(song: SongModel, settings: AppSettings) -> int:
+    return count_linear_patterns(song, settings)
+
+
 @st.dialog("Save Edited Song", dismissible=False)
 def _dialog_table_save() -> None:
     pending = st.session_state.get("_table_save_pending")
@@ -542,6 +550,7 @@ def _dialog_import_progress() -> None:
         if st.button("Close", type="primary", key="_import_progress_close", use_container_width=True):
             st.session_state._import_progress_request = None
             st.session_state._import_progress_status = None
+            st.session_state._import_uploader_reset_token += 1
             st.rerun()
 
 
@@ -862,7 +871,7 @@ def _render_import_section(disabled: bool = False) -> None:
         "Accepts: .zip (iReal-musicxml), .musicxml, .xml / .mid, .midi is for tempo metadata only",
         type=["zip", "musicxml", "xml", "mid", "midi"],
         accept_multiple_files=True,
-        key="_sl_uploader",
+        key=f"_sl_uploader_{st.session_state._import_uploader_reset_token}",
         disabled=disabled,
     )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled):
@@ -1526,7 +1535,7 @@ def _render_preview_send() -> None:
         effective_song = _filtered_song_for_send(song)
         try:
             if send_mode == "Linear":
-                n_pat = _count_patterns(effective_song, settings)
+                n_pat = _count_linear_patterns(effective_song, settings)
                 if n_pat > 1:
                     st.markdown(
                         f'<span class="autosplit-warn">⚠ Auto Split → {n_pat} patterns</span>',
@@ -1586,6 +1595,7 @@ def _render_preview_send() -> None:
                 st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:
                 st.session_state._send_confirm = True
+                st.session_state._send_confirm_mode = send_mode
                 st.rerun()
             else:
                 effective = _filtered_song_for_send(song)
@@ -1597,7 +1607,8 @@ def _render_preview_send() -> None:
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
         effective = _filtered_song_for_send(song) if song else song
-        _show_send_confirm_dialog(effective, settings, dest)
+        confirm_mode = st.session_state.get("_send_confirm_mode", send_mode)
+        _show_send_confirm_dialog(effective, settings, dest, confirm_mode)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1683,25 +1694,36 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
             st.error(str(exc))
 
 
+def _run_send_for_mode(song: SongModel, settings: AppSettings, dest: str, send_mode: str) -> None:
+    if send_mode == "Bundle by Section":
+        _run_send_bundle_by_section(song, settings, dest)
+    else:
+        _run_send(song, settings, dest)
+
+
 @st.dialog("Send SysEx to Digitone II?", dismissible=False)
-def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, dest: str) -> None:
+def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, dest: str, send_mode: str) -> None:
     st.warning("This will write data to hardware.")
+    st.caption(f"Send mode: {send_mode}")
     cc1, cc2, cc3 = st.columns(3, width="stretch", gap="small")
     if cc1.button("Cancel", key="_send_conf_cancel", use_container_width=True):
         st.session_state._send_confirm = False
+        st.session_state._send_confirm_mode = None
         st.rerun()
     if cc2.button("Send", type="primary", key="_send_conf_ok", use_container_width=True):
         st.session_state._send_confirm = False
+        st.session_state._send_confirm_mode = None
         if song:
-            _run_send(song, settings, dest)
+            _run_send_for_mode(song, settings, dest, send_mode)
         st.rerun()
     if cc3.button("Always Send", key="_send_conf_no_confirm", use_container_width=True):
         settings.confirm_before_hardware_write = False
         save_settings(settings)
         st.session_state._settings = settings
         st.session_state._send_confirm = False
+        st.session_state._send_confirm_mode = None
         if song:
-            _run_send(song, settings, dest)
+            _run_send_for_mode(song, settings, dest, send_mode)
         st.rerun()
 
 

@@ -235,9 +235,9 @@ def test_construct_chord_raises_for_unknown_normalized_quality():
 
 # ── variable note count (Chord layer) ─────────────────────────────────────────
 
-def test_bm_slash_a_does_not_raise_with_b_dorian_collection():
+def test_bm_slash_a_does_not_raise_with_b_phrygian_collection():
     core = parse_chord_core("Bm/A")
-    # B Dorian: B C D E F# G A
+    # B C D E F# G A — modes of G major (B Phrygian / A Dorian)
     selected = _selected_collection(11, 0, 2, 4, 6, 7, 9)
 
     result = construct_chord_pitch_classes(core, selected)

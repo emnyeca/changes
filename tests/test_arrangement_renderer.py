@@ -131,3 +131,87 @@ def test_render_arrangement_chord_layer_uses_dominant_blues_extraction_for_a7_ov
     assert realized_pitch_classes == {9, 1, 4, 6, 7, 0}
     assert 0 in realized_pitch_classes  # #9 (C)
     assert 11 not in realized_pitch_classes  # 9 (B)
+
+
+# ── pipeline regression: variable-note chord symbols ──────────────────────────
+
+def _minimal_song_with_symbol(title: str, symbol: str, key: str = "C") -> SongModel:
+    return SongModel(
+        title=title,
+        working_key=key,
+        performance_tempo=Fraction(120, 1),
+        measures=(
+            Measure(
+                number=1,
+                section_id="A",
+                meter_numerator=4,
+                meter_denominator=4,
+                absolute_start_quarters=Fraction(0, 1),
+                harmony=(
+                    HarmonyEvent(
+                        id="h1",
+                        symbol=symbol,
+                        measure_number=1,
+                        offset_quarters=Fraction(0, 1),
+                        duration_quarters=Fraction(4, 1),
+                    ),
+                ),
+            ),
+        ),
+    )
+
+
+def test_render_arrangement_bm_slash_a_does_not_raise():
+    # Regression: Bm/A triggered ChordRealizationError when selected collection
+    # (modes of G major) provided only 5 notes instead of 6.
+    song = _minimal_song_with_symbol("ComeTogether", "Bm/A", key="G")
+
+    arrangement = render_arrangement(song)
+
+    assert len(arrangement.occurrences) == 1
+    occ = arrangement.occurrences[0]
+    assert occ.chord is not None
+
+
+def test_render_arrangement_bm_slash_a_chord_layer_mandatory_pitch_classes_present():
+    song = _minimal_song_with_symbol("ComeTogether", "Bm/A", key="G")
+
+    arrangement = render_arrangement(song)
+
+    occ = arrangement.occurrences[0]
+    realized_pcs = {n % 12 for n in occ.chord.realized_midi_notes}
+    assert 11 in realized_pcs  # B
+    assert 2 in realized_pcs   # D
+    assert 6 in realized_pcs   # F#
+
+
+def test_render_arrangement_bm_slash_a_chord_velocities_match_note_count():
+    song = _minimal_song_with_symbol("ComeTogether", "Bm/A", key="G")
+
+    arrangement = render_arrangement(song)
+
+    occ = arrangement.occurrences[0]
+    chord = occ.chord
+    assert len(chord.velocities) == len(chord.realized_midi_notes)
+
+
+def test_render_arrangement_c5_does_not_raise():
+    song = _minimal_song_with_symbol("PowerChord", "C5", key="C")
+
+    arrangement = render_arrangement(song)
+
+    assert len(arrangement.occurrences) == 1
+    occ = arrangement.occurrences[0]
+    assert occ.chord is not None
+    assert len(occ.chord.realized_midi_notes) >= 2
+
+
+def test_render_arrangement_chord_layer_note_and_velocity_counts_always_match():
+    for key, symbol in [("G", "Bm/A"), ("C", "Cmaj7"), ("C", "C5"), ("A", "Em7")]:
+        song = _minimal_song_with_symbol(symbol, symbol, key=key)
+        arrangement = render_arrangement(song)
+        occ = arrangement.occurrences[0]
+        chord = occ.chord
+        assert chord is not None
+        assert len(chord.notes) == len(chord.realized_midi_notes)
+        assert len(chord.velocities) == len(chord.realized_midi_notes)

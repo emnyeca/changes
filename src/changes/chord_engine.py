@@ -1,9 +1,9 @@
 """Pure Chord Engine core for symbol-faithful pitch-class construction.
 
-Produces 3–6 pitch classes per chord: mandatory chord tones are always
+Produces 2–6 pitch classes per chord: mandatory chord tones are always
 included; preferred tensions from the selected collection are added up to six
-voices.  Falling short of six is not an error — Chord layer does not require
-a fixed voice count.
+voices.  Power chords may produce as few as 2 notes; falling short of six is
+not an error — Chord layer does not require a fixed voice count.
 
 This module deliberately stops before register realization, velocity policy,
 length policy, Track 8 assignment, or any export integration.

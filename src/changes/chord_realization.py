@@ -1,8 +1,12 @@
 """Phase 2 pure Chord register realization.
 
-This module converts six Chord pitch classes into six ascending MIDI notes
-inside the configured Chord register. It intentionally does not integrate with
-renderer roles, Track 8 mapping, MIDI export, SysEx export, or bundle planning.
+This module converts 2–6 Chord pitch classes into ascending MIDI notes inside
+the configured Chord register.  Voice count matches the pitch-class input:
+6 mandatory notes → 6 realized notes; 3 mandatory notes → 3, and so on.
+The velocity profile always stores 6 slots; outputs are sliced to match.
+
+It intentionally does not integrate with renderer roles, Track 8 mapping,
+MIDI export, SysEx export, or bundle planning.
 """
 
 from __future__ import annotations
@@ -14,7 +18,10 @@ from .chord_engine import ChordConstructionResult
 
 
 class ChordRealizationError(ValueError):
-    """Raised when Chord register realization cannot produce a valid six-note result."""
+    """Raised when Chord register realization cannot produce a valid result.
+
+    Valid results have 2–6 distinct pitch classes that fit within the register.
+    """
 
 
 CHORD_REGISTER_MIN_MIDI = 48
@@ -48,13 +55,13 @@ class ChordRealizationResult:
 
 
 def _validate_source_pitch_classes(source_pitch_classes: tuple[int, ...]) -> None:
-    if len(source_pitch_classes) != 6:
+    if len(source_pitch_classes) < 2 or len(source_pitch_classes) > 6:
         raise ChordRealizationError(
-            f"Chord realization requires exactly six pitch classes: {source_pitch_classes}"
+            f"Chord realization requires 2 to 6 pitch classes: {source_pitch_classes}"
         )
-    if len(set(source_pitch_classes)) != 6:
+    if len(set(source_pitch_classes)) != len(source_pitch_classes):
         raise ChordRealizationError(
-            f"Chord realization requires six distinct pitch classes: {source_pitch_classes}"
+            f"Chord realization requires distinct pitch classes: {source_pitch_classes}"
         )
     bad = [pc for pc in source_pitch_classes if pc < 0 or pc > 11]
     if bad:
@@ -144,9 +151,9 @@ def realize_chord_register(
     )
 
     realized_midi_notes = tuple(sorted(folded_unsorted))
-    if len(realized_midi_notes) != 6 or len(set(realized_midi_notes)) != 6:
+    if len(set(realized_midi_notes)) != len(realized_midi_notes):
         raise ChordRealizationError(
-            "Chord realization produced non-distinct MIDI notes after fold/sort: "
+            "Chord realization produced duplicate MIDI notes after fold/sort: "
             f"source_pitch_classes={source_pitch_classes} canonical_stacked={canonical_stacked} "
             f"folded_unsorted={folded_unsorted}"
         )
@@ -156,7 +163,7 @@ def realize_chord_register(
             f"realized={realized_midi_notes} register={register_policy.min_midi}..{register_policy.max_midi}"
         )
 
-    velocities = tuple(performance_policy.velocity_low_to_high)
+    velocities = tuple(performance_policy.velocity_low_to_high[:len(realized_midi_notes)])
     diagnostics = (
         f"source_symbol={construction.source_symbol}",
         f"source_pitch_classes={source_pitch_classes}",

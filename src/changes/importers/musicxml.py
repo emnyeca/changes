@@ -422,6 +422,8 @@ def _parse_form_markers(measure: ET.Element, measure_number: str) -> list[RawFor
     markers: list[RawFormMarker] = []
 
     for barline in _children(measure, "barline"):
+        location = barline.attrib.get("location", "right")
+
         repeat = _first(barline, "repeat")
         if repeat is not None:
             direction = repeat.attrib.get("direction", "")
@@ -455,25 +457,61 @@ def _parse_form_markers(measure: ET.Element, measure_number: str) -> list[RawFor
                 )
             )
 
-    for direction in _children(measure, "direction"):
-        d_type = _first(direction, "direction-type")
-        if d_type is None:
-            continue
-        if _first(d_type, "segno") is not None:
-            markers.append(RawFormMarker(measure_number=measure_number, marker_type="segno", raw_payload={}))
-        if _first(d_type, "coda") is not None:
-            markers.append(RawFormMarker(measure_number=measure_number, marker_type="coda", raw_payload={}))
-        if _first(d_type, "tocoda") is not None:
-            markers.append(RawFormMarker(measure_number=measure_number, marker_type="tocoda", raw_payload={}))
-        words = _text(_first(d_type, "words"))
-        if words is not None:
+        bar_style = _text(_first(barline, "bar-style"))
+        if bar_style == "light-light":
             markers.append(
                 RawFormMarker(
                     measure_number=measure_number,
-                    marker_type="words",
-                    raw_payload={"text": words},
+                    marker_type="double_barline",
+                    raw_payload={"location": location},
                 )
             )
+
+    for direction in _children(measure, "direction"):
+        d_type = _first(direction, "direction-type")
+        if d_type is not None:
+            if _first(d_type, "segno") is not None:
+                markers.append(RawFormMarker(measure_number=measure_number, marker_type="segno", raw_payload={}))
+            if _first(d_type, "coda") is not None:
+                markers.append(RawFormMarker(measure_number=measure_number, marker_type="coda", raw_payload={}))
+            if _first(d_type, "tocoda") is not None:
+                markers.append(RawFormMarker(measure_number=measure_number, marker_type="tocoda", raw_payload={}))
+            words = _text(_first(d_type, "words"))
+            if words is not None:
+                markers.append(
+                    RawFormMarker(
+                        measure_number=measure_number,
+                        marker_type="words",
+                        raw_payload={"text": words},
+                    )
+                )
+            rehearsal_el = _first(d_type, "rehearsal")
+            if rehearsal_el is not None:
+                markers.append(
+                    RawFormMarker(
+                        measure_number=measure_number,
+                        marker_type="rehearsal",
+                        raw_payload={"text": _text(rehearsal_el) or ""},
+                    )
+                )
+
+        sound = _first(direction, "sound")
+        if sound is not None:
+            for attr, mtype in (
+                ("segno", "sound_segno"),
+                ("coda", "sound_coda"),
+                ("tocoda", "sound_tocoda"),
+                ("dalsegno", "sound_dalsegno"),
+                ("dacapo", "sound_dacapo"),
+            ):
+                if sound.attrib.get(attr):
+                    markers.append(
+                        RawFormMarker(
+                            measure_number=measure_number,
+                            marker_type=mtype,
+                            raw_payload={},
+                        )
+                    )
 
     return markers
 
@@ -642,7 +680,12 @@ def extract_musicxml_groove(xml_text: str) -> str | None:
     return None
 
 
-def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int | str = 120) -> SongModel:
+def imported_song_to_song_model(
+    imported: ImportedSong,
+    *,
+    tempo: Fraction | int | str = 120,
+    section_ids: tuple[str | None, ...] | None = None,
+) -> SongModel:
     meter = imported.initial_time_signature or {"beats": 4, "beat_type": 4}
     beats = int(meter.get("beats", 4))
     beat_type = int(meter.get("beat_type", 4))
@@ -652,12 +695,13 @@ def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int
     absolute_start = Fraction(0, 1)
 
     for measure_index, bar in enumerate(imported.bars, start=1):
+        sid = section_ids[measure_index - 1] if section_ids is not None else None
         event_count = len(bar.events)
         if event_count == 0:
             measures.append(
                 Measure(
                     number=measure_index,
-                    section_id=None,
+                    section_id=sid,
                     meter_numerator=beats,
                     meter_denominator=beat_type,
                     absolute_start_quarters=absolute_start,
@@ -685,7 +729,7 @@ def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int
         measures.append(
             Measure(
                 number=measure_index,
-                section_id=None,
+                section_id=sid,
                 meter_numerator=beats,
                 meter_denominator=beat_type,
                 absolute_start_quarters=absolute_start,

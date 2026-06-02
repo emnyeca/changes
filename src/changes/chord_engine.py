@@ -81,7 +81,7 @@ CHORD_TENSION_PREFERENCE: dict[str, tuple[int, ...]] = {
     "dominant_altered": (1, 3, 8, 6, 2, 9, 5),
     "dominant_augmented": (2, 6, 9, 8),
     "suspended": (2, 9, 1),
-    "half_diminished": (2, 5, 8, 1),
+    "half_diminished": (2, 5, 9, 8, 1),
     "diminished": (2, 5, 8, 11),
     "augmented": (2, 6, 10, 9, 5),
     "power": (2, 9, 5, 10, 11),

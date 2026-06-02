@@ -19,6 +19,7 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Callable
 
+from changes.importers.form_expander import FormExpansionResult, expand_form
 from changes.importers.musicxml import (
     ImportedSong,
     extract_musicxml_groove,
@@ -473,8 +474,29 @@ def import_musicxml_with_midi(
     else:
         meter_source = "default"
 
+    # Form expansion
+    expansion = expand_form(imported)
+    for w in expansion.warnings:
+        warnings.append(w)
+
+    # Build expanded ImportedSong for SongModel conversion
+    from changes.importers.musicxml import ImportedSong as _ImportedSong
+    expanded_imported = _ImportedSong(
+        title=imported.title,
+        composer=imported.composer,
+        source_software=imported.source_software,
+        source_musicxml_version=imported.source_musicxml_version,
+        initial_key=imported.initial_key,
+        initial_time_signature=imported.initial_time_signature,
+        bars=expansion.bars,
+        raw_form_markers=(),
+        warnings=imported.warnings,
+    )
+
     song = imported_song_to_song_model(
-        imported, tempo=Fraction(tempo).limit_denominator(1000)
+        expanded_imported,
+        tempo=Fraction(tempo).limit_denominator(1000),
+        section_ids=expansion.section_ids,
     )
     if working_key:
         from dataclasses import replace

@@ -376,29 +376,32 @@ _RELATIVE_MINOR_TONIC = {
 }
 
 
-def _musicxml_working_key(imported: ImportedSong) -> tuple[str | None, str]:
-    """Extract working_key from ImportedSong's key signature. Returns (key, source).
+def _musicxml_working_key(imported: ImportedSong) -> tuple[str | None, str | None, str]:
+    """Extract working_key and mode from ImportedSong's key signature.
 
+    Returns (working_key, working_key_mode, source).
     For minor mode keys, returns the actual minor tonic (not the relative major),
-    e.g. fifths=0, mode=minor → "A" (A minor), not "C" (C major).
+    e.g. fifths=0, mode=minor → ("A", "minor"), not ("C", "major").
     """
     if imported.initial_key is None:
-        return None, "unknown"
+        return None, None, "unknown"
     fifths = int(imported.initial_key.get("fifths", 0))
     mode = str(imported.initial_key.get("mode", "major")).lower()
     major_key = _FIFTHS_TO_MAJOR.get(fifths)
     if major_key is None:
-        return None, "unknown"
+        return None, None, "unknown"
     if mode == "minor":
-        return _RELATIVE_MINOR_TONIC.get(major_key, major_key), "musicxml"
-    return major_key, "musicxml"
+        return _RELATIVE_MINOR_TONIC.get(major_key, major_key), "minor", "musicxml"
+    return major_key, "major", "musicxml"
 
 
-def _midi_working_key(midi_key: str | None) -> str | None:
-    """Convert mido key string ('C', 'Em', 'Bb') to working_key (tonic only)."""
+def _midi_working_key(midi_key: str | None) -> tuple[str | None, str | None]:
+    """Convert mido key string ('C', 'Em', 'Bb') to (working_key, working_key_mode)."""
     if not midi_key:
-        return None
-    return midi_key[:-1] if midi_key.endswith("m") else midi_key
+        return None, None
+    if midi_key.endswith("m"):
+        return midi_key[:-1], "minor"
+    return midi_key, "major"
 
 
 # ── Core import: one MusicXML ± MIDI ─────────────────────────────────────────
@@ -440,13 +443,17 @@ def import_musicxml_with_midi(
             warnings.append(f"Unsupported iReal style default tempo: {groove}")
 
     # Key
-    xml_key, key_source = _musicxml_working_key(imported)
-    midi_key = _midi_working_key(midi_meta.key)
-    if xml_key and midi_key and xml_key != midi_key:
+    from changes.key_signature import format_working_key
+    xml_key, xml_mode, key_source = _musicxml_working_key(imported)
+    midi_key, midi_mode = _midi_working_key(midi_meta.key)
+    if xml_key and midi_key and (xml_key != midi_key or xml_mode != midi_mode):
+        xml_display = format_working_key(xml_key, xml_mode)
+        midi_display = format_working_key(midi_key, midi_mode)
         warnings.append(
-            f"key mismatch: MusicXML={xml_key}, MIDI={midi_key}. MusicXML was used."
+            f"key mismatch: MusicXML={xml_display}, MIDI={midi_display}. MusicXML was used."
         )
     working_key = xml_key or midi_key
+    working_key_mode = xml_mode if xml_key else midi_mode
     if not xml_key and midi_key:
         key_source = "midi"
 
@@ -471,7 +478,7 @@ def import_musicxml_with_midi(
     )
     if working_key:
         from dataclasses import replace
-        song = replace(song, working_key=working_key)
+        song = replace(song, working_key=working_key, working_key_mode=working_key_mode)
 
     return ImportedSongCandidate(
         source_name=source_name,

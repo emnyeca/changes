@@ -39,12 +39,14 @@ class SongModel:
     working_key: str | None
     performance_tempo: Fraction
     measures: tuple[Measure, ...]
+    working_key_mode: str | None = None
 
 
 def song_model_to_dict(song: SongModel) -> dict:
     return {
         "title": song.title,
         "working_key": song.working_key,
+        "working_key_mode": song.working_key_mode,
         "performance_tempo": _fraction_to_text(song.performance_tempo),
         "measures": [
             {
@@ -96,6 +98,7 @@ def song_model_from_dict(data: dict) -> SongModel:
     return SongModel(
         title=str(data.get("title") or "Untitled"),
         working_key=(None if data.get("working_key") is None else str(data.get("working_key"))),
+        working_key_mode=(None if data.get("working_key_mode") is None else str(data.get("working_key_mode"))),
         performance_tempo=_fraction_from_text(data.get("performance_tempo", "120")),
         measures=tuple(measures),
     )

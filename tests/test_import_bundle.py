@@ -18,6 +18,8 @@ from changes.importers.import_bundle import (
     ImportBundleResult,
     MidiMetadata,
     MidiUpdateCandidate,
+    _midi_working_key,
+    _musicxml_working_key,
     choose_import_tempo,
     choose_midi_only_update_tempo,
     extract_zip,
@@ -403,6 +405,69 @@ def test_meter_mismatch_warning() -> None:
     mid = _make_midi(meter=(3, 4))
     c = import_musicxml_with_midi("t", _WITH_TEMPO_XML, mid)
     assert any("meter mismatch" in w for w in c.warnings)
+
+
+# ── _midi_working_key ─────────────────────────────────────────────────────────
+
+def test_midi_working_key_major() -> None:
+    assert _midi_working_key("C") == ("C", "major")
+
+def test_midi_working_key_flat_major() -> None:
+    assert _midi_working_key("Bb") == ("Bb", "major")
+
+def test_midi_working_key_minor() -> None:
+    assert _midi_working_key("Em") == ("E", "minor")
+
+def test_midi_working_key_sharp_minor() -> None:
+    assert _midi_working_key("F#m") == ("F#", "minor")
+
+def test_midi_working_key_none() -> None:
+    assert _midi_working_key(None) == (None, None)
+
+
+# ── working_key_mode on imported SongModel ────────────────────────────────────
+
+def test_import_sets_major_mode() -> None:
+    # with_tempo.musicxml has fifths=0 (no mode element → defaults to major)
+    c = import_musicxml_with_midi("t", _WITH_TEMPO_XML)
+    assert c.song.working_key == "C"
+    assert c.song.working_key_mode == "major"
+
+
+_NO_KEY_XML = b"""\
+<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <work><work-title>No Key Song</work-title></work>
+  <part id="P1">
+    <measure number="1">
+      <attributes>
+        <divisions>4</divisions>
+        <time><beats>4</beats><beat-type>4</beat-type></time>
+      </attributes>
+      <harmony><root><root-step>C</root-step></root><kind>major</kind></harmony>
+      <note><duration>16</duration></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+
+
+def test_import_minor_mode_from_midi() -> None:
+    # No XML key → MIDI key Am (minor) is used as fallback
+    mid = _make_midi(key_sf=0, key_minor=True)
+    c = import_musicxml_with_midi("t", _NO_KEY_XML, mid)
+    assert c.song.working_key == "A"
+    assert c.song.working_key_mode == "minor"
+
+
+def test_key_mismatch_includes_mode_in_warning() -> None:
+    # XML C major, MIDI Am — same tonic, different mode → mismatch
+    mid = _make_midi(key_sf=0, key_minor=True)
+    c = import_musicxml_with_midi("t", _WITH_TEMPO_XML, mid)
+    assert any("key mismatch" in w for w in c.warnings)
+    # Warning should include mode info ("C" vs "Am" display)
+    warning_text = " ".join(c.warnings)
+    assert "major" in warning_text or "minor" in warning_text or "Am" in warning_text
 
 
 # ── import_files (batch) ──────────────────────────────────────────────────────

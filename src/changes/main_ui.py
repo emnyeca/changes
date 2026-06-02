@@ -18,6 +18,47 @@ from changes.library import SongEntry, delete_song, list_songs, overwrite_song, 
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
 
+
+# ── Section helpers ───────────────────────────────────────────────────────────
+
+def extract_section_ids(song: SongModel) -> list[str]:
+    """Return ordered unique section_ids from a SongModel (preserving first occurrence order)."""
+    seen: dict[str, None] = {}
+    for m in song.measures:
+        if m.section_id is not None:
+            seen.setdefault(m.section_id, None)
+    return list(seen.keys())
+
+
+def filter_song_by_sections(song: SongModel, selected: set[str]) -> SongModel:
+    """Return a new SongModel containing only measures in the selected section_ids.
+
+    absolute_start_quarters is re-computed from zero for the filtered measures.
+    Measures with section_id=None are included only if selected contains None.
+    """
+    from fractions import Fraction as _Frac
+    from dataclasses import replace as _replace
+
+    filtered_measures = [
+        m for m in song.measures
+        if m.section_id in selected
+    ]
+    # Re-number and recompute absolute_start_quarters
+    new_measures = []
+    absolute_start = _Frac(0)
+    for new_num, m in enumerate(filtered_measures, start=1):
+        if m.harmony:
+            measure_len = m.harmony[-1].offset_quarters + m.harmony[-1].duration_quarters
+        else:
+            beats, beat_type = m.meter_numerator, m.meter_denominator
+            measure_len = _Frac(4 * beats, beat_type)
+        new_measures.append(
+            _replace(m, number=new_num, absolute_start_quarters=absolute_start)
+        )
+        absolute_start += measure_len
+
+    return _replace(song, measures=tuple(new_measures))
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 _ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
@@ -874,8 +915,13 @@ def _load_song_into_editor(song: SongModel) -> None:
     if song.measures:
         m = song.measures[0]
         state.meter = f"{m.meter_numerator}/{m.meter_denominator}"
-    # Rebuild cells from measures
+    # Rebuild cells from measures; insert || at section boundaries
+    prev_section = None
     for m in song.measures:
+        if m.section_id != prev_section:
+            if prev_section is not None:
+                state.insert("||")
+            prev_section = m.section_id
         for h in m.harmony:
             state.insert(h.symbol)
         state.insert("|")

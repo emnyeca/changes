@@ -17,7 +17,12 @@ from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections
-from changes.ui_pipeline import count_auto_split_patterns, count_linear_patterns, song_to_syx_bytes
+from changes.ui_pipeline import (
+    count_auto_split_patterns,
+    count_linear_patterns,
+    song_to_syx_bytes,
+    song_to_syx_bytes_bundle,
+)
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -180,6 +185,11 @@ def _ss_init() -> None:
         ("_import_progress_request", None), ("_import_progress_status", None),
         ("_import_uploader_reset_token", 0),
         ("_send_confirm_mode", None),
+        # Action-specific isolated result state
+        ("_send_area_ok", False), ("_send_area_ok_detail", None),
+        ("_send_area_error", None), ("_send_area_syx_bytes", None), ("_send_area_syx_fname", None),
+        ("_adv_syx_ok", False), ("_adv_syx_bytes", None), ("_adv_syx_fname", None), ("_adv_syx_error", None),
+        ("_dry_run_result", None), ("_dry_run_error", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -473,6 +483,7 @@ def _dialog_pending_switch() -> None:
     col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
     if col_cancel.button("Cancel", key="sw_cancel", use_container_width=True):
         st.session_state._pending_switch = None
+        _reset_song_table_view()
         st.rerun()
     if col_discard.button("Discard and switch", type="primary", key="sw_discard", use_container_width=True):
         _do_switch_song(pending_switch)
@@ -1359,9 +1370,13 @@ def _render_settings() -> None:
             settings.chord_center_midi = new_chord_midi; changed = True
     with ch3:
         st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 12)}`")
+    # Chord is polyphonic — toolkit currently only supports multi-note on track 8.
+    _CHORD_TRACK_OPTS = ["None", "8"]
     cur_chord = settings.chord_track
-    chord_idx = 0 if cur_chord is None else cur_chord
-    new_chord_sel = st.selectbox("Track", _TRACK_OPTS, index=chord_idx, key="_s_chord_track")
+    chord_track_val = "None" if cur_chord is None else ("8" if cur_chord == 8 else "None")
+    if cur_chord not in (None, 8):
+        st.caption(f"⚠ Chord track {cur_chord} is not supported (polyphonic requires Track 8). Reset to None.")
+    new_chord_sel = st.selectbox("Track", _CHORD_TRACK_OPTS, index=_CHORD_TRACK_OPTS.index(chord_track_val), key="_s_chord_track")
     new_chord_track: int | None = None if new_chord_sel == "None" else int(new_chord_sel)
     if new_chord_track != settings.chord_track:
         settings.chord_track = new_chord_track; changed = True
@@ -1417,42 +1432,127 @@ def _render_settings() -> None:
     if song:
         adv1, adv2 = st.columns(2)
         with adv1:
-            if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx"):
+            if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx_btn"):
+                # Clear previous state before new action
+                st.session_state._adv_syx_ok = False
+                st.session_state._adv_syx_bytes = None
+                st.session_state._adv_syx_fname = None
+                st.session_state._adv_syx_error = None
                 with st.spinner("Generating SYX..."):
                     try:
                         syx = _export_syx_bytes(song, settings)
-                        st.session_state._syx_bytes = syx
-                        st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
-                        st.success("Done")
+                        st.session_state._adv_syx_ok = True
+                        st.session_state._adv_syx_bytes = syx
+                        st.session_state._adv_syx_fname = f"{song.title or 'changes'}.syx"
                     except ModuleNotFoundError:
-                        st.error("digitone-syx-toolkit is required:\n`pip install -e ../digitone-syx-toolkit`")
+                        st.session_state._adv_syx_error = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
                     except Exception as exc:
-                        st.error(str(exc))
-            if "_syx_bytes" in st.session_state:
-                st.download_button("↓ Download .syx", data=st.session_state._syx_bytes,
-                                   file_name=st.session_state.get("_syx_fname","changes.syx"),
-                                   mime="application/octet-stream", use_container_width=True,
-                                   key="_adv_syx_dl")
+                        st.session_state._adv_syx_error = str(exc)
+            if st.session_state.get("_adv_syx_ok") and st.session_state.get("_adv_syx_bytes"):
+                syx_b = st.session_state._adv_syx_bytes
+                st.success(f"Export done — {len(syx_b):,} bytes")
+                st.download_button(
+                    "↓ Download .syx",
+                    data=syx_b,
+                    file_name=st.session_state.get("_adv_syx_fname", "changes.syx"),
+                    mime="application/octet-stream",
+                    use_container_width=True,
+                    key="_adv_syx_dl",
+                )
+            elif st.session_state.get("_adv_syx_error"):
+                st.error(st.session_state._adv_syx_error)
         with adv2:
             if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
+                st.session_state._dry_run_result = None
+                st.session_state._dry_run_error = None
                 with st.spinner("Analyzing..."):
                     try:
+                        import traceback as _tb
                         from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+                        from changes.song_filter import extract_section_ids as _sec_ids
                         from changes.ui_pipeline import compile_song_for_ui
                         compiled = compile_song_for_ui(song, settings)
                         bp = compile_timeline_to_digitone_bundle_plan(
                             compiled.song, compiled.timeline, compiled.target_profile
                         )
-                        st.json({
-                            "pattern_count": len(bp.patterns),
-                            "patterns": [
-                                {"name": p.pattern_name, "steps": p.total_steps, "section": p.section_label}
-                                for p in bp.patterns
-                            ],
-                            "warnings": list(bp.warnings),
-                        })
+                        timing = bp.timing
+                        all_secs = _sec_ids(compiled.song)
+                        sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs)
+                        enabled_layers: list[str] = []
+                        if any(t is not None for t in settings.cloud_tracks[:6]):
+                            enabled_layers.append(f"Cloud ({sum(1 for t in settings.cloud_tracks[:6] if t is not None)}/6 voices)")
+                        if settings.bass_track is not None:
+                            enabled_layers.append(f"Bass → Track {settings.bass_track}")
+                        if settings.chord_track is not None:
+                            enabled_layers.append(f"Chord → Track {settings.chord_track}")
+                        disabled_layers = [lbl for lbl in ["Cloud", "Bass", "Chord"] if not any(lbl in x for x in enabled_layers)]
+                        total_events = sum(len(p.events) for p in bp.patterns)
+                        st.session_state._dry_run_result = {
+                            "song": {
+                                "title": compiled.song.title,
+                                "key_mode": f"{compiled.song.working_key} {compiled.song.working_key_mode or ''}".strip(),
+                                "tempo": float(compiled.song.performance_tempo),
+                                "meter": (f"{compiled.song.measures[0].meter_numerator}/{compiled.song.measures[0].meter_denominator}"
+                                          if compiled.song.measures else "?"),
+                                "source_measures": len(compiled.song.measures),
+                            },
+                            "sections": {
+                                "all_section_ids": all_secs,
+                                "selected_section_ids": sel_secs,
+                                "fallback_ALL_used": all_secs == ["ALL"],
+                            },
+                            "render_settings": {
+                                "cloud_tracks": list(settings.cloud_tracks[:6]),
+                                "bass_track": settings.bass_track,
+                                "chord_track": settings.chord_track,
+                                "cloud_trigger": settings.cloud_trigger_policy,
+                                "bass_trigger": settings.bass_trigger_policy,
+                                "chord_trigger": settings.chord_trigger_policy,
+                                "cloud_center_midi": settings.cloud_center_midi,
+                                "bass_center_midi": settings.bass_center_midi,
+                                "chord_center_midi": settings.chord_center_midi,
+                            },
+                            "output": {
+                                "enabled_layers": enabled_layers,
+                                "disabled_layers": disabled_layers,
+                                "total_timeline_events": len(compiled.timeline.events),
+                                "total_compiled_events": total_events,
+                            },
+                            "timing": {
+                                "performance_tempo": float(compiled.timeline.performance_tempo),
+                                "device_tempo": float(timing.device_tempo),
+                                "speed": timing.speed,
+                                "q_step": str(timing.q_step),
+                            },
+                            "bundle": {
+                                "pattern_count": len(bp.patterns),
+                                "patterns": [
+                                    {
+                                        "name": p.pattern_name,
+                                        "steps": p.total_steps,
+                                        "section_id": p.section_id,
+                                        "section_label": p.section_label,
+                                        "events": len(p.events),
+                                    }
+                                    for p in bp.patterns
+                                ],
+                                "warnings": list(bp.warnings),
+                            },
+                        }
                     except Exception as exc:
-                        st.error(str(exc))
+                        import traceback as _tb
+                        st.session_state._dry_run_error = {
+                            "summary": str(exc),
+                            "type": type(exc).__name__,
+                            "traceback": _tb.format_exc(),
+                        }
+            if st.session_state.get("_dry_run_result"):
+                st.json(st.session_state._dry_run_result)
+            elif st.session_state.get("_dry_run_error"):
+                err = st.session_state._dry_run_error
+                st.error(f"{err['type']}: {err['summary']}")
+                with st.expander("Traceback"):
+                    st.code(err["traceback"], language="text")
     else:
         st.caption("No song loaded. Select or compose a song first.")
 
@@ -1468,6 +1568,31 @@ def _render_main() -> None:
         _render_import_section()
         st.divider()
         _render_settings()
+
+
+def _has_any_layer(settings: AppSettings) -> bool:
+    """Return True when at least one Cloud/Bass/Chord output track is configured."""
+    has_cloud = any(t is not None for t in settings.cloud_tracks[:6])
+    has_bass = settings.bass_track is not None
+    has_chord = settings.chord_track is not None
+    return has_cloud or has_bass or has_chord
+
+
+def _action_disabled_reason(
+    *,
+    has_selected_song: bool,
+    settings: AppSettings,
+    selected_sections: set[str],
+    song_has_sections: bool,
+) -> str | None:
+    """Return a short human-readable reason if actions should be disabled, else None."""
+    if not has_selected_song:
+        return None
+    if not _has_any_layer(settings):
+        return "Enable at least one layer: Cloud, Bass, or Chord."
+    if song_has_sections and not selected_sections:
+        return "Select at least one section to preview or export."
+    return None
 
 
 def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
@@ -1530,7 +1655,25 @@ def _render_preview_send() -> None:
         label_visibility="collapsed",
     )
 
-    # ── Auto split warning ─────────────────────────────────────────────────────
+    # ── Compute disable conditions ─────────────────────────────────────────────
+    song_path = st.session_state.get("_selected_path")
+    selected_sections: set[str] = set()
+    song_has_real_sections = False
+    if song:
+        selected_sections = _get_or_init_section_filter(song, song_path)
+        all_sec_ids = extract_section_ids(song)
+        from changes.song_filter import FALLBACK_ALL_SECTION
+        song_has_real_sections = all_sec_ids != [FALLBACK_ALL_SECTION]
+
+    disable_reason = _action_disabled_reason(
+        has_selected_song=has_selected_song,
+        settings=settings,
+        selected_sections=selected_sections,
+        song_has_sections=song_has_real_sections,
+    )
+    actions_disabled = not has_selected_song or disable_reason is not None
+
+    # ── Auto split info / warnings ─────────────────────────────────────────────
     if song:
         effective_song = _filtered_song_for_send(song)
         try:
@@ -1543,9 +1686,9 @@ def _render_preview_send() -> None:
                     )
                 else:
                     sections = extract_section_ids(effective_song)
-                    st.caption(f"Linear: {len(effective_song.measures)} measures / {len(sections)} section(s)")
+                    n_sec = len(sections) if sections != ["ALL"] else 0
+                    st.caption(f"Linear: {len(effective_song.measures)} measures" + (f" / {n_sec} section(s)" if n_sec else ""))
             else:
-                # Bundle by Section: one pattern per section
                 sections = extract_section_ids(effective_song)
                 autosplit_warnings = []
                 for sec_id in sections:
@@ -1556,16 +1699,23 @@ def _render_preview_send() -> None:
                             autosplit_warnings.append(f"⚠ {_display_section_label(sec_id)} Auto Split → {n} patterns")
                     except Exception:
                         pass
+                n_patterns = sum(
+                    max(1, _count_patterns(filter_song_by_sections(effective_song, {s}), settings))
+                    for s in sections
+                ) if sections != ["ALL"] else 1
+                label = "ALL (no sections)" if sections == ["ALL"] else f"{len(sections)} section(s) / {n_patterns} pattern(s)"
                 if autosplit_warnings:
                     st.markdown(
                         f'<span class="autosplit-warn">{", ".join(autosplit_warnings)}</span>',
                         unsafe_allow_html=True,
                     )
                 else:
-                    st.caption(f"Bundle by Section: {len(sections)} section(s) / {len(sections)} pattern(s)")
+                    st.caption(f"Bundle by Section: {label}")
         except Exception:
             pass
 
+    if disable_reason:
+        st.caption(f"⚠ {disable_reason}")
     if not settings.confirm_before_hardware_write:
         st.caption("⚠ Hardware write confirmation is OFF (see Settings)")
 
@@ -1582,7 +1732,7 @@ def _render_preview_send() -> None:
 
     # Preview (Realtime MIDI)
     with ps1:
-        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=not has_selected_song):
+        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=actions_disabled):
             if not song:
                 st.warning("No song loaded")
             else:
@@ -1590,7 +1740,7 @@ def _render_preview_send() -> None:
 
     # Send SysEx
     with ps2:
-        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=not has_selected_song):
+        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=actions_disabled):
             if not song:
                 st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:
@@ -1600,9 +1750,9 @@ def _render_preview_send() -> None:
             else:
                 effective = _filtered_song_for_send(song)
                 if send_mode == "Bundle by Section":
-                    _run_send_bundle_by_section(effective, settings, dest)
+                    _run_send_bundle_by_section(effective, settings, dest, send_mode)
                 else:
-                    _run_send(effective, settings, dest)
+                    _run_send(effective, settings, dest, send_mode)
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -1610,43 +1760,135 @@ def _render_preview_send() -> None:
         confirm_mode = st.session_state.get("_send_confirm_mode", send_mode)
         _show_send_confirm_dialog(effective, settings, dest, confirm_mode)
 
+    # ── Persistent send results ────────────────────────────────────────────────
+    if st.session_state.get("_send_area_ok"):
+        detail = st.session_state.get("_send_area_ok_detail") or {}
+        dest_label = detail.get("dest", "?")
+        mode_label = detail.get("mode", "?")
+        pat_names = detail.get("pattern_names", [])
+        pat_count = detail.get("patterns", len(pat_names))
+        pat_info = f"  \nPatterns: {pat_count}" + (
+            (" (" + ", ".join(pat_names[:6]) + ("…" if len(pat_names) > 6 else "") + ")")
+            if pat_names else ""
+        )
+        st.success(f"Send completed.  \nDestination: {dest_label}  \nMode: {mode_label}{pat_info}")
+        syx_b = st.session_state.get("_send_area_syx_bytes")
+        if syx_b:
+            st.download_button(
+                "↓ Download .syx",
+                data=syx_b,
+                file_name=st.session_state.get("_send_area_syx_fname", "changes.syx"),
+                mime="application/octet-stream",
+                use_container_width=True,
+                key="_ps_syx_dl",
+            )
+    elif st.session_state.get("_send_area_error"):
+        err = st.session_state._send_area_error
+        st.error(err.get("summary", "Send failed"))
+        with st.expander("Error details"):
+            ctx = err.get("context", {})
+            if ctx:
+                st.json(ctx)
+            tb = err.get("traceback")
+            if tb:
+                st.code(tb, language="text")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 
-def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str) -> None:
-    """Send each section as a separate SYX bundle."""
-    sections = extract_section_ids(song)
-    if not sections:
-        _run_send(song, settings, dest)
-        return
-    combined_syx = b""
-    for sec_id in sections:
-        sec_song = filter_song_by_sections(song, {sec_id})
+def _clear_send_area_state() -> None:
+    for k in ("_send_area_ok", "_send_area_ok_detail", "_send_area_error",
+              "_send_area_syx_bytes", "_send_area_syx_fname"):
+        st.session_state[k] = None if k != "_send_area_ok" else False
+
+
+def _store_send_error(
+    exc: Exception,
+    *,
+    action: str,
+    song: SongModel,
+    dest: str,
+    send_mode: str,
+    settings: AppSettings,
+) -> None:
+    import traceback as _tb
+    selected_sections = list(st.session_state.get("_section_filter_selected") or [])
+    enabled_layers: list[str] = []
+    if any(t is not None for t in settings.cloud_tracks[:6]):
+        enabled_layers.append("Cloud")
+    if settings.bass_track is not None:
+        enabled_layers.append("Bass")
+    if settings.chord_track is not None:
+        enabled_layers.append("Chord")
+    st.session_state._send_area_error = {
+        "summary": str(exc),
+        "context": {
+            "action": action,
+            "song": song.title,
+            "send_mode": send_mode,
+            "destination": dest,
+            "selected_sections": selected_sections,
+            "enabled_layers": enabled_layers,
+            "exception_type": type(exc).__name__,
+            "exception_message": str(exc),
+        },
+        "traceback": _tb.format_exc(),
+    }
+
+
+def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Bundle by Section") -> None:
+    """Compile via bundle planner (preserves section-prefixed pattern names) and send."""
+    _clear_send_area_state()
+
+    with st.spinner("Compiling bundle..."):
         try:
-            combined_syx += _export_syx_bytes(sec_song, settings)
+            segments = song_to_syx_bytes_bundle(song, settings)
+        except ModuleNotFoundError:
+            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
+            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
+            return
         except Exception as exc:
-            st.warning(f"Section {_display_section_label(sec_id)}: {exc}")
-    if combined_syx:
-        st.session_state._syx_bytes = combined_syx
-        st.session_state._syx_fname = f"{song.title or 'changes'}_bundle.syx"
-        port_name = "DEBUG" if "DEBUG" in dest else dest
-        if port_name != "DEBUG":
-            with st.spinner(f"Sending {len(sections)} sections to {port_name}..."):
-                err = _send_syx_via_midi(combined_syx, port_name)
-                if err:
-                    st.error(err)
-                else:
-                    st.success(f"Sent {len(sections)} section(s) to {port_name}")
-        else:
-            st.info("Internal (DEBUG) - download only")
-        st.download_button(
-            "↓ Download .syx (bundle)",
-            data=combined_syx,
-            file_name=st.session_state.get("_syx_fname", "changes_bundle.syx"),
-            mime="application/octet-stream",
-            use_container_width=True,
-            key="_ps_bundle_dl",
-        )
+            _store_send_error(exc, action="bundle_compile", song=song, dest=dest, send_mode=send_mode, settings=settings)
+            return
+
+    if not segments:
+        st.session_state._send_area_error = {
+            "summary": "Bundle compile produced no segments.",
+            "context": {"song": song.title, "send_mode": send_mode},
+            "traceback": "",
+        }
+        return
+
+    combined_syx = b"".join(syx for _, syx in segments)
+    pat_names = [name for name, _ in segments]
+    port_name = "DEBUG" if "DEBUG" in dest else dest
+
+    if port_name != "DEBUG":
+        with st.spinner(f"Sending {len(segments)} pattern(s) to {port_name}..."):
+            err = _send_syx_via_midi(combined_syx, port_name)
+            if err:
+                st.session_state._send_area_error = {
+                    "summary": err,
+                    "context": {
+                        "action": "midi_send",
+                        "song": song.title,
+                        "send_mode": send_mode,
+                        "destination": port_name,
+                        "pattern_names": pat_names,
+                    },
+                    "traceback": "",
+                }
+                return
+
+    st.session_state._send_area_ok = True
+    st.session_state._send_area_ok_detail = {
+        "dest": port_name,
+        "mode": send_mode,
+        "patterns": len(segments),
+        "pattern_names": pat_names,
+    }
+    st.session_state._send_area_syx_bytes = combined_syx
+    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}_bundle.syx"
 
 
 def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
@@ -1696,27 +1938,36 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
 
 def _run_send_for_mode(song: SongModel, settings: AppSettings, dest: str, send_mode: str) -> None:
     if send_mode == "Bundle by Section":
-        _run_send_bundle_by_section(song, settings, dest)
+        _run_send_bundle_by_section(song, settings, dest, send_mode)
     else:
-        _run_send(song, settings, dest)
+        _run_send(song, settings, dest, send_mode)
 
 
 @st.dialog("Send SysEx to Digitone II?", dismissible=False)
 def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, dest: str, send_mode: str) -> None:
     st.warning("This will write data to hardware.")
+
+    # Show MIDI port prominently
+    port_name = dest if dest and not dest.startswith("(Select") else None
+    if port_name:
+        st.markdown(f"**Destination:**\n\n`{port_name}`")
+    else:
+        st.error("No MIDI destination selected. Please select a MIDI port.")
     st.caption(f"Send mode: {send_mode}")
+
+    send_allowed = port_name is not None
     cc1, cc2, cc3 = st.columns(3, width="stretch", gap="small")
     if cc1.button("Cancel", key="_send_conf_cancel", use_container_width=True):
         st.session_state._send_confirm = False
         st.session_state._send_confirm_mode = None
         st.rerun()
-    if cc2.button("Send", type="primary", key="_send_conf_ok", use_container_width=True):
+    if cc2.button("Send", type="primary", key="_send_conf_ok", disabled=not send_allowed, use_container_width=True):
         st.session_state._send_confirm = False
         st.session_state._send_confirm_mode = None
         if song:
             _run_send_for_mode(song, settings, dest, send_mode)
         st.rerun()
-    if cc3.button("Always Send", key="_send_conf_no_confirm", use_container_width=True):
+    if cc3.button("Always Send", key="_send_conf_no_confirm", disabled=not send_allowed, use_container_width=True):
         settings.confirm_before_hardware_write = False
         save_settings(settings)
         st.session_state._settings = settings
@@ -1772,40 +2023,48 @@ def _send_pipeline_preview(
         return [f"MIDI error: {exc}"]
 
 
-def _run_send(song: SongModel, settings: AppSettings, dest: str) -> None:
+def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Linear") -> None:
+    _clear_send_area_state()
+
     with st.spinner("Generating SysEx..."):
         try:
             syx = _export_syx_bytes(song, settings)
-            st.session_state._syx_bytes = syx
-            st.session_state._syx_fname = f"{song.title or 'changes'}.syx"
         except ModuleNotFoundError:
-            st.error("digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`")
+            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
+            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
             return
         except Exception as exc:
-            st.error(str(exc))
+            _store_send_error(exc, action="export", song=song, dest=dest, send_mode=send_mode, settings=settings)
             return
 
-    syx = st.session_state._syx_bytes
     port_name = "DEBUG" if "DEBUG" in dest else dest
 
     if port_name != "DEBUG":
         with st.spinner(f"Sending SysEx to {port_name}..."):
             err = _send_syx_via_midi(syx, port_name)
             if err:
-                st.error(err)
-            else:
-                st.success(f"Sent to {port_name}")
-    else:
-        st.info("Internal (DEBUG) - download only")
+                st.session_state._send_area_error = {
+                    "summary": err,
+                    "context": {
+                        "action": "midi_send",
+                        "song": song.title,
+                        "send_mode": send_mode,
+                        "destination": port_name,
+                        "syx_size_bytes": len(syx),
+                    },
+                    "traceback": "",
+                }
+                return
 
-    st.download_button(
-        "↓ Download .syx",
-        data=syx,
-        file_name=st.session_state.get("_syx_fname", "changes.syx"),
-        mime="application/octet-stream",
-        use_container_width=True,
-        key="_ps_syx_dl",
-    )
+    st.session_state._send_area_ok = True
+    st.session_state._send_area_ok_detail = {
+        "dest": port_name,
+        "mode": send_mode,
+        "patterns": 1,
+        "pattern_names": [],
+    }
+    st.session_state._send_area_syx_bytes = syx
+    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}.syx"
 
 
 def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:

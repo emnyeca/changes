@@ -199,12 +199,15 @@ def test_construct_chord_supported_quality_smoke(normalized_quality: str):
     assert all(pc in result.final_pitch_classes for pc in result.mandatory_pitch_classes)
 
 
-def test_construct_chord_raises_when_selected_collection_cannot_fill_six_notes():
+def test_construct_chord_returns_mandatory_notes_when_collection_insufficient():
     core = parse_chord_core("Cmaj7")
     selected = _selected_collection(0, 4, 7, 11)
 
-    with pytest.raises(ChordConstructionError, match="does not provide enough distinct automatic tensions"):
-        construct_chord_pitch_classes(core, selected)
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert result.final_pitch_classes == (0, 4, 7, 11)
+    assert len(result.final_pitch_classes) == 4
+    assert set(result.mandatory_pitch_classes).issubset(set(result.final_pitch_classes))
 
 
 def test_construct_chord_raises_for_unknown_normalized_quality():
@@ -228,3 +231,123 @@ def test_construct_chord_raises_for_unknown_normalized_quality():
 
     with pytest.raises(ChordConstructionError, match="Unsupported normalized chord quality"):
         construct_chord_pitch_classes(forged, tuple(range(12)))
+
+
+# ── variable note count (Chord layer) ─────────────────────────────────────────
+
+def test_bm_slash_a_does_not_raise_with_b_dorian_collection():
+    core = parse_chord_core("Bm/A")
+    # B Dorian: B C D E F# G A
+    selected = _selected_collection(11, 0, 2, 4, 6, 7, 9)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 11 in result.final_pitch_classes  # B
+    assert 2 in result.final_pitch_classes   # D
+    assert 6 in result.final_pitch_classes   # F#
+
+
+def test_bm_slash_a_mandatory_pitch_classes_all_in_final():
+    core = parse_chord_core("Bm/A")
+    selected = _selected_collection(11, 0, 2, 4, 6, 7, 9)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert set(result.mandatory_pitch_classes).issubset(set(result.final_pitch_classes))
+
+
+def test_bm_slash_a_final_pitch_classes_only_from_mandatory_and_selected_collection():
+    core = parse_chord_core("Bm/A")
+    selected = _selected_collection(11, 0, 2, 4, 6, 7, 9)
+    selected_set = set(selected)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    for pc in result.final_pitch_classes:
+        assert pc in selected_set or pc in result.mandatory_pitch_classes
+
+
+def test_bm_slash_a_adds_a_and_e_from_collection():
+    core = parse_chord_core("Bm/A")
+    selected = _selected_collection(11, 0, 2, 4, 6, 7, 9)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 9 in result.final_pitch_classes   # A
+    assert 4 in result.final_pitch_classes   # E
+    assert set(result.final_pitch_classes) == {11, 2, 6, 9, 4}
+
+
+def test_insufficient_collection_tensions_does_not_raise():
+    # Gm in a very restricted collection that has only mandatory tones
+    core = parse_chord_core("Gm")
+    selected = _selected_collection(7, 10, 2)  # G Bb D — mandatory only, no extra tensions
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert len(result.final_pitch_classes) == 3
+    assert result.automatic_tension_pitch_classes == ()
+
+
+def test_csus4_does_not_add_major_third_even_when_in_collection():
+    core = parse_chord_core("Csus4")
+    # C major scale includes E natural (pc 4)
+    selected = _selected_collection(0, 2, 4, 5, 7, 9, 11)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 4 not in result.final_pitch_classes  # E natural must not appear
+
+
+def test_c11_does_not_add_major_third_even_when_in_collection():
+    core = parse_chord_core("C11")
+    # collection includes E (4)
+    selected = _selected_collection(0, 2, 4, 5, 7, 9, 10)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 4 not in result.final_pitch_classes  # E natural must not appear
+
+
+def test_c5_does_not_add_third_or_flat_third():
+    core = parse_chord_core("C5")
+    selected = _selected_collection(0, 3, 4, 7)  # includes both E (4) and Eb (3)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 4 not in result.final_pitch_classes  # E natural
+    assert 3 not in result.final_pitch_classes  # Eb
+
+
+def test_c5_with_minimal_collection_returns_two_notes():
+    core = parse_chord_core("C5")
+    selected = _selected_collection(0, 7)  # root and fifth only
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert set(result.final_pitch_classes) == {0, 7}
+    assert len(result.final_pitch_classes) == 2
+
+
+def test_c7b9_does_not_add_natural9_or_sharp9_as_tension():
+    core = parse_chord_core("C7b9")
+    # collection has Db(1) [b9 = mandatory], D(2) [natural 9], D#(3) [#9]
+    selected = _selected_collection(0, 1, 2, 3, 4, 7, 10)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 1 in result.mandatory_pitch_classes   # Db (b9) kept
+    assert 2 not in result.final_pitch_classes   # D (natural 9) excluded
+    assert 3 not in result.final_pitch_classes   # D# (#9) excluded
+
+
+def test_c7sharp9_does_not_add_flat9_or_natural9_as_tension():
+    core = parse_chord_core("C7#9")
+    # collection has Db(1) [b9], D(2) [natural 9], D#(3) [#9 = mandatory]
+    selected = _selected_collection(0, 1, 2, 3, 4, 7, 10)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert 3 in result.mandatory_pitch_classes   # D# (#9) kept
+    assert 1 not in result.final_pitch_classes   # Db (b9) excluded
+    assert 2 not in result.final_pitch_classes   # D (natural 9) excluded

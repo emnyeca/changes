@@ -238,7 +238,7 @@ st.logo(
 def _render_header() -> None:
     song = _header_song()
     title = song.title if song else "Select a song"
-    key = format_working_key(song.working_key, song.working_key_mode) if song else "—"
+    key = format_working_key(song.working_key, getattr(song, "working_key_mode", None)) if song else "—"
     tempo = str(int(song.performance_tempo)) if song else "—"
     meter = (f"{song.measures[0].meter_numerator}/{song.measures[0].meter_denominator}"
              if song and song.measures else "—")
@@ -642,7 +642,7 @@ def _render_songlist(show_import: bool = True) -> None:
     orig_df = pd.DataFrame({
         "Select": pd.Series([st.session_state._selected_path == e.path for e in filtered], dtype="bool"),
         "Title": pd.Series([e.title+"⚠" if e.error else e.title for e in filtered], dtype="string"),
-        "Key":   pd.Series([format_working_key(e.song.working_key, e.song.working_key_mode) if e.song else "-" for e in filtered], dtype="string"),
+        "Key":   pd.Series([format_working_key(e.song.working_key, getattr(e.song, "working_key_mode", None)) if e.song else "-" for e in filtered], dtype="string"),
         "Tempo": pd.Series([int(e.song.performance_tempo) if e.song else 0 for e in filtered], dtype="Int64"),
         "Meter": pd.Series([_meter(e) for e in filtered], dtype="string"),
         "Delete": pd.Series([False for _ in filtered], dtype="bool"),
@@ -698,7 +698,7 @@ def _render_songlist(show_import: bool = True) -> None:
             if entry.song is None:
                 continue
             new_title = edited_df.at[i, "Title"] if i < len(edited_df) else entry.title
-            new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else format_working_key(entry.song.working_key, entry.song.working_key_mode)
+            new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else format_working_key(entry.song.working_key, getattr(entry.song, "working_key_mode", None))
             new_tempo = edited_df.at[i, "Tempo"] if i < len(edited_df) else int(entry.song.performance_tempo)
             new_meter = edited_df.at[i, "Meter"] if i < len(edited_df) else _meter(entry)
 
@@ -708,7 +708,7 @@ def _render_songlist(show_import: bool = True) -> None:
             meter_val = str(new_meter).strip()
 
             old_title = entry.title
-            old_key = format_working_key(entry.song.working_key, entry.song.working_key_mode)
+            old_key = format_working_key(entry.song.working_key, getattr(entry.song, "working_key_mode", None))
             old_tempo = int(entry.song.performance_tempo)
             old_meter = _meter(entry)
 

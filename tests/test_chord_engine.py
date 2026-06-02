@@ -137,6 +137,19 @@ def test_construct_chord_c7sharp9_does_not_auto_add_other_ninth_variants():
     assert 8 in result.automatic_tension_pitch_classes
 
 
+def test_construct_chord_gm7b5_uses_natural13_when_locrian_natural2_needs_six_notes():
+    core = parse_chord_core("Gm7b5")
+    selected = _selected_collection(1, 2, 4, 5, 7, 9, 10)
+
+    result = construct_chord_pitch_classes(core, selected)
+
+    assert set(result.mandatory_pitch_classes) == {7, 10, 1, 5}
+    assert result.automatic_tension_intervals == (2, 9)
+    assert result.automatic_tension_pitch_classes == (9, 4)
+    assert set(result.final_pitch_classes) == {7, 10, 1, 5, 9, 4}
+    assert len(result.final_pitch_classes) == 6
+
+
 def test_construct_chord_alt_allows_compound_alterations():
     core = parse_chord_core("Calt")
     selected = _selected_collection(0, 1, 2, 3, 4, 6, 7, 8, 10)

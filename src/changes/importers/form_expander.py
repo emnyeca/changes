@@ -427,30 +427,40 @@ def _execute_expansion(
 
 # ── Section label assignment ──────────────────────────────────────────────────
 
+_KNOWN_LABEL_MAP: dict[str, str] = {
+    "intro": "INT", "introduction": "INT", "intro.": "INT",
+    "coda": "COD", "cod": "COD", "coda.": "COD",
+    "bridge": "BRG", "brdg": "BRG", "brig": "BRG",
+    "outro": "OUT", "end": "OUT", "ending": "OUT", "fine": "OUT",
+    "verse": "VRS", "vrs": "VRS",
+    "chorus": "CHO", "cho": "CHO",
+    "theme": "THM",
+    "head": "HD",
+    "solo": "SOL",
+    "interlude": "ITL",
+    "vamp": "VMP",
+}
+
+
 def _shorten_label(label: str) -> str:
-    """Convert rehearsal label to a compact section prefix."""
-    l = label.strip()
-    if not l:
+    """Convert rehearsal label to an abbreviated section prefix for section_id.
+
+    Known words (intro, coda, bridge, ...) → fixed 2-3 char abbreviation.
+    Single letter (A, B, C) → kept as-is.
+    Other labels → uppercased ASCII, truncated to 3 chars.
+    """
+    raw = label.strip()
+    if not raw:
         return "S"
-    # Normalize known words
-    ll = l.lower()
-    if ll in ("intro", "introduction", "intro."):
-        return "Intro"
-    if ll in ("coda", "cod.", "coda."):
-        return "Coda"
-    if ll in ("outro", "end", "ending", "fine"):
-        return "Outro"
-    if ll in ("verse", "vrs"):
-        return "Verse"
-    if ll in ("chorus", "cho"):
-        return "Chorus"
-    if ll in ("bridge", "brdg", "brig"):
-        return "Bridge"
-    # Single uppercase letter (A, B, C, ...) → keep as is
-    if len(l) == 1 and l.isupper():
-        return l
-    # Capitalize first letter
-    return l[0].upper() + l[1:] if l else "S"
+    mapped = _KNOWN_LABEL_MAP.get(raw.lower())
+    if mapped is not None:
+        return mapped
+    # Single letter: keep as-is
+    if len(raw) == 1 and raw.isalpha():
+        return raw.upper()
+    # Multi-char: normalize to uppercase ASCII, truncate to 3 chars
+    normalized = re.sub(r"[^A-Za-z0-9]", "", raw).upper()
+    return normalized[:3] if normalized else "S"
 
 
 def _assign_section_ids(
@@ -479,11 +489,25 @@ def _assign_section_ids(
         is_new_section = False
         new_label: str | None = None
 
+        # Priority: rehearsal > coda target > structural_repeat_forward > double_barline > first_bar
+        #
+        # "Structural" repeat_forward: at the very start of the song, or immediately
+        # following a repeat_backward or double_barline@right in the source.  This
+        # avoids creating spurious section splits for in-section repeats.
+        _prev_is_section_end = (
+            src_idx > 0
+            and (
+                anns[src_idx - 1].repeat_backward
+                or anns[src_idx - 1].double_barline_right
+            )
+        )
         if ann.rehearsal:
             new_label = _shorten_label(ann.rehearsal)
             is_new_section = True
         elif coda_target_idx is not None and src_idx == coda_target_idx:
-            new_label = "Coda"
+            new_label = "COD"
+            is_new_section = True
+        elif ann.repeat_forward and (src_idx == 0 or _prev_is_section_end):
             is_new_section = True
         elif ann.double_barline_left:
             is_new_section = True
@@ -561,7 +585,9 @@ def expand_form(imported: ImportedSong) -> FormExpansionResult:
             section_ids=tuple(None for _ in bars),
             source_measure_count=len(bars),
             playback_measure_count=len(bars),
-            warnings=(str(exc),),
+            warnings=(
+                f"Form expansion failed; imported source order without playback expansion: {exc}",
+            ),
             diagnostics=(),
         )
 

@@ -25,7 +25,6 @@ from changes.models.rendered_timeline import RenderedTimeline
 from changes.models.song_model import SongModel
 
 MAX_PATTERN_STEPS = 128
-MAX_PATTERN_EVENTS = 128
 MAX_PATTERN_NAME_CHARS = 16
 
 DEFAULT_SECTION_TOKENS = {
@@ -268,86 +267,6 @@ def _resolve_short_segments(segments: list[_RawSegment]) -> tuple[list[_RawSegme
     return resolved, warnings
 
 
-def _segment_event_count(
-    seg: _RawSegment,
-    timeline: RenderedTimeline,
-    target: DigitoneTargetProfile,
-    timing: TimingPlan,
-) -> int:
-    return len(
-        compile_timeline_events_with_timing(
-            timeline,
-            target,
-            timing,
-            step_start=seg.global_step_start,
-            step_end=seg.global_step_end,
-            include_boundary_carryover=True,
-        )
-    )
-
-
-def _renumber_segment_splits(segments: list[_RawSegment]) -> list[_RawSegment]:
-    totals: dict[tuple[str | None, int, int], int] = {}
-    indexes: dict[tuple[str | None, int, int], int] = {}
-    for seg in segments:
-        key = (seg.section_id, seg.section_occurrence_index, seg.section_global_order_index)
-        totals[key] = totals.get(key, 0) + 1
-
-    renumbered: list[_RawSegment] = []
-    for seg in segments:
-        key = (seg.section_id, seg.section_occurrence_index, seg.section_global_order_index)
-        indexes[key] = indexes.get(key, 0) + 1
-        renumbered.append(
-            replace(
-                seg,
-                section_split_index=indexes[key],
-                section_split_count=totals[key],
-            )
-        )
-    return renumbered
-
-
-def _split_segments_by_event_capacity(
-    segments: list[_RawSegment],
-    timeline: RenderedTimeline,
-    target: DigitoneTargetProfile,
-    timing: TimingPlan,
-) -> list[_RawSegment]:
-    split_segments: list[_RawSegment] = []
-
-    for seg in segments:
-        if _segment_event_count(seg, timeline, target, timing) <= MAX_PATTERN_EVENTS:
-            split_segments.append(seg)
-            continue
-
-        cursor = seg.global_step_start
-        while cursor <= seg.global_step_end:
-            hi = min(seg.global_step_end, cursor + MAX_PATTERN_STEPS - 1)
-            min_end = min(seg.global_step_end, cursor + 1)
-            min_seg = replace(seg, global_step_start=cursor, global_step_end=min_end)
-            if _segment_event_count(min_seg, timeline, target, timing) > MAX_PATTERN_EVENTS:
-                raise ValueError(
-                    "Cannot split bundle segment within Digitone trigger slot capacity: "
-                    f"section={seg.section_label!r} global_step_start={cursor}"
-                )
-
-            best = min_end
-            lo = min_end
-            while lo <= hi:
-                mid = (lo + hi) // 2
-                candidate = replace(seg, global_step_start=cursor, global_step_end=mid)
-                if _segment_event_count(candidate, timeline, target, timing) <= MAX_PATTERN_EVENTS:
-                    best = mid
-                    lo = mid + 1
-                else:
-                    hi = mid - 1
-
-            split_segments.append(replace(seg, global_step_start=cursor, global_step_end=best))
-            cursor = best + 1
-
-    return _renumber_segment_splits(split_segments)
-
-
 def _build_auto_prefix(
     *,
     segment_index: int,
@@ -403,15 +322,12 @@ def compile_timeline_to_digitone_bundle_plan(
         raise ValueError("Bundle planning produced no segments")
 
     raw_segments, short_merge_warnings = _resolve_short_segments(raw_segments)
-    raw_segments = _split_segments_by_event_capacity(raw_segments, timeline, target, timing)
-    raw_segments, event_split_short_warnings = _resolve_short_segments(raw_segments)
-    raw_segments = _split_segments_by_event_capacity(raw_segments, timeline, target, timing)
 
     song_title = song.title
     multi = len(raw_segments) > 1
 
     patterns: list[DigitonePatternSegment] = []
-    bundle_warnings: list[str] = list(short_merge_warnings) + list(event_split_short_warnings)
+    bundle_warnings: list[str] = list(short_merge_warnings)
 
     overrides = explicit_pattern_name_overrides or {}
     label_occurrence_totals: dict[str, int] = {}
@@ -436,12 +352,6 @@ def compile_timeline_to_digitone_bundle_plan(
             step_end=seg.global_step_end,
             include_boundary_carryover=True,
         )
-        if len(events) > MAX_PATTERN_EVENTS:
-            raise ValueError(
-                f"Invalid pattern event count={len(events)} at segment_index={i}. "
-                "Bundle planning must resolve each segment to at most 128 events before encoding."
-            )
-
         section_token = _resolve_section_token(seg.section_label)
         warnings: list[str] = []
 

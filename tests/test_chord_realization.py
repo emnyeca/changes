@@ -88,9 +88,9 @@ def test_length_mode_inherit_is_retained_without_duration_resolution():
     assert result.length_mode == "inherit"
 
 
-def test_invalid_pitch_class_count_raises_error():
+def test_five_pitch_classes_realizes_without_error():
     construction = _build_construction("Cmaj7", (0, 2, 4, 5, 7, 9, 11))
-    broken = construction.__class__(
+    five_note = construction.__class__(
         source_symbol=construction.source_symbol,
         root_pc=construction.root_pc,
         normalized_quality=construction.normalized_quality,
@@ -104,8 +104,50 @@ def test_invalid_pitch_class_count_raises_error():
         diagnostics=construction.diagnostics,
     )
 
-    with pytest.raises(ChordRealizationError, match="exactly six pitch classes"):
-        realize_chord_register(broken)
+    result = realize_chord_register(five_note)
+
+    assert len(result.realized_midi_notes) == 5
+    assert len(result.velocities) == 5
+
+
+def test_too_few_pitch_classes_raises_error():
+    construction = _build_construction("Cmaj7", (0, 2, 4, 5, 7, 9, 11))
+    one_note = construction.__class__(
+        source_symbol=construction.source_symbol,
+        root_pc=construction.root_pc,
+        normalized_quality=construction.normalized_quality,
+        selected_collection_pitch_classes=construction.selected_collection_pitch_classes,
+        mandatory_intervals=construction.mandatory_intervals,
+        mandatory_pitch_classes=construction.mandatory_pitch_classes,
+        automatic_excluded_intervals=construction.automatic_excluded_intervals,
+        automatic_tension_intervals=construction.automatic_tension_intervals,
+        automatic_tension_pitch_classes=construction.automatic_tension_pitch_classes,
+        final_pitch_classes=(0,),
+        diagnostics=construction.diagnostics,
+    )
+
+    with pytest.raises(ChordRealizationError, match="2 to 6 pitch classes"):
+        realize_chord_register(one_note)
+
+
+def test_too_many_pitch_classes_raises_error():
+    construction = _build_construction("Cmaj7", (0, 2, 4, 5, 7, 9, 11))
+    seven_note = construction.__class__(
+        source_symbol=construction.source_symbol,
+        root_pc=construction.root_pc,
+        normalized_quality=construction.normalized_quality,
+        selected_collection_pitch_classes=construction.selected_collection_pitch_classes,
+        mandatory_intervals=construction.mandatory_intervals,
+        mandatory_pitch_classes=construction.mandatory_pitch_classes,
+        automatic_excluded_intervals=construction.automatic_excluded_intervals,
+        automatic_tension_intervals=construction.automatic_tension_intervals,
+        automatic_tension_pitch_classes=construction.automatic_tension_pitch_classes,
+        final_pitch_classes=(0, 1, 2, 3, 4, 5, 6),
+        diagnostics=construction.diagnostics,
+    )
+
+    with pytest.raises(ChordRealizationError, match="2 to 6 pitch classes"):
+        realize_chord_register(seven_note)
 
 
 def test_duplicate_pitch_classes_raise_error():
@@ -124,7 +166,7 @@ def test_duplicate_pitch_classes_raise_error():
         diagnostics=construction.diagnostics,
     )
 
-    with pytest.raises(ChordRealizationError, match="six distinct pitch classes"):
+    with pytest.raises(ChordRealizationError, match="distinct pitch classes"):
         realize_chord_register(broken)
 
 
@@ -142,3 +184,51 @@ def test_too_narrow_custom_register_raises_error():
 
     with pytest.raises(ChordRealizationError, match="below register"):
         realize_chord_register(construction, register_policy=narrow)
+
+
+# ── variable note count (Chord realization) ────────────────────────────────────
+
+def test_bm_slash_a_five_notes_realizes_without_error():
+    # B Phrygian collection (modes of G major): C# absent → only 5 notes possible
+    construction = _build_construction("Bm/A", (0, 2, 4, 6, 7, 9, 11))
+
+    result = realize_chord_register(construction)
+
+    assert len(result.realized_midi_notes) == len(set(result.realized_midi_notes))
+    assert all(48 <= n <= 69 for n in result.realized_midi_notes)
+    assert len(result.velocities) == len(result.realized_midi_notes)
+
+
+def test_realize_chord_velocity_count_matches_note_count():
+    # Bm with chord-tones-only collection → 3 notes, velocities sliced to 3
+    construction = _build_construction("Bm", (11, 2, 6))
+
+    result = realize_chord_register(construction)
+
+    assert len(result.realized_midi_notes) == 3
+    assert len(result.velocities) == 3
+    assert result.velocities == (70, 70, 70)
+
+
+def test_realize_chord_two_note_power_chord():
+    construction = _build_construction("C5", (0, 7))
+
+    result = realize_chord_register(construction)
+
+    assert len(result.realized_midi_notes) == 2
+    assert len(result.velocities) == 2
+    assert all(48 <= n <= 69 for n in result.realized_midi_notes)
+
+
+def test_realize_chord_variable_notes_all_within_register():
+    for symbol, collection in [
+        ("Bm/A", (0, 2, 4, 6, 7, 9, 11)),   # 5 notes
+        ("Gm", (7, 10, 2)),                    # 3 notes
+        ("C5", (0, 7)),                        # 2 notes
+    ]:
+        construction = _build_construction(symbol, collection)
+        result = realize_chord_register(construction)
+        assert len(result.realized_midi_notes) >= 2
+        assert len(result.realized_midi_notes) <= 6
+        assert all(48 <= n <= 69 for n in result.realized_midi_notes)
+        assert len(result.velocities) == len(result.realized_midi_notes)

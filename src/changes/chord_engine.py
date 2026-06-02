@@ -1,4 +1,9 @@
-"""Pure Chord Engine core for symbol-faithful six-note pitch-class construction.
+"""Pure Chord Engine core for symbol-faithful pitch-class construction.
+
+Produces 2–6 pitch classes per chord: mandatory chord tones are always
+included; preferred tensions from the selected collection are added up to six
+voices.  Power chords may produce as few as 2 notes; falling short of six is
+not an error — Chord layer does not require a fixed voice count.
 
 This module deliberately stops before register realization, velocity policy,
 length policy, Track 8 assignment, or any export integration.
@@ -13,7 +18,12 @@ from .note import semitone_to_pitch_class
 
 
 class ChordConstructionError(ValueError):
-    """Raised when the pure chord engine cannot construct a valid six-note chord."""
+    """Raised when the chord engine cannot construct a valid chord.
+
+    This is reserved for truly unrecoverable failures: unknown quality,
+    unparseable symbol, or mandatory pitch-class count exceeding six.
+    Falling short of six notes is *not* an error.
+    """
 
 
 @dataclass(frozen=True)
@@ -292,15 +302,6 @@ def construct_chord_pitch_classes(
             break
 
     final_pitch_classes = mandatory_pitch_classes + tuple(automatic_tension_pitch_classes)
-    if len(final_pitch_classes) != 6:
-        raise _construction_error(
-            source_symbol=parsed_chord.symbol,
-            normalized_quality=parsed_chord.normalized_quality,
-            mandatory_pitch_classes=mandatory_pitch_classes,
-            selected_collection_pitch_classes=normalized_selected,
-            attempted_preference_family=preference_family,
-            reason="selected collection does not provide enough distinct automatic tensions to reach six notes",
-        )
 
     diagnostics = (
         f"source_symbol={parsed_chord.symbol}",

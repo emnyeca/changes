@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from changes.app_settings import AppSettings
-from changes.ui_pipeline import settings_to_render_profile, settings_to_target_profile
+from changes.ui_pipeline import count_auto_split_patterns, count_linear_patterns, settings_to_render_profile, settings_to_target_profile
+from changes.importers.compact_progression import compact_progression_to_song_model
 
 
 # ── settings_to_render_profile ────────────────────────────────────────────────
@@ -120,3 +121,21 @@ def test_target_profile_all_same_track() -> None:
     # All voices on track 1
     v2t = tp.voice_to_track
     assert all(t == 1 for t in v2t.values())
+
+
+def test_count_linear_patterns_ignores_bundle_section_splits() -> None:
+    song = compact_progression_to_song_model(
+        {
+            "name": "Two Sections",
+            "tempo": 120,
+            "time_signature": "4/4",
+            "sections": [
+                {"name": "A", "progression": [["Cmaj7"] for _ in range(8)]},
+                {"name": "B", "progression": [["Dm7"] for _ in range(8)]},
+            ],
+        }
+    )
+    settings = AppSettings()
+
+    assert count_auto_split_patterns(song, settings) == 2
+    assert count_linear_patterns(song, settings) == 1

@@ -69,11 +69,6 @@ _CSS = """
 [data-testid="stSidebar"] [data-testid="stRadioOption"] > div:first-child { display: none !important; }
 .sidebar-version { text-align:center; font-size:11px; color:#AFA0C4; padding:12px 0 4px; }
 [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stButton"] button { height:36px; }
-@media (max-width: 900px) {
-    [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="stColumn"]:nth-child(2) {
-        margin-top:10px;
-    }
-}
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
 .autosplit-warn { color:#E07000; font-size:13px; }
@@ -137,15 +132,18 @@ def _hdr_item(label: str, value: str) -> str:
     return f'<span class="hdr-item">{img}<span class="hdr-label">{label}</span><span class="hdr-val">{value}</span></span>'
 
 
-def _render_header_field(label: str, value: str) -> None:
+def _render_header_field(label: str, value: str | None = None, *, render_controls=None) -> None:
     icon = _header_icon_bytes()
-    top_icon_col, top_label_col = st.columns([0.18, 1], gap="small", vertical_alignment="center")
-    with top_icon_col:
+    if render_controls is not None:
+        render_controls()
+    else:
+        st.write(f"**{value or ''}**")
+    bottom_icon_col, bottom_label_col = st.columns([0.18, 1], gap="small", vertical_alignment="center")
+    with bottom_icon_col:
         if icon is not None:
             st.image(icon, width=18)
-    with top_label_col:
+    with bottom_label_col:
         st.caption(label)
-    st.write(f"**{value}**")
 
 # ── Session state ─────────────────────────────────────────────────────────────
 
@@ -231,30 +229,32 @@ def _render_header() -> None:
     meter = (f"{song.measures[0].meter_numerator}/{song.measures[0].meter_denominator}"
              if song and song.measures else "—")
     has_selected_song = st.session_state.get("_selected_path") is not None
-    header_col, transpose_col = st.columns([1, 0.18], gap="small", vertical_alignment="center")
-    with header_col:
-        with st.container(border=True):
-            song_col, key_col, tempo_col, meter_col = st.columns([3.2, 1.2, 1.2, 1.2], gap="small")
-            with song_col:
-                _render_header_field("Song", title)
-            with key_col:
-                _render_header_field("Key", f"{key}{' ●' if st.session_state._editor_dirty else ''}")
-            with tempo_col:
-                _render_header_field("Tempo", tempo)
-            with meter_col:
-                _render_header_field("Meter", meter)
-    with transpose_col:
-        t1, t2 = st.columns(2, gap="small", vertical_alignment="center")
-        with t1:
-            if st.button("▽", key="key_down", use_container_width=True, help="Transpose down by one semitone", disabled=not has_selected_song):
+
+    def _render_transpose_controls() -> None:
+        down_col, up_col = st.columns([1,1], vertical_alignment="bottom", gap="small")
+        with down_col:
+            if st.button("▽", key="key_down", help="Transpose down by one semitone", disabled=not has_selected_song, width="stretch"):
                 _transpose_state(st.session_state.editor, -1)
                 st.session_state._editor_dirty = True
                 st.rerun()
-        with t2:
-            if st.button("△", key="key_up", use_container_width=True, help="Transpose up by one semitone", disabled=not has_selected_song):
+        with up_col:
+            if st.button("△", key="key_up", help="Transpose up by one semitone", disabled=not has_selected_song, width="stretch"):
                 _transpose_state(st.session_state.editor, +1)
                 st.session_state._editor_dirty = True
                 st.rerun()
+
+    with st.container(border=True):
+        song_col, key_col, tempo_col, meter_col, transpose_col = st.columns([3.2, 1.2, 1.2, 1.2, 1.2], vertical_alignment="bottom", gap="small")
+        with song_col:
+            _render_header_field("Song", title)
+        with key_col:
+            _render_header_field("Key", f"{key}{' ●' if st.session_state._editor_dirty else ''}")
+        with tempo_col:
+            _render_header_field("Tempo", tempo)
+        with meter_col:
+            _render_header_field("Meter", meter)
+        with transpose_col:
+            _render_header_field("Transpose", render_controls=_render_transpose_controls)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────

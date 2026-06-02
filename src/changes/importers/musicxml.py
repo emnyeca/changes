@@ -682,6 +682,7 @@ def imported_song_to_song_model(imported: ImportedSong, *, tempo: Fraction | int
     return SongModel(
         title=imported.title or "Untitled",
         working_key=None,
+        working_key_mode=None,
         performance_tempo=Fraction(str(tempo)),
         measures=tuple(measures),
     )

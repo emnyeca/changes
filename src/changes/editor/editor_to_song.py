@@ -131,6 +131,7 @@ def editor_to_song_model(state: EditorState) -> SongModel:
     return SongModel(
         title=title,
         working_key=state.working_key or None,
+        working_key_mode=None,
         performance_tempo=tempo,
         measures=tuple(measures),
     )

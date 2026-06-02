@@ -13,6 +13,7 @@ import streamlit as st
 
 from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
+from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
@@ -237,7 +238,7 @@ st.logo(
 def _render_header() -> None:
     song = _header_song()
     title = song.title if song else "Select a song"
-    key = (song.working_key or "—") if song else "—"
+    key = format_working_key(song.working_key, song.working_key_mode) if song else "—"
     tempo = str(int(song.performance_tempo)) if song else "—"
     meter = (f"{song.measures[0].meter_numerator}/{song.measures[0].meter_denominator}"
              if song and song.measures else "—")
@@ -641,7 +642,7 @@ def _render_songlist(show_import: bool = True) -> None:
     orig_df = pd.DataFrame({
         "Select": pd.Series([st.session_state._selected_path == e.path for e in filtered], dtype="bool"),
         "Title": pd.Series([e.title+"⚠" if e.error else e.title for e in filtered], dtype="string"),
-        "Key":   pd.Series([e.song.working_key or "" if e.song else "" for e in filtered], dtype="string"),
+        "Key":   pd.Series([format_working_key(e.song.working_key, e.song.working_key_mode) if e.song else "-" for e in filtered], dtype="string"),
         "Tempo": pd.Series([int(e.song.performance_tempo) if e.song else 0 for e in filtered], dtype="Int64"),
         "Meter": pd.Series([_meter(e) for e in filtered], dtype="string"),
         "Delete": pd.Series([False for _ in filtered], dtype="bool"),
@@ -697,7 +698,7 @@ def _render_songlist(show_import: bool = True) -> None:
             if entry.song is None:
                 continue
             new_title = edited_df.at[i, "Title"] if i < len(edited_df) else entry.title
-            new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else (entry.song.working_key or "")
+            new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else format_working_key(entry.song.working_key, entry.song.working_key_mode)
             new_tempo = edited_df.at[i, "Tempo"] if i < len(edited_df) else int(entry.song.performance_tempo)
             new_meter = edited_df.at[i, "Meter"] if i < len(edited_df) else _meter(entry)
 
@@ -707,7 +708,7 @@ def _render_songlist(show_import: bool = True) -> None:
             meter_val = str(new_meter).strip()
 
             old_title = entry.title
-            old_key = (entry.song.working_key or "")
+            old_key = format_working_key(entry.song.working_key, entry.song.working_key_mode)
             old_tempo = int(entry.song.performance_tempo)
             old_meter = _meter(entry)
 
@@ -725,9 +726,12 @@ def _render_songlist(show_import: bool = True) -> None:
                     st.session_state._songlist_error_message = "Tempo must be between 30 and 300"
                     _reset_song_table_view()
                     st.rerun()
-                key_opts = {"", "C", "Db", "D", "Eb", "E", "F", "F#", "Gb", "G", "Ab", "A", "Bb", "B"}
-                if key_val not in key_opts:
-                    st.session_state._songlist_error_message = "Key must be one of: C, Db, D, Eb, E, F, F#, Gb, G, Ab, A, Bb, B"
+
+                parsed_key, parsed_mode = parse_working_key_display(key_val)
+                if parsed_key is None and key_val not in ("", "-", "?"):
+                    st.session_state._songlist_error_message = (
+                        "Invalid key format. Examples: C, Em, F#m, Bb, C?, -"
+                    )
                     _reset_song_table_view()
                     st.rerun()
 
@@ -754,14 +758,16 @@ def _render_songlist(show_import: bool = True) -> None:
                 )
                 updated_song = SongModel(
                     title=title_val,
-                    working_key=key_val or None,
+                    working_key=parsed_key,
+                    working_key_mode=parsed_mode,
                     performance_tempo=_Frac(tempo_val).limit_denominator(1000),
                     measures=updated_measures,
                 )
                 signature = (
                     str(entry.path),
                     title_val,
-                    key_val,
+                    parsed_key,
+                    parsed_mode,
                     int(tempo_val),
                     int(meter_num),
                     int(meter_den),

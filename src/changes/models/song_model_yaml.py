@@ -144,9 +144,13 @@ def song_model_from_dict(payload: dict) -> SongModel:
             )
         )
 
+    working_key_mode_raw = data.get("working_key_mode")
+    working_key_mode = None if working_key_mode_raw is None else str(working_key_mode_raw)
+
     return SongModel(
         title=title,
         working_key=working_key,
+        working_key_mode=working_key_mode,
         performance_tempo=performance_tempo,
         measures=tuple(measures),
     )
@@ -158,6 +162,7 @@ def song_model_to_dict(song: SongModel) -> dict:
         "type": "changes.song",
         "title": song.title,
         "working_key": song.working_key,
+        "working_key_mode": song.working_key_mode,
         "performance_tempo": format_fraction_value(song.performance_tempo),
         "measures": [
             {

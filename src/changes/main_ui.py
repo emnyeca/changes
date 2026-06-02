@@ -16,48 +16,8 @@ from changes.editor import EditorState, editor_to_song_model
 from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
+from changes.song_filter import extract_section_ids, filter_song_by_sections
 from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
-
-
-# ── Section helpers ───────────────────────────────────────────────────────────
-
-def extract_section_ids(song: SongModel) -> list[str]:
-    """Return ordered unique section_ids from a SongModel (preserving first occurrence order)."""
-    seen: dict[str, None] = {}
-    for m in song.measures:
-        if m.section_id is not None:
-            seen.setdefault(m.section_id, None)
-    return list(seen.keys())
-
-
-def filter_song_by_sections(song: SongModel, selected: set[str]) -> SongModel:
-    """Return a new SongModel containing only measures in the selected section_ids.
-
-    absolute_start_quarters is re-computed from zero for the filtered measures.
-    Measures with section_id=None are included only if selected contains None.
-    """
-    from fractions import Fraction as _Frac
-    from dataclasses import replace as _replace
-
-    filtered_measures = [
-        m for m in song.measures
-        if m.section_id in selected
-    ]
-    # Re-number and recompute absolute_start_quarters
-    new_measures = []
-    absolute_start = _Frac(0)
-    for new_num, m in enumerate(filtered_measures, start=1):
-        if m.harmony:
-            measure_len = m.harmony[-1].offset_quarters + m.harmony[-1].duration_quarters
-        else:
-            beats, beat_type = m.meter_numerator, m.meter_denominator
-            measure_len = _Frac(4 * beats, beat_type)
-        new_measures.append(
-            _replace(m, number=new_num, absolute_start_quarters=absolute_start)
-        )
-        absolute_start += measure_len
-
-    return _replace(song, measures=tuple(new_measures))
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -113,6 +73,7 @@ _CSS = """
 .sidebar-version { text-align:center; font-size:11px; color:#AFA0C4; padding:12px 0 4px; }
 [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stButton"] button { height:36px; }
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
+.chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
 .autosplit-warn { color:#E07000; font-size:13px; }
 button[kind="primary"] { background:#7C5CBF !important; border-color:#7C5CBF !important; color:white !important; border-radius:10px !important; font-weight:600 !important; }
@@ -393,14 +354,37 @@ def _process_text_input() -> None:
     st.session_state["ti"] = ""
 
 
-def _cell_strip(state: EditorState) -> str:
+def _chord_display_html(state: EditorState) -> str:
+    """Build HTML chord display with highlighted section labels.
+
+    Section labels are shown as <mark> elements before each || separator,
+    and at the beginning when an initial section is set.
+    Example: <mark>A1</mark>|| Em7b5 A7b9 | Dm <mark>B1</mark>|| D#7 |
+    """
+    section_labels: dict[int | str, str] = st.session_state.get(
+        "_editor_section_labels", {}
+    )
     parts: list[str] = []
+
+    initial = section_labels.get("initial", "")
+    if initial:
+        parts.append(f'<mark class="section-lbl">{initial}</mark>||')
+
     for i, cell in enumerate(state.cells):
         if i == state.cursor:
             parts.append("▸")
-        parts.append(cell)
+        if cell == "||":
+            label = section_labels.get(i, "")
+            if label:
+                parts.append(f'<mark class="section-lbl">{label}</mark>||')
+            else:
+                parts.append("||")
+        else:
+            parts.append(cell)
+
     if state.cursor == len(state.cells):
         parts.append("▸")
+
     return " ".join(parts) if parts else "▸  (empty)"
 
 
@@ -915,16 +899,38 @@ def _load_song_into_editor(song: SongModel) -> None:
     if song.measures:
         m = song.measures[0]
         state.meter = f"{m.meter_numerator}/{m.meter_denominator}"
-    # Rebuild cells from measures; insert || at section boundaries
-    prev_section = None
-    for m in song.measures:
+
+    # Rebuild cells from measures.
+    # Section boundary: insert || instead of trailing |, record label for display.
+    # This avoids the "| ||" double-separator that looks like an empty bar.
+    section_labels: dict[int | str, str] = {}
+    prev_section: str | None = None
+    measures_list = list(song.measures)
+
+    for m_idx, m in enumerate(measures_list):
         if m.section_id != prev_section:
-            if prev_section is not None:
+            if prev_section is None:
+                # First section: record initial label
+                if m.section_id:
+                    section_labels["initial"] = m.section_id
+            else:
+                # New section: record label position (before ||) then insert ||
+                if m.section_id:
+                    section_labels[len(state.cells)] = m.section_id
                 state.insert("||")
             prev_section = m.section_id
+
         for h in m.harmony:
             state.insert(h.symbol)
-        state.insert("|")
+
+        # Insert | only when the next measure is in the same section (or last measure).
+        # When next measure starts a new section, skip the trailing | — the || will be
+        # inserted on the next iteration, avoiding the "| ||" double-separator.
+        next_m = measures_list[m_idx + 1] if m_idx + 1 < len(measures_list) else None
+        if next_m is None or next_m.section_id == m.section_id:
+            state.insert("|")
+
+    st.session_state._editor_section_labels = section_labels
     st.session_state.editor = state
     st.session_state.editor_title = state.title
     st.session_state.editor_tempo = state.tempo
@@ -1207,7 +1213,10 @@ def _render_compose() -> None:
     lib_path = Path(s.library_path)
 
     # ── Cell display ───────────────────────────────────────────────────────────
-    st.markdown(f"<div class='chord-cell-display'>{_cell_strip(state)}</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='chord-cell-display'>{_chord_display_html(state)}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1425,6 +1434,55 @@ def _render_main() -> None:
         _render_settings()
 
 
+def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
+    """Return current section selection, resetting when the song changes."""
+    cache_key = st.session_state.get("_section_filter_song_path")
+    if cache_key != song_path:
+        sections = set(extract_section_ids(song))
+        st.session_state._section_filter_song_path = song_path
+        st.session_state._section_filter_selected = sections
+    return st.session_state.get("_section_filter_selected", set(extract_section_ids(song)))
+
+
+def _filtered_song_for_send(song: SongModel) -> SongModel:
+    """Apply section filter from session state to a song before sending."""
+    song_path = st.session_state.get("_selected_path")
+    selected = _get_or_init_section_filter(song, song_path)
+    all_sections = set(extract_section_ids(song))
+    if selected and selected != all_sections:
+        return filter_song_by_sections(song, selected)
+    return song
+
+
+def _render_section_filter(song: SongModel) -> None:
+    """Render section selection checkboxes if the song has multiple sections."""
+    sections = extract_section_ids(song)
+    if len(sections) < 2:
+        return
+
+    song_path = st.session_state.get("_selected_path")
+    selected = _get_or_init_section_filter(song, song_path)
+
+    st.caption("Sections to send:")
+    new_selected: set[str] = set()
+
+    # "All" / "None" shortcuts
+    sc1, sc2, _ = st.columns([1, 1, 4])
+    if sc1.button("All", key="_sec_all", use_container_width=True):
+        st.session_state._section_filter_selected = set(sections)
+        st.rerun()
+    if sc2.button("None", key="_sec_none", use_container_width=True):
+        st.session_state._section_filter_selected = set()
+        st.rerun()
+
+    cols = st.columns(min(len(sections), 8))
+    for i, sec_id in enumerate(sections):
+        if cols[i % len(cols)].checkbox(sec_id, value=sec_id in selected, key=f"_sf_{sec_id}"):
+            new_selected.add(sec_id)
+
+    st.session_state._section_filter_selected = new_selected
+
+
 def _render_preview_send() -> None:
     song = _playback_song()
     has_selected_song = st.session_state.get("_selected_path") is not None
@@ -1432,24 +1490,59 @@ def _render_preview_send() -> None:
 
     st.markdown("**Preview / Send**")
 
-    # Auto split warning
+    # ── Section filter ─────────────────────────────────────────────────────────
     if song:
+        _render_section_filter(song)
+
+    # ── Send mode ──────────────────────────────────────────────────────────────
+    send_mode = st.radio(
+        "Send mode",
+        ["Linear", "Bundle by Section"],
+        key="_send_mode",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+
+    # ── Auto split warning ─────────────────────────────────────────────────────
+    if song:
+        effective_song = _filtered_song_for_send(song)
         try:
-            n_pat = _count_patterns(song, settings)
-            if n_pat > 1:
-                st.markdown(
-                    f'<span class="autosplit-warn" title="This song will be split to {n_pat} patterns automatically. '
-                    f'Add section boundaries in Compose if you want musical control.">'
-                    f'⚠ Auto Split → {n_pat} patterns</span>',
-                    unsafe_allow_html=True,
-                )
+            if send_mode == "Linear":
+                n_pat = _count_patterns(effective_song, settings)
+                if n_pat > 1:
+                    st.markdown(
+                        f'<span class="autosplit-warn">⚠ Auto Split → {n_pat} patterns</span>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    sections = extract_section_ids(effective_song)
+                    st.caption(f"Linear: {len(effective_song.measures)} measures / {len(sections)} section(s)")
+            else:
+                # Bundle by Section: one pattern per section
+                sections = extract_section_ids(effective_song)
+                autosplit_warnings = []
+                for sec_id in sections:
+                    sec_song = filter_song_by_sections(effective_song, {sec_id})
+                    try:
+                        n = _count_patterns(sec_song, settings)
+                        if n > 1:
+                            autosplit_warnings.append(f"⚠ {sec_id} Auto Split → {n} patterns")
+                    except Exception:
+                        pass
+                if autosplit_warnings:
+                    st.markdown(
+                        f'<span class="autosplit-warn">{", ".join(autosplit_warnings)}</span>',
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.caption(f"Bundle by Section: {len(sections)} section(s) / {len(sections)} pattern(s)")
         except Exception:
             pass
 
     if not settings.confirm_before_hardware_write:
         st.caption("⚠ Hardware write confirmation is OFF (see Settings)")
 
-    # Destination
+    # ── Destination ────────────────────────────────────────────────────────────
     ports = ["(Select MIDI Port Destination)"]
     try:
         import mido
@@ -1466,7 +1559,7 @@ def _render_preview_send() -> None:
             if not song:
                 st.warning("No song loaded")
             else:
-                _run_preview(song, settings, dest)
+                _run_preview(_filtered_song_for_send(song), settings, dest)
 
     # Send SysEx
     with ps2:
@@ -1477,13 +1570,54 @@ def _render_preview_send() -> None:
                 st.session_state._send_confirm = True
                 st.rerun()
             else:
-                _run_send(song, settings, dest)
+                effective = _filtered_song_for_send(song)
+                if send_mode == "Bundle by Section":
+                    _run_send_bundle_by_section(effective, settings, dest)
+                else:
+                    _run_send(effective, settings, dest)
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
-        _show_send_confirm_dialog(song, settings, dest)
+        effective = _filtered_song_for_send(song) if song else song
+        _show_send_confirm_dialog(effective, settings, dest)
 
     st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str) -> None:
+    """Send each section as a separate SYX bundle."""
+    sections = extract_section_ids(song)
+    if not sections:
+        _run_send(song, settings, dest)
+        return
+    combined_syx = b""
+    for sec_id in sections:
+        sec_song = filter_song_by_sections(song, {sec_id})
+        try:
+            combined_syx += _export_syx_bytes(sec_song, settings)
+        except Exception as exc:
+            st.warning(f"Section {sec_id}: {exc}")
+    if combined_syx:
+        st.session_state._syx_bytes = combined_syx
+        st.session_state._syx_fname = f"{song.title or 'changes'}_bundle.syx"
+        port_name = "DEBUG" if "DEBUG" in dest else dest
+        if port_name != "DEBUG":
+            with st.spinner(f"Sending {len(sections)} sections to {port_name}..."):
+                err = _send_syx_via_midi(combined_syx, port_name)
+                if err:
+                    st.error(err)
+                else:
+                    st.success(f"Sent {len(sections)} section(s) to {port_name}")
+        else:
+            st.info("Internal (DEBUG) - download only")
+        st.download_button(
+            "↓ Download .syx (bundle)",
+            data=combined_syx,
+            file_name=st.session_state.get("_syx_fname", "changes_bundle.syx"),
+            mime="application/octet-stream",
+            use_container_width=True,
+            key="_ps_bundle_dl",
+        )
 
 
 def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:

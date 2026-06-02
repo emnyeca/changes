@@ -241,8 +241,8 @@ def test_section_id_from_coda_marker():
     )
     _, exp = _import_bytes(xml)
     ids = _section_ids(exp)
-    # Last bar (Coda section) should have "Coda1" label
-    assert ids[-1] == "Coda1"
+    # Last bar (Coda section) should have abbreviated Coda label ("COD1")
+    assert ids[-1] == "COD1"
 
 
 def test_section_id_from_double_barline():
@@ -389,7 +389,8 @@ def test_a_noite_has_coda_section():
     result = import_files({"song.musicxml": path.read_bytes()})
     song = result.songs[0].song
     section_ids = {m.section_id for m in song.measures if m.section_id is not None}
-    assert any("Coda" in (s or "") for s in section_ids), f"No Coda section in: {section_ids}"
+    # Coda is abbreviated to "COD" by _shorten_label
+    assert any("COD" in (s or "").upper() for s in section_ids), f"No Coda section in: {section_ids}"
 
 
 def test_canto_5x_words_override():
@@ -406,7 +407,7 @@ def test_canto_5x_words_override():
 # ── UI helpers ────────────────────────────────────────────────────────────────
 
 def test_extract_section_ids():
-    from changes.main_ui import extract_section_ids
+    from changes.song_filter import extract_section_ids
     from changes.models.song_model import SongModel, Measure, HarmonyEvent
     from fractions import Fraction
     h = HarmonyEvent(id="m1_h1", symbol="C", measure_number=1,
@@ -424,7 +425,7 @@ def test_extract_section_ids():
 
 
 def test_filter_song_by_sections():
-    from changes.main_ui import filter_song_by_sections
+    from changes.song_filter import filter_song_by_sections
     from changes.models.song_model import SongModel, Measure, HarmonyEvent
     from fractions import Fraction
     h = HarmonyEvent(id="m1_h1", symbol="C", measure_number=1,

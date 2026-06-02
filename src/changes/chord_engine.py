@@ -62,6 +62,11 @@ CHORD_MANDATORY_INTERVALS: dict[str, tuple[int, ...]] = {
     "9sus4": (0, 5, 7, 10, 2),
     "7b9sus4": (0, 5, 7, 10, 1),
     "alt": (0, 4, 10),
+    "m11": (0, 3, 7, 10, 2, 5),
+    "maj13": (0, 4, 7, 11, 2, 9),
+    "aug": (0, 4, 8),
+    "5": (0, 7),
+    "11": (0, 5, 7, 10, 2),
 }
 
 CHORD_TENSION_PREFERENCE: dict[str, tuple[int, ...]] = {
@@ -78,6 +83,8 @@ CHORD_TENSION_PREFERENCE: dict[str, tuple[int, ...]] = {
     "suspended": (2, 9, 1),
     "half_diminished": (2, 5, 8, 1),
     "diminished": (2, 5, 8, 11),
+    "augmented": (2, 6, 10, 9, 5),
+    "power": (2, 9, 5, 10, 11),
 }
 
 _QUALITY_TENSION_FAMILY: dict[str, str] = {
@@ -111,6 +118,11 @@ _QUALITY_TENSION_FAMILY: dict[str, str] = {
     "9sus4": "suspended",
     "7b9sus4": "suspended",
     "alt": "dominant_altered",
+    "m11": "minor_seventh",
+    "maj13": "major_seventh",
+    "aug": "augmented",
+    "5": "power",
+    "11": "suspended",
 }
 
 _QUALITY_TENSION_PREFERENCE_OVERRIDES: dict[str, tuple[int, ...]] = {

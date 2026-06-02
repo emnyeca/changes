@@ -1466,15 +1466,6 @@ def _render_section_filter(song: SongModel) -> None:
     st.caption("Sections to send:")
     new_selected: set[str] = set()
 
-    # "All" / "None" shortcuts
-    sc1, sc2, _ = st.columns([1, 1, 4])
-    if sc1.button("All", key="_sec_all", use_container_width=True):
-        st.session_state._section_filter_selected = set(sections)
-        st.rerun()
-    if sc2.button("None", key="_sec_none", use_container_width=True):
-        st.session_state._section_filter_selected = set()
-        st.rerun()
-
     cols = st.columns(min(len(sections), 8))
     for i, sec_id in enumerate(sections):
         if cols[i % len(cols)].checkbox(sec_id, value=sec_id in selected, key=f"_sf_{sec_id}"):

@@ -211,6 +211,21 @@ def _classify_quality(
     if kv == "dominant-13th" and dm.get(("alter", 9)) == -1:
         return "13b9"
 
+    if kv == "minor-11th":
+        return "m11"
+
+    if kv == "major-13th":
+        return "maj13"
+
+    if kv == "augmented":
+        return "aug"
+
+    if kv == "power":
+        return "5"
+
+    if kv == "dominant-11th":
+        return "11"
+
     base_map = {
         "major": "",
         "minor": "m",

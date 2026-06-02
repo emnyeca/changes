@@ -82,6 +82,11 @@ SUPPORTED_QUALITIES = {
     "9sus4",
     "7b9sus4",
     "alt",
+    "m11",
+    "maj13",
+    "aug",
+    "5",
+    "11",
 }
 
 EXTRACTION_HEPTATONIC = "heptatonic_1351379"
@@ -110,6 +115,7 @@ _SYMMETRIC_ELIGIBLE_QUALITIES = {
     "13b9",
     "alt",
     "7b9sus4",
+    "aug",
 }
 
 _HARD_CONTEXT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
@@ -143,6 +149,11 @@ _HARD_CONTEXT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
     "7b9sus4": (0, 5, 7, 10),
     "7#5": (0, 4, 8, 10),
     "alt": (0, 1, 4, 8),
+    "m11": (0, 3, 7, 10, 2, 5),
+    "maj13": (0, 4, 7, 11, 2, 9),
+    "aug": (0, 4, 8),
+    "5": (0, 7),
+    "11": (0, 5, 7, 10, 2),
 }
 
 _COLOR_HINT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
@@ -155,6 +166,9 @@ _COLOR_HINT_INTERVALS_BY_QUALITY: dict[str, tuple[int, ...]] = {
     "7b5b9": (1,),
     "13b9": (1,),
     "7b9sus4": (1,),
+    "m11": (2, 5),
+    "maj13": (2, 9),
+    "11": (2, 5),
 }
 
 
@@ -388,6 +402,11 @@ def chord_tone_pitch_classes(symbol: str, include_bass: bool = False) -> frozens
         "7b9sus4": (0, 5, 7, 10, 1),
         "7#5": (0, 4, 8, 10),
         "alt": (0, 1, 4, 8),
+        "m11": (0, 3, 7, 10, 2, 5),
+        "maj13": (0, 4, 7, 11, 2, 9),
+        "aug": (0, 4, 8),
+        "5": (0, 7),
+        "11": (0, 5, 7, 10, 2),
     }
 
     intervals = intervals_by_quality.get(core.normalized_quality)

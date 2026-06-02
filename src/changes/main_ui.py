@@ -173,6 +173,7 @@ def _ss_init() -> None:
         ("_songlist_error_message", None),
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
+        ("_import_progress_request", None), ("_import_progress_status", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -450,15 +451,115 @@ def _dialog_import_conflict() -> None:
     )
     c1, c2, c3 = st.columns(3, width="stretch", gap="small")
     if c1.button("Overwrite all", type="primary", key="ic_over", use_container_width=True):
-        st.session_state._import_conflict_mode = "overwrite"
+        st.session_state._import_conflict_mode = None
+        st.session_state._import_progress_request = {"kind": "save", "mode": "overwrite"}
         st.rerun()
     if c2.button("Keep both", key="ic_keep", use_container_width=True):
-        st.session_state._import_conflict_mode = "keep_both"
+        st.session_state._import_conflict_mode = None
+        st.session_state._import_progress_request = {"kind": "save", "mode": "keep_both"}
         st.rerun()
     if c3.button("Cancel import", key="ic_cancel", use_container_width=True):
         st.session_state._import_conflict_mode = None
         st.session_state._import_pending = []
+        st.session_state._import_pending_failed = []
         st.rerun()
+
+
+@st.dialog("Import Progress", dismissible=False)
+def _dialog_import_progress() -> None:
+    request = st.session_state.get("_import_progress_request")
+    status = st.session_state.get("_import_progress_status")
+    progress = st.progress(0)
+    message = st.empty()
+
+    if request is not None and status is None:
+        try:
+            _run_import_progress_request(request, progress, message)
+            status = st.session_state._import_progress_status
+        except Exception as exc:
+            st.session_state._import_progress_request = None
+            status = {"ok": False, "message": str(exc)}
+            st.session_state._import_progress_status = status
+
+    if status:
+        progress.progress(100)
+        if status.get("ok"):
+            st.success(status.get("message", "Import completed."))
+        else:
+            st.error(status.get("message", "Import failed."))
+        if st.button("Close", type="primary", key="_import_progress_close", use_container_width=True):
+            st.session_state._import_progress_request = None
+            st.session_state._import_progress_status = None
+            st.rerun()
+
+
+def _run_import_progress_request(request: dict, progress, message) -> None:
+    stage_base = {
+        "zip_open": 2,
+        "zip_scan": 8,
+        "zip_read": 18,
+        "zip_complete": 28,
+        "scan_files": 34,
+        "parse_file": 42,
+        "songmodel_build": 52,
+        "validation": 72,
+        "save": 84,
+        "complete": 96,
+        "error": 100,
+    }
+    stage_span = {
+        "zip_open": 4,
+        "zip_scan": 10,
+        "zip_read": 10,
+        "zip_complete": 4,
+        "scan_files": 6,
+        "parse_file": 10,
+        "songmodel_build": 20,
+        "validation": 12,
+        "save": 12,
+        "complete": 4,
+        "error": 0,
+    }
+
+    def _progress(stage: str, current: int, total: int, text: str) -> None:
+        safe_total = max(int(total), 1)
+        ratio = min(max(int(current), 0) / safe_total, 1.0)
+        pct = min(100, int(stage_base.get(stage, 1) + stage_span.get(stage, 1) * ratio))
+        progress.progress(pct)
+        message.write(f"**{stage.replace('_', ' ').title()}**  {current}/{safe_total}  {text}")
+
+    kind = request.get("kind")
+    if kind == "prepare":
+        _start_import(request.get("files", []), progress_callback=_progress)
+        result = st.session_state.get("_import_result")
+        conflicts = st.session_state.get("_import_conflict_titles") or []
+        if conflicts:
+            msg = f"Validation found {len(conflicts)} duplicate title(s). Close this dialog to choose how to save."
+            ok = True
+        elif result:
+            msg = f"Import completed. Success: {result['ok']}  Failed: {len(result['failed'])}"
+            ok = int(result.get("ok", 0)) > 0 or not result.get("failed")
+        else:
+            msg = "Import prepared."
+            ok = True
+        st.session_state._import_progress_status = {"ok": ok, "message": msg}
+    elif kind == "save":
+        mode = str(request.get("mode") or "keep_both")
+        _do_import(mode, progress_callback=_progress)
+        st.session_state._import_pending = []
+        st.session_state._import_conflict_titles = []
+        _refresh_library()
+        result = st.session_state.get("_import_result") or {"ok": 0, "failed": []}
+        ok = int(result.get("ok", 0))
+        failed = result.get("failed", [])
+        st.session_state._import_progress_status = {
+            "ok": ok > 0 or not failed,
+            "message": f"Import completed. Success: {ok}  Failed: {len(failed)}",
+        }
+    else:
+        raise ValueError(f"Unknown import progress request: {kind}")
+
+    st.session_state._import_progress_request = None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -471,9 +572,20 @@ def _render_songlist(show_import: bool = True) -> None:
     pending_switch = st.session_state.get("_pending_switch")
     del_path = st.session_state.get("_delete_confirm")
     import_conflict_pending = st.session_state.get("_import_conflict_mode") == "pending"
+    import_progress_pending = (
+        st.session_state.get("_import_progress_request") is not None
+        or st.session_state.get("_import_progress_status") is not None
+    )
     midi_update_pending = st.session_state.get("_midi_update_candidates") is not None
 
-    ui_locked = table_save_pending or pending_switch is not None or del_path is not None or import_conflict_pending or midi_update_pending
+    ui_locked = (
+        table_save_pending
+        or pending_switch is not None
+        or del_path is not None
+        or import_conflict_pending
+        or import_progress_pending
+        or midi_update_pending
+    )
 
     if st.session_state.get("_table_save_mode") in ("update", "keep_both"):
         _execute_table_save(st.session_state._table_save_mode)
@@ -484,10 +596,11 @@ def _render_songlist(show_import: bool = True) -> None:
 
     # Process resolved imports
     if st.session_state.get("_import_conflict_mode") in ("overwrite", "keep_both"):
-        _do_import(st.session_state._import_conflict_mode)
+        st.session_state._import_progress_request = {
+            "kind": "save",
+            "mode": st.session_state._import_conflict_mode,
+        }
         st.session_state._import_conflict_mode = None
-        st.session_state._import_pending = []
-        _refresh_library()
         st.rerun()
 
     # ── Search ────────────────────────────────────────────────────────────────
@@ -674,6 +787,8 @@ def _render_songlist(show_import: bool = True) -> None:
         _dialog_pending_switch()
     elif del_path is not None:
         _dialog_delete_confirm()
+    elif import_progress_pending:
+        _dialog_import_progress()
     elif import_conflict_pending:
         _dialog_import_conflict()
     elif midi_update_pending:
@@ -694,7 +809,14 @@ def _render_import_section(disabled: bool = False) -> None:
         disabled=disabled,
     )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled):
-        _start_import(uploaded)
+        st.session_state._import_progress_status = None
+        st.session_state._import_progress_request = {
+            "kind": "prepare",
+            "files": [
+                {"name": f.name, "data": f.getvalue()}
+                for f in uploaded
+            ],
+        }
         st.rerun()
 
     # Show last import result
@@ -832,7 +954,38 @@ def _apply_midi_updates(candidates: list) -> None:
         st.success(f"{updated} song(s) updated.")
 
 
-def _start_import(files: list) -> None:
+def _supports_progress_callback(func) -> bool:
+    import inspect
+
+    try:
+        return "progress_callback" in inspect.signature(func).parameters
+    except (TypeError, ValueError):
+        return False
+
+
+def _extract_zip_with_optional_progress(extract_zip_func, raw: bytes, progress_callback=None) -> dict[str, bytes]:
+    if _supports_progress_callback(extract_zip_func):
+        return extract_zip_func(raw, progress_callback=progress_callback)
+    if progress_callback:
+        progress_callback("zip_open", 0, 1, "Opening ZIP")
+    files = extract_zip_func(raw)
+    if progress_callback:
+        progress_callback("zip_complete", 1, 1, f"Extracted {len(files)} file(s)")
+    return files
+
+
+def _import_files_with_optional_progress(import_files_func, file_data: dict[str, bytes], progress_callback=None):
+    if _supports_progress_callback(import_files_func):
+        return import_files_func(file_data, default_tempo=120, progress_callback=progress_callback)
+    if progress_callback:
+        progress_callback("songmodel_build", 0, max(len(file_data), 1), "Building SongModel candidates")
+    result = import_files_func(file_data, default_tempo=120)
+    if progress_callback:
+        progress_callback("complete", 1, 1, f"Built {len(result.songs)} SongModel candidate(s)")
+    return result
+
+
+def _start_import(files: list, progress_callback=None) -> None:
     from changes.importers.import_bundle import (
         MIDI_EXTS,
         MUSICXML_EXTS,
@@ -847,19 +1000,35 @@ def _start_import(files: list) -> None:
 
     # Read all uploaded bytes; separate ZIPs from direct files
     file_data: dict[str, bytes] = {}
-    for f in files:
-        raw = f.read()
-        ext = Path(f.name).suffix.lower()
+    upload_failed: list[tuple[str, str]] = []
+    total_files = max(len(files), 1)
+    for idx, f in enumerate(files, start=1):
+        name = str(f["name"]) if isinstance(f, dict) else str(f.name)
+        raw = f["data"] if isinstance(f, dict) else f.read()
+        ext = Path(name).suffix.lower()
+        if progress_callback:
+            progress_callback("scan_files", idx, total_files, f"Received {name}")
         if ext == ".zip":
             try:
-                file_data.update(extract_zip(raw))
+                file_data.update(_extract_zip_with_optional_progress(extract_zip, raw, progress_callback))
             except Exception as exc:
-                st.warning(f"ZIP extraction failed for {f.name}: {exc}")
+                st.warning(f"ZIP extraction failed for {name}: {exc}")
+                upload_failed.append((name, str(exc)))
         else:
-            file_data[f.name] = raw
+            file_data[name] = raw
 
     has_xml = any(Path(n).suffix.lower() in MUSICXML_EXTS for n in file_data)
     has_mid = any(Path(n).suffix.lower() in MIDI_EXTS for n in file_data)
+
+    if not has_xml and not has_mid:
+        if progress_callback:
+            progress_callback("error", 1, 1, "No importable MusicXML or MIDI files found")
+        failed = upload_failed or [("import", "No importable MusicXML or MIDI files found")]
+        st.session_state._import_bundle_result = None
+        st.session_state._import_pending = []
+        st.session_state._import_pending_failed = failed
+        st.session_state._import_result = {"ok": 0, "failed": failed}
+        return
 
     if not has_xml and has_mid:
         # MIDI-only → metadata update flow
@@ -877,14 +1046,14 @@ def _start_import(files: list) -> None:
     st.session_state._midi_update_kept = None
     st.session_state._midi_update_unmatched = None
 
-    bundle_result = import_files(file_data, default_tempo=120)
+    bundle_result = _import_files_with_optional_progress(import_files, file_data, progress_callback)
     st.session_state._import_bundle_result = bundle_result
 
     pending = [(c.source_name, c.song) for c in bundle_result.songs]
     existing_titles = {e.title.lower() for e in list_songs(lib_path)}
 
     st.session_state._import_pending = pending
-    st.session_state._import_pending_failed = list(bundle_result.failed)
+    st.session_state._import_pending_failed = upload_failed + list(bundle_result.failed)
 
     conflict_titles = [
         song.title for _, song in pending if song.title.lower() in existing_titles
@@ -893,24 +1062,33 @@ def _start_import(files: list) -> None:
         st.session_state._import_conflict_mode = "pending"
         st.session_state._import_conflict_titles = conflict_titles
     else:
-        _do_import("keep_both")
+        _do_import("keep_both", progress_callback=progress_callback)
         _refresh_library()
 
 
-def _do_import(mode: str) -> None:
+def _do_import(mode: str, progress_callback=None) -> None:
     pending = st.session_state.get("_import_pending", [])
     failed = list(st.session_state.get("_import_pending_failed", []))
     s = st.session_state._settings
     lib_path = Path(s.library_path)
 
     ok = 0
-    for filename, song in pending:
+    total = max(len(pending), 1)
+    for idx, (filename, song) in enumerate(pending, start=1):
         try:
+            if progress_callback:
+                progress_callback("save", idx - 1, total, f"Saving {filename}")
             save_song(lib_path, song, mode=mode)
             ok += 1
+            if progress_callback:
+                progress_callback("save", idx, total, f"Saved {filename}")
         except Exception as exc:
             failed.append((filename, str(exc)))
+            if progress_callback:
+                progress_callback("save", idx, total, f"Failed {filename}")
 
+    if progress_callback:
+        progress_callback("complete", 1, 1, f"Saved {ok} song(s)")
     st.session_state._import_result = {"ok": ok, "failed": failed}
 
 

@@ -301,6 +301,24 @@ def test_extract_zip_strips_directory_prefix() -> None:
     assert "subdir/song-a.musicxml" not in files
 
 
+def test_extract_zip_reports_progress_stages() -> None:
+    events: list[tuple[str, int, int, str]] = []
+    callback = lambda stage, current, total, message: events.append((stage, current, total, message))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as zf:
+        zf.writestr("subdir/song-a.musicxml", b"xml")
+        zf.writestr("song-b.mid", b"mid")
+
+    files = extract_zip(buf.getvalue(), progress_callback=callback)
+
+    stages = [stage for stage, _, _, _ in events]
+    assert files["song-a.musicxml"] == b"xml"
+    assert "zip_open" in stages
+    assert "zip_scan" in stages
+    assert "zip_read" in stages
+    assert stages[-1] == "zip_complete"
+
+
 # ── Tempo fallback priority ───────────────────────────────────────────────────
 
 def test_non_120_midi_wins_when_musicxml_is_120() -> None:
@@ -401,6 +419,22 @@ def test_import_files_processes_paired_group() -> None:
     assert result.tempo_source_counts["midi"] == 1
 
 
+def test_import_files_reports_songmodel_progress_stages() -> None:
+    events: list[tuple[str, int, int, str]] = []
+    callback = lambda stage, current, total, message: events.append((stage, current, total, message))
+    files = {"alone.musicxml": _WITH_TEMPO_XML}
+
+    result = import_files(files, progress_callback=callback)
+
+    stages = [stage for stage, _, _, _ in events]
+    assert len(result.songs) == 1
+    assert "scan_files" in stages
+    assert "parse_file" in stages
+    assert "songmodel_build" in stages
+    assert "validation" in stages
+    assert stages[-1] == "complete"
+
+
 def test_import_files_skips_midi_only_group() -> None:
     mid = _make_midi(tempo_bpm=90.0)
     files = {"midi-only.mid": mid}
@@ -437,8 +471,11 @@ def test_import_zip_pairs_xml_and_mid() -> None:
 
 
 def test_import_zip_invalid_bytes() -> None:
-    result = import_zip(b"not a zip")
+    events: list[tuple[str, int, int, str]] = []
+    callback = lambda stage, current, total, message: events.append((stage, current, total, message))
+    result = import_zip(b"not a zip", progress_callback=callback)
     assert len(result.failed) == 1
+    assert events[-1][0] == "error"
 
 
 def test_import_zip_tempo_source_counts() -> None:

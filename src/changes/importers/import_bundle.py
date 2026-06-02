@@ -17,6 +17,7 @@ import zipfile
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
+from typing import Callable
 
 from changes.importers.musicxml import (
     ImportedSong,
@@ -35,6 +36,7 @@ _IGNORE_EXTS = frozenset({".mscx"})
 _KNOWN_EXTS = MUSICXML_EXTS | MIDI_EXTS | _IGNORE_EXTS
 
 DEFAULT_TEMPO = 120
+ProgressCallback = Callable[[str, int, int, str], None]
 
 IREAL_JAZZ_STYLE_DEFAULT_TEMPO: dict[str, int] = {
     "Afro": 110,
@@ -324,21 +326,38 @@ def group_files_by_basename(
 
 # ── ZIP extraction ────────────────────────────────────────────────────────────
 
-def extract_zip(zip_bytes: bytes) -> dict[str, bytes]:
+def extract_zip(
+    zip_bytes: bytes,
+    progress_callback: ProgressCallback | None = None,
+) -> dict[str, bytes]:
     """Extract files from a ZIP and return {bare filename: bytes}.
 
     Directory prefixes are stripped; only the file's own name is used.
     """
+    if progress_callback:
+        progress_callback("zip_open", 0, 1, "Opening ZIP")
     files: dict[str, bytes] = {}
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
-        for info in zf.infolist():
+        infos = zf.infolist()
+        total = max(len(infos), 1)
+        if progress_callback:
+            progress_callback("zip_scan", 0, total, "Scanning ZIP contents")
+        for idx, info in enumerate(infos, start=1):
             if info.is_dir():
+                if progress_callback:
+                    progress_callback("zip_scan", idx, total, f"Skipping directory {info.filename}")
                 continue
             bare = Path(info.filename).name
             if not bare:
+                if progress_callback:
+                    progress_callback("zip_scan", idx, total, f"Skipping unnamed ZIP entry {idx}")
                 continue
             if bare not in files:  # first occurrence wins on duplicate bare names
                 files[bare] = zf.read(info.filename)
+            if progress_callback:
+                progress_callback("zip_read", idx, total, f"Read {bare}")
+    if progress_callback:
+        progress_callback("zip_complete", 1, 1, f"Extracted {len(files)} file(s)")
     return files
 
 
@@ -469,6 +488,7 @@ def import_musicxml_with_midi(
 def import_files(
     files: dict[str, bytes],
     default_tempo: int = DEFAULT_TEMPO,
+    progress_callback: ProgressCallback | None = None,
 ) -> ImportBundleResult:
     """Import a flat dict of {filename: bytes}.
 
@@ -476,19 +496,27 @@ def import_files(
     candidates. MIDI-only groups are skipped (use find_midi_update_candidates
     for those).
     """
+    if progress_callback:
+        progress_callback("scan_files", 0, max(len(files), 1), "Scanning uploaded files")
     groups = group_files_by_basename(files)
     songs: list[ImportedSongCandidate] = []
     failed: list[tuple[str, str]] = []
     bundle_warnings: list[ImportWarning] = []
     tempo_counts: dict[str, int] = {"musicxml": 0, "style_default": 0, "midi": 0, "default": 0}
 
-    for base, exts in sorted(groups.items()):
+    items = sorted(groups.items())
+    total = max(len(items), 1)
+    for idx, (base, exts) in enumerate(items, start=1):
+        if progress_callback:
+            progress_callback("parse_file", idx - 1, total, f"Preparing {base}")
         xml_bytes: bytes | None = None
         for ext in MUSICXML_EXTS:
             if ext in exts:
                 xml_bytes = exts[ext]
                 break
         if xml_bytes is None:
+            if progress_callback:
+                progress_callback("parse_file", idx, total, f"Skipped MIDI-only group {base}")
             continue  # MIDI-only: handled separately
 
         mid_bytes: bytes | None = None
@@ -498,12 +526,16 @@ def import_files(
                 break
 
         try:
+            if progress_callback:
+                progress_callback("songmodel_build", idx - 1, total, f"Building SongModel for {base}")
             candidate = import_musicxml_with_midi(
                 source_name=base,
                 xml_bytes=xml_bytes,
                 mid_bytes=mid_bytes,
                 default_tempo=default_tempo,
             )
+            if progress_callback:
+                progress_callback("validation", idx, total, f"Validated {base}")
             songs.append(candidate)
             tempo_counts[candidate.tempo_source] = (
                 tempo_counts.get(candidate.tempo_source, 0) + 1
@@ -512,7 +544,11 @@ def import_files(
                 bundle_warnings.append(ImportWarning(song_name=base, message=w))
         except Exception as exc:
             failed.append((base, str(exc)))
+            if progress_callback:
+                progress_callback("validation", idx, total, f"Failed {base}")
 
+    if progress_callback:
+        progress_callback("complete", 1, 1, f"Built {len(songs)} SongModel candidate(s)")
     return ImportBundleResult(
         songs=songs,
         failed=failed,
@@ -524,18 +560,21 @@ def import_files(
 def import_zip(
     zip_bytes: bytes,
     default_tempo: int = DEFAULT_TEMPO,
+    progress_callback: ProgressCallback | None = None,
 ) -> ImportBundleResult:
     """Import all songs from a ZIP archive."""
     try:
-        files = extract_zip(zip_bytes)
+        files = extract_zip(zip_bytes, progress_callback=progress_callback)
     except Exception as exc:
+        if progress_callback:
+            progress_callback("error", 1, 1, f"ZIP extraction failed: {exc}")
         return ImportBundleResult(
             songs=[],
             failed=[("(zip)", str(exc))],
             warnings=[],
             tempo_source_counts={},
         )
-    return import_files(files, default_tempo=default_tempo)
+    return import_files(files, default_tempo=default_tempo, progress_callback=progress_callback)
 
 
 # ── MIDI-only metadata update ─────────────────────────────────────────────────

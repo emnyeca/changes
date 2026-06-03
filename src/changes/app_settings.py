@@ -26,8 +26,6 @@ class AppSettings:
     bass_trigger_policy: str = "hold_until_change"
     bass_center_midi: int = 36    # C2
     bass_track: int | None = 7
-    bass_switch_enabled: bool = False
-    bass_switch_every: int = 4
 
     # Chord — single track for all 6 chord notes (None = don't send)
     chord_trigger_policy: str = "retrigger"
@@ -36,9 +34,6 @@ class AppSettings:
 
     # Safety
     confirm_before_hardware_write: bool = True
-
-    # MIDI destination
-    destination: str = "Internal"
 
 
 def _migrate_raw(raw: dict[str, Any]) -> dict[str, Any]:

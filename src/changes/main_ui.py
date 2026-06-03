@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import base64
 import functools
 import re
 from dataclasses import replace as _replace
@@ -30,7 +29,6 @@ _ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
 _LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo_header.png"
 _LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
 _ICON_PATH = _ASSETS / "icon_cloud.png"
-_ICON_PATH_CLOUD = _ASSETS / "icon_cloud.png"
 _ICON_PATH_BASS = _ASSETS / "icon_bass.png"
 _ICON_PATH_CHORD = _ASSETS / "icon_chord.png"
 _APP_VERSION = "v0.1.0"
@@ -119,29 +117,13 @@ def _name_to_midi(name: str) -> int:
     pc = _NOTE_NAMES.index(note_part) if note_part in _NOTE_NAMES else 0
     return (int(oct_part) + 1) * 12 + pc
 
-# settings_to_render_profile is imported from ui_pipeline
-
-
 # ── Icon ──────────────────────────────────────────────────────────────────────
-
-@functools.lru_cache(maxsize=1)
-def _icon_b64() -> str:
-    if _ICON_PATH.exists():
-        return base64.b64encode(_ICON_PATH.read_bytes()).decode()
-    return ""
-
 
 @functools.lru_cache(maxsize=1)
 def _header_icon_bytes() -> bytes | None:
     if _ICON_PATH.exists():
         return _ICON_PATH.read_bytes()
     return None
-
-
-def _hdr_item(label: str, value: str) -> str:
-    ico = _icon_b64()
-    img = f'<img src="data:image/png;base64,{ico}" class="hdr-icon"/>' if ico else ""
-    return f'<span class="hdr-item">{img}<span class="hdr-label">{label}</span><span class="hdr-val">{value}</span></span>'
 
 
 def _render_header_field(label: str, value: str | None = None, *, render_controls=None, render_title=False, has_song=True) -> None:
@@ -166,8 +148,6 @@ def _render_header_field(label: str, value: str | None = None, *, render_control
 # ── Session state ─────────────────────────────────────────────────────────────
 
 def _ss_init() -> None:
-    if "_page" not in st.session_state:
-        st.session_state._page = "Main"
     if "_settings" not in st.session_state:
         st.session_state._settings = load_settings()
     if "_library" not in st.session_state:
@@ -206,7 +186,6 @@ def _ss_init() -> None:
 
 def _refresh_library() -> None:
     s = st.session_state.get("_settings") or load_settings()
-    from pathlib import Path
     st.session_state._library = list_songs(Path(s.library_path))
 
 
@@ -258,18 +237,7 @@ def _display_section_label(section_id: str | None) -> str:
     return f"{label}{occ}"
 
 
-def _section_filter_label(section_id: str) -> str:
-    return _display_section_label(section_id)
-
-
-def _header_song() -> SongModel | None:
-    selected = _selected_library_song()
-    if selected is not None and not st.session_state.get("_editor_dirty"):
-        return selected
-    return _dirty_song() or selected
-
-
-def _playback_song() -> SongModel | None:
+def _current_song() -> SongModel | None:
     selected = _selected_library_song()
     if selected is not None and not st.session_state.get("_editor_dirty"):
         return selected
@@ -286,7 +254,7 @@ st.logo(
 # ── Common header ─────────────────────────────────────────────────────────────
 
 def _render_header() -> None:
-    song = _header_song()
+    song = _current_song()
     title = song.title if song else "Select a song"
     key = format_working_key(song.working_key, getattr(song, "working_key_mode", None)) if song else "—"
     tempo = str(int(song.performance_tempo)) if song else "—"
@@ -435,20 +403,6 @@ def _chord_display_html(state: EditorState) -> str:
         parts.append("▸")
 
     return " ".join(parts) if parts else "▸  (empty)"
-
-
-# ── SYX / pattern-count helpers (delegates to ui_pipeline) ───────────────────
-
-def _export_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
-    return song_to_syx_bytes(song, settings)
-
-
-def _count_patterns(song: SongModel, settings: AppSettings) -> int:
-    return count_auto_split_patterns(song, settings)
-
-
-def _count_linear_patterns(song: SongModel, settings: AppSettings) -> int:
-    return count_linear_patterns(song, settings)
 
 
 @st.dialog("Save Edited Song", dismissible=False)
@@ -1279,6 +1233,95 @@ def _render_compose() -> None:
 # Page: Settings
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: AppSettings) -> dict:
+    from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+    from changes.song_filter import extract_section_ids as _sec_ids
+    from changes.ui_pipeline import compile_song_for_ui
+
+    compiled = compile_song_for_ui(effective_dry, settings)
+    bp = compile_timeline_to_digitone_bundle_plan(
+        compiled.song, compiled.timeline, compiled.target_profile
+    )
+    timing = bp.timing
+    all_secs_orig = _sec_ids(song)
+    all_secs_eff = _sec_ids(compiled.song)
+    sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs_orig)
+
+    enabled_layers: list[str] = []
+    if any(t is not None for t in settings.cloud_tracks[:6]):
+        enabled_layers.append(f"Cloud ({sum(1 for t in settings.cloud_tracks[:6] if t is not None)}/6 voices)")
+    if settings.bass_track is not None:
+        enabled_layers.append(f"Bass → Track {settings.bass_track}")
+    if settings.chord_track is not None:
+        enabled_layers.append(f"Chord → Track {settings.chord_track}")
+    disabled_layers = [lbl for lbl in ["Cloud", "Bass", "Chord"] if not any(lbl in x for x in enabled_layers)]
+
+    _TRIGGER_MAX = 128
+    per_pattern_validation = [
+        {
+            "name": p.pattern_name,
+            "steps": p.total_steps,
+            "section_id": p.section_id,
+            "events": len(p.events),
+            "within_128_limit": len(p.events) <= _TRIGGER_MAX,
+            "warning": f"EXCEEDS hardware limit ({len(p.events)} > {_TRIGGER_MAX})" if len(p.events) > _TRIGGER_MAX else None,
+        }
+        for p in bp.patterns
+    ]
+
+    return {
+        "song": {
+            "original_title": song.title,
+            "original_measures": len(song.measures),
+            "effective_title": effective_dry.title,
+            "effective_measures": len(effective_dry.measures),
+            "selected_sections": sel_secs,
+            "section_filter_active": effective_dry is not song,
+        },
+        "song_meta": {
+            "key_mode": f"{compiled.song.working_key} {compiled.song.working_key_mode or ''}".strip(),
+            "tempo": float(compiled.song.performance_tempo),
+            "meter": (f"{compiled.song.measures[0].meter_numerator}/{compiled.song.measures[0].meter_denominator}"
+                      if compiled.song.measures else "?"),
+        },
+        "sections": {
+            "all_section_ids_original": all_secs_orig,
+            "all_section_ids_effective": all_secs_eff,
+            "fallback_ALL_used": all_secs_orig == ["ALL"],
+        },
+        "render_settings": {
+            "cloud_tracks": list(settings.cloud_tracks[:6]),
+            "bass_track": settings.bass_track,
+            "chord_track": settings.chord_track,
+            "cloud_trigger": settings.cloud_trigger_policy,
+            "bass_trigger": settings.bass_trigger_policy,
+            "chord_trigger": settings.chord_trigger_policy,
+            "cloud_center_midi": settings.cloud_center_midi,
+            "bass_center_midi": settings.bass_center_midi,
+            "chord_center_midi": settings.chord_center_midi,
+        },
+        "output": {
+            "enabled_layers": enabled_layers,
+            "disabled_layers": disabled_layers,
+            "total_timeline_events": len(compiled.timeline.events),
+            "total_compiled_events": sum(len(p.events) for p in bp.patterns),
+            "toolkit_slot_limit": _TRIGGER_MAX,
+            "exceeds_limit_patterns": [p["name"] for p in per_pattern_validation if not p["within_128_limit"]],
+        },
+        "timing": {
+            "performance_tempo": float(compiled.timeline.performance_tempo),
+            "device_tempo": float(timing.device_tempo),
+            "speed": timing.speed,
+            "q_step": str(timing.q_step),
+        },
+        "bundle": {
+            "pattern_count": len(bp.patterns),
+            "patterns": per_pattern_validation,
+            "warnings": list(bp.warnings),
+        },
+    }
+
+
 def _render_settings() -> None:
     st.subheader("Changes")
     settings: AppSettings = st.session_state._settings
@@ -1293,7 +1336,7 @@ def _render_settings() -> None:
     # ── Cloud ─────────────────────────────────────────────────────────────────
     c0, c1, c2 = st.columns([1, 3, 3], vertical_alignment="bottom")
     with c0:
-        st.image(_ICON_PATH_CLOUD, width=60)
+        st.image(_ICON_PATH, width=60)
     with c1:
         new_cloud_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_cloud_trig",
@@ -1485,7 +1528,7 @@ def _render_settings() -> None:
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
     st.subheader("Advanced")
-    song = _playback_song()
+    song = _current_song()
 
     # Compute disabled state for Advanced actions using the same conditions as
     # Preview / Send (no layers, no sections selected, no song loaded).
@@ -1517,7 +1560,7 @@ def _render_settings() -> None:
                 with st.spinner("Generating SYX..."):
                     try:
                         effective_adv = _filtered_song_for_send(song)
-                        syx = _export_syx_bytes(effective_adv, settings)
+                        syx = song_to_syx_bytes(effective_adv, settings)
                         st.session_state._adv_syx_ok = True
                         st.session_state._adv_syx_bytes = syx
                         st.session_state._adv_syx_fname = f"{song.title or 'changes'}.syx"
@@ -1549,92 +1592,9 @@ def _render_settings() -> None:
                 with st.spinner("Analyzing..."):
                     try:
                         import traceback as _tb
-                        from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-                        from changes.song_filter import extract_section_ids as _sec_ids
-                        from changes.ui_pipeline import compile_song_for_ui
                         effective_dry = _filtered_song_for_send(song)
-                        compiled = compile_song_for_ui(effective_dry, settings)
-                        bp = compile_timeline_to_digitone_bundle_plan(
-                            compiled.song, compiled.timeline, compiled.target_profile
-                        )
-                        timing = bp.timing
-                        all_secs_orig = _sec_ids(song)
-                        all_secs_eff = _sec_ids(compiled.song)
-                        sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs_orig)
-                        enabled_layers: list[str] = []
-                        if any(t is not None for t in settings.cloud_tracks[:6]):
-                            enabled_layers.append(f"Cloud ({sum(1 for t in settings.cloud_tracks[:6] if t is not None)}/6 voices)")
-                        if settings.bass_track is not None:
-                            enabled_layers.append(f"Bass → Track {settings.bass_track}")
-                        if settings.chord_track is not None:
-                            enabled_layers.append(f"Chord → Track {settings.chord_track}")
-                        disabled_layers = [lbl for lbl in ["Cloud", "Bass", "Chord"] if not any(lbl in x for x in enabled_layers)]
-                        total_events = sum(len(p.events) for p in bp.patterns)
-                        _TRIGGER_MAX = 128
-                        per_pattern_validation = [
-                            {
-                                "name": p.pattern_name,
-                                "steps": p.total_steps,
-                                "section_id": p.section_id,
-                                "events": len(p.events),
-                                "within_128_limit": len(p.events) <= _TRIGGER_MAX,
-                                "warning": f"EXCEEDS hardware limit ({len(p.events)} > {_TRIGGER_MAX})" if len(p.events) > _TRIGGER_MAX else None,
-                            }
-                            for p in bp.patterns
-                        ]
-                        st.session_state._dry_run_result = {
-                            "song": {
-                                "original_title": song.title,
-                                "original_measures": len(song.measures),
-                                "effective_title": effective_dry.title,
-                                "effective_measures": len(effective_dry.measures),
-                                "selected_sections": sel_secs,
-                                "section_filter_active": effective_dry is not song,
-                            },
-                            "song_meta": {
-                                "key_mode": f"{compiled.song.working_key} {compiled.song.working_key_mode or ''}".strip(),
-                                "tempo": float(compiled.song.performance_tempo),
-                                "meter": (f"{compiled.song.measures[0].meter_numerator}/{compiled.song.measures[0].meter_denominator}"
-                                          if compiled.song.measures else "?"),
-                            },
-                            "sections": {
-                                "all_section_ids_original": all_secs_orig,
-                                "all_section_ids_effective": all_secs_eff,
-                                "fallback_ALL_used": all_secs_orig == ["ALL"],
-                            },
-                            "render_settings": {
-                                "cloud_tracks": list(settings.cloud_tracks[:6]),
-                                "bass_track": settings.bass_track,
-                                "chord_track": settings.chord_track,
-                                "cloud_trigger": settings.cloud_trigger_policy,
-                                "bass_trigger": settings.bass_trigger_policy,
-                                "chord_trigger": settings.chord_trigger_policy,
-                                "cloud_center_midi": settings.cloud_center_midi,
-                                "bass_center_midi": settings.bass_center_midi,
-                                "chord_center_midi": settings.chord_center_midi,
-                            },
-                            "output": {
-                                "enabled_layers": enabled_layers,
-                                "disabled_layers": disabled_layers,
-                                "total_timeline_events": len(compiled.timeline.events),
-                                "total_compiled_events": total_events,
-                                "toolkit_slot_limit": _TRIGGER_MAX,
-                                "exceeds_limit_patterns": [p["name"] for p in per_pattern_validation if not p["within_128_limit"]],
-                            },
-                            "timing": {
-                                "performance_tempo": float(compiled.timeline.performance_tempo),
-                                "device_tempo": float(timing.device_tempo),
-                                "speed": timing.speed,
-                                "q_step": str(timing.q_step),
-                            },
-                            "bundle": {
-                                "pattern_count": len(bp.patterns),
-                                "patterns": per_pattern_validation,
-                                "warnings": list(bp.warnings),
-                            },
-                        }
+                        st.session_state._dry_run_result = _build_dry_run_result(song, effective_dry, settings)
                     except Exception as exc:
-                        import traceback as _tb
                         st.session_state._dry_run_error = {
                             "summary": str(exc),
                             "type": type(exc).__name__,
@@ -1719,14 +1679,14 @@ def _render_section_filter(song: SongModel) -> None:
 
     cols = st.columns(min(len(sections), 8))
     for i, sec_id in enumerate(sections):
-        if cols[i % len(cols)].checkbox(_section_filter_label(sec_id), value=sec_id in selected, key=f"_sf_{sec_id}"):
+        if cols[i % len(cols)].checkbox(_display_section_label(sec_id), value=sec_id in selected, key=f"_sf_{sec_id}"):
             new_selected.add(sec_id)
 
     st.session_state._section_filter_selected = new_selected
 
 
 def _render_preview_send() -> None:
-    song = _playback_song()
+    song = _current_song()
     has_selected_song = st.session_state.get("_selected_path") is not None
     settings: AppSettings = st.session_state._settings
 
@@ -1770,7 +1730,7 @@ def _render_preview_send() -> None:
         effective_song = _filtered_song_for_send(song)
         try:
             if send_mode == "Linear":
-                n_pat = _count_linear_patterns(effective_song, settings)
+                n_pat = count_linear_patterns(effective_song, settings)
                 if n_pat > 1:
                     st.markdown(
                         f'<span class="autosplit-warn">⚠ Auto Split → {n_pat} patterns</span>',
@@ -1787,7 +1747,7 @@ def _render_preview_send() -> None:
                 for sec_id in sections:
                     sec_song = filter_song_by_sections(effective_song, {sec_id})
                     try:
-                        n = _count_patterns(sec_song, settings)
+                        n = count_auto_split_patterns(sec_song, settings)
                         n_patterns_total += max(1, n)
                         if n > 1:
                             autosplit_warnings.append(f"⚠ {_display_section_label(sec_id)} Auto Split → {n} patterns")
@@ -1932,6 +1892,10 @@ def _store_send_error(
     }
 
 
+def _port_name(dest: str) -> str:
+    return "DEBUG" if "DEBUG" in dest else dest
+
+
 def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Bundle by Section") -> None:
     """Compile via bundle planner (preserves section-prefixed pattern names) and send."""
     _clear_send_area_state()
@@ -1957,7 +1921,7 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
 
     combined_syx = b"".join(syx for _, syx in segments)
     pat_names = [name for name, _ in segments]
-    port_name = "DEBUG" if "DEBUG" in dest else dest
+    port_name = _port_name(dest)
 
     if port_name != "DEBUG":
         with st.spinner(f"Sending {len(segments)} pattern(s) to {port_name}..."):
@@ -2021,7 +1985,7 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
         return
 
     play_notes.sort(key=lambda n: n[0])
-    port_name = "DEBUG" if "DEBUG" in dest else dest
+    port_name = _port_name(dest)
 
     with st.spinner("Running preview..."):
         try:
@@ -2124,7 +2088,7 @@ def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str 
 
     with st.spinner("Generating SysEx..."):
         try:
-            syx = _export_syx_bytes(song, settings)
+            syx = song_to_syx_bytes(song, settings)
         except ModuleNotFoundError:
             exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
             st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
@@ -2133,7 +2097,7 @@ def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str 
             _store_send_error(exc, action="export", song=song, dest=dest, send_mode=send_mode, settings=settings)
             return
 
-    port_name = "DEBUG" if "DEBUG" in dest else dest
+    port_name = _port_name(dest)
 
     if port_name != "DEBUG":
         with st.spinner(f"Sending SysEx to {port_name}..."):

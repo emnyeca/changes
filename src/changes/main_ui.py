@@ -1280,6 +1280,7 @@ def _render_compose() -> None:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _render_settings() -> None:
+    st.subheader("Changes")
     settings: AppSettings = st.session_state._settings
     changed = False
 
@@ -1602,13 +1603,13 @@ def _render_settings() -> None:
                             "type": type(exc).__name__,
                             "traceback": _tb.format_exc(),
                         }
-            if st.session_state.get("_dry_run_result"):
-                st.json(st.session_state._dry_run_result)
-            elif st.session_state.get("_dry_run_error"):
-                err = st.session_state._dry_run_error
-                st.error(f"{err['type']}: {err['summary']}")
-                with st.expander("Traceback"):
-                    st.code(err["traceback"], language="text")
+        if st.session_state.get("_dry_run_result"):
+            st.json(st.session_state._dry_run_result)
+        elif st.session_state.get("_dry_run_error"):
+            err = st.session_state._dry_run_error
+            st.error(f"{err['type']}: {err['summary']}")
+            with st.expander("Traceback"):
+                st.code(err["traceback"], language="text")
     else:
         st.caption("No song loaded. Select or compose a song first.")
 

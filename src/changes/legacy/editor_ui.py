@@ -12,7 +12,7 @@ from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
-from changes.ui_pipeline import count_auto_split_patterns, song_to_syx_bytes
+from changes.ui_pipeline import CLOUD_RANGE_SEMITONES, count_auto_split_patterns, song_to_syx_bytes
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -976,7 +976,7 @@ def _render_settings() -> None:
         if new_cloud_midi != settings.cloud_center_midi:
             settings.cloud_center_midi = new_cloud_midi; changed = True
     with c3:
-        st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, 12, 12)}`")
+        st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, CLOUD_RANGE_SEMITONES // 2, CLOUD_RANGE_SEMITONES // 2)}`")
 
     # Per-voice track assignment (None = don't send)
     _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 17)]

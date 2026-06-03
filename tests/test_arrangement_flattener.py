@@ -257,11 +257,11 @@ def test_flatten_render_arrangement_output_for_minimal_cmaj7_song():
     assert sum(event.role == "chord" for event in timeline.events) == 6
     assert sum(event.role == "bass" for event in timeline.events) == 1
     assert tuple(event.note_midi for event in timeline.events) == (
-        48,
         52,
         55,
         57,
         59,
+        60,
         62,
         48,
         52,

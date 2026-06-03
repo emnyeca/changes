@@ -22,52 +22,60 @@ def ascii_upper_only(text: str) -> str:
     return "".join(out)
 
 
-def _validate_allowed_chars(name: str, *, context: str) -> None:
-    for ch in name:
-        if ch not in ALLOWED_PATTERN_NAME_CHARS:
-            raise ValueError(
-                f"Unsupported character in {context}: {ch!r} in {name!r}. "
-                "Use supported charset only or provide an explicit Pattern Name override."
-            )
+def strip_disallowed_chars(text: str) -> str:
+    return "".join(ch for ch in text if ch in ALLOWED_PATTERN_NAME_CHARS)
 
 
 def normalize_validate_and_truncate_pattern_name(name: str, *, context: str) -> tuple[str, str | None]:
     if not isinstance(name, str):
         raise ValueError(f"{context} must be a string")
 
-    normalized = ascii_upper_only(name)
-    _validate_allowed_chars(normalized, context=context)
+    raw = ascii_upper_only(name)
+    normalized = strip_disallowed_chars(raw)
+
+    diag: list[str] = []
+    if normalized != raw:
+        diag.append(f'Unsupported characters stripped from {context}: "{raw}" -> "{normalized}"')
 
     if len(normalized) <= MAX_PATTERN_NAME_CHARS:
-        return normalized, None
+        return normalized, "; ".join(diag) if diag else None
 
     fitted = normalized[:MAX_PATTERN_NAME_CHARS]
-    return fitted, f'Pattern name truncated to 16 characters: "{normalized}" -> "{fitted}"'
+    diag.append(f'Pattern name truncated to 16 characters: "{normalized}" -> "{fitted}"')
+    return fitted, "; ".join(diag)
 
 
 def fit_prefixed_auto_pattern_name(prefix: str, source_title: str) -> tuple[str, str | None]:
-    normalized_prefix = ascii_upper_only(prefix)
-    normalized_title = ascii_upper_only(source_title)
+    raw_prefix = ascii_upper_only(prefix)
+    raw_title = ascii_upper_only(source_title)
+    normalized_prefix = strip_disallowed_chars(raw_prefix)
+    normalized_title = strip_disallowed_chars(raw_title)
 
-    _validate_allowed_chars(normalized_prefix, context="auto Pattern Name prefix")
-    _validate_allowed_chars(normalized_title, context="auto Pattern Name source title")
+    diag: list[str] = []
+    if normalized_prefix != raw_prefix:
+        diag.append(f'Unsupported characters stripped from pattern name prefix: "{raw_prefix}" -> "{normalized_prefix}"')
+    if normalized_title != raw_title:
+        diag.append(f'Unsupported characters stripped from pattern name title: "{raw_title}" -> "{normalized_title}"')
 
     if not normalized_prefix:
         if len(normalized_title) <= MAX_PATTERN_NAME_CHARS:
-            return normalized_title, None
+            return normalized_title, "; ".join(diag) if diag else None
         fitted = normalized_title[:MAX_PATTERN_NAME_CHARS]
-        return fitted, f'Pattern name truncated to 16 characters: "{normalized_title}" -> "{fitted}"'
+        diag.append(f'Pattern name truncated to 16 characters: "{normalized_title}" -> "{fitted}"')
+        return fitted, "; ".join(diag)
 
     if len(normalized_prefix) >= MAX_PATTERN_NAME_CHARS:
         fitted = normalized_prefix[:MAX_PATTERN_NAME_CHARS]
-        return fitted, f'Pattern name truncated to 16 characters: "{normalized_prefix}{normalized_title}" -> "{fitted}"'
+        diag.append(f'Pattern name truncated to 16 characters: "{normalized_prefix}{normalized_title}" -> "{fitted}"')
+        return fitted, "; ".join(diag)
 
     room = MAX_PATTERN_NAME_CHARS - len(normalized_prefix)
     if len(normalized_title) <= room:
-        return normalized_prefix + normalized_title, None
+        return normalized_prefix + normalized_title, "; ".join(diag) if diag else None
 
     fitted = normalized_prefix + normalized_title[:room]
-    return fitted, f'Pattern name truncated to 16 characters: "{normalized_prefix}{normalized_title}" -> "{fitted}"'
+    diag.append(f'Pattern name truncated to 16 characters: "{normalized_prefix}{normalized_title}" -> "{fitted}"')
+    return fitted, "; ".join(diag)
 
 
 def finalize_single_pattern_auto_name(source_title: str) -> tuple[str, tuple[str, ...]]:

@@ -17,6 +17,7 @@ from changes.library import SongEntry, delete_song, list_songs, overwrite_song, 
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections
 from changes.ui_pipeline import (
+    CLOUD_RANGE_SEMITONES,
     count_auto_split_patterns,
     count_linear_patterns,
     song_to_syx_bytes,
@@ -1347,7 +1348,7 @@ def _render_settings() -> None:
     with c2:
         cloud_notes = _note_options(36, 84)
         cloud_note_labels = {
-            n: f"{_range_display(_name_to_midi(n), 12, 12)}"
+            n: f"{_range_display(_name_to_midi(n), CLOUD_RANGE_SEMITONES // 2, CLOUD_RANGE_SEMITONES // 2)}"
             for n in cloud_notes
         }
         ci = _note_options_index(cloud_notes, settings.cloud_center_midi)

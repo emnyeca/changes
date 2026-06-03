@@ -16,7 +16,8 @@ EUB Changes generates multiple performance layers for Digitone II:
 
 These layers can be used independently or together depending on the performance workflow.
 
-![EUB Changes UI concept](docs/assets/1x/GUI_Concept.png)
+![EUB Changes UI1](docs/assets/1x/EUB-Changes_Screenshot1.png)
+![EUB Changes UI2](docs/assets/1x/EUB-Changes_Screenshot2.png)
 
 ## UI
 

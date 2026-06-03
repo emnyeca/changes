@@ -24,8 +24,8 @@ def test_render_profile_uses_trigger_policies() -> None:
 def test_render_profile_midi_ranges() -> None:
     s = AppSettings(cloud_center_midi=60, bass_center_midi=36, chord_center_midi=60)
     rp = settings_to_render_profile(s)
-    assert rp.cloud_min_midi == 48
-    assert rp.cloud_max_midi == 72
+    assert rp.cloud_min_midi == 51  # center 60 - 9
+    assert rp.cloud_max_midi == 69  # center 60 + 9
     assert rp.bass_min_midi == 36
     assert rp.bass_max_midi == 47
 

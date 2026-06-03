@@ -25,6 +25,8 @@ from changes.models.rendered_arrangement import RenderedArrangement
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.models.song_model import SongModel
 
+CLOUD_RANGE_SEMITONES = 18
+
 
 @dataclass
 class UiCompiledSong:
@@ -48,8 +50,8 @@ def settings_to_render_profile(settings: AppSettings) -> RenderProfile:
         cloud_trigger_policy=settings.cloud_trigger_policy,
         bass_trigger_policy=settings.bass_trigger_policy,
         chord_trigger_policy=settings.chord_trigger_policy,
-        cloud_min_midi=cc - 12,
-        cloud_max_midi=cc + 12,
+        cloud_min_midi=cc - CLOUD_RANGE_SEMITONES // 2,
+        cloud_max_midi=cc + CLOUD_RANGE_SEMITONES // 2,
         chord_min_midi=ch - 12,
         chord_max_midi=ch + 12,
         bass_min_midi=bc,

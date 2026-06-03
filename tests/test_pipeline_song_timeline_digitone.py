@@ -353,7 +353,7 @@ def test_single_pattern_long_title_is_truncated_in_plan_with_warning():
     assert any("truncated to 16" in w for w in plan.warnings)
 
 
-def test_single_pattern_unsupported_auto_name_character_fails_before_build():
+def test_single_pattern_unsupported_auto_name_character_strips_and_warns():
     timeline = RenderedTimeline(
         title="BLUE MOON 😺",
         performance_tempo=Fraction(120, 1),
@@ -381,8 +381,9 @@ def test_single_pattern_unsupported_auto_name_character_fails_before_build():
         ),
     )
 
-    with pytest.raises(ValueError, match="Unsupported character in auto Pattern Name source title"):
-        compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    assert plan.pattern_name == "BLUE MOON "
+    assert any("stripped" in w for w in plan.warnings)
 
 
 def test_compile_digitone_pipeline_keeps_six_voice_tracks_and_bass_without_collisions():

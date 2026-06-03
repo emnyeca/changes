@@ -277,7 +277,7 @@ def test_bundle_explicit_override_truncates_and_manifest_records_warning(tmp_pat
     assert any("BLUE MOON SOLO LONG" in w and "BLUE MOON SOLO L" in w for w in warnings)
 
 
-def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_position():
+def test_bundle_explicit_override_strips_unsupported_chars_and_warns():
     payload = {
         "name": "BLUE MOON",
         "tempo": 120,
@@ -286,8 +286,10 @@ def test_bundle_explicit_override_rejects_unsupported_char_even_after_16th_posit
         "digitone_pattern_name_overrides": ["BLUE MOON SOLO LO😺"],
     }
 
-    with pytest.raises(ValueError, match="Unsupported character"):
-        compile_digitone_bundle_pipeline(payload, layers="bass")
+    _song, _timeline, bundle = compile_digitone_bundle_pipeline(payload, layers="bass")
+    # 😺 stripped → "BLUE MOON SOLO LO" (17 chars) → truncated to 16
+    assert bundle.patterns[0].pattern_name == "BLUE MOON SOLO L"
+    assert any("stripped" in (w or "") for w in bundle.patterns[0].warnings)
 
 
 

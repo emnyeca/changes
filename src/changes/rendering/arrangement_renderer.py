@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from fractions import Fraction
 
 from changes.chord_engine import ChordConstructionResult, construct_chord_pitch_classes
@@ -168,6 +169,16 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
                 start=1,
             )
         )
+        out_of_range = [
+            n.note_midi for n in cloud_notes
+            if not (active_profile.cloud_min_midi <= n.note_midi <= active_profile.cloud_max_midi)
+        ]
+        if out_of_range:
+            warnings.warn(
+                f"Cloud voice(s) outside range {active_profile.cloud_min_midi}..{active_profile.cloud_max_midi} "
+                f"at chord '{harmony.symbol}': {out_of_range}",
+                stacklevel=2,
+            )
         cloud_layer = RenderedCloudLayer(role="cloud", notes=cloud_notes)
 
         bass_layer = None

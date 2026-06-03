@@ -27,7 +27,7 @@ from changes.ui_pipeline import (
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
 _ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
-_LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo.png"
+_LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo_header.png"
 _LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
 _ICON_PATH = _ASSETS / "icon_cloud.png"
 _APP_VERSION = "v0.1.0"
@@ -141,13 +141,19 @@ def _hdr_item(label: str, value: str) -> str:
     return f'<span class="hdr-item">{img}<span class="hdr-label">{label}</span><span class="hdr-val">{value}</span></span>'
 
 
-def _render_header_field(label: str, value: str | None = None, *, render_controls=None) -> None:
+def _render_header_field(label: str, value: str | None = None, *, render_controls=None, render_title=False, has_song=True) -> None:
     icon = _header_icon_bytes()
     if render_controls is not None:
         render_controls()
+    elif render_title:
+        if has_song:
+            st.markdown(f"### {value or ''}{'<span style="color:orange; font-size:16px"> ●</span>' if st.session_state._editor_dirty else ''}", unsafe_allow_html=True)
+        else:
+            st.caption("### Select a song")
     else:
         st.write(f"**{value or ''}**")
-    bottom_icon_col, bottom_label_col = st.columns([0.18, 1], gap="small", vertical_alignment="center")
+    
+    bottom_icon_col, bottom_label_col = st.columns([0.18, 3 if render_title else 1], gap="small", vertical_alignment="center")
     with bottom_icon_col:
         if icon is not None:
             st.image(icon, width=18)
@@ -301,9 +307,9 @@ def _render_header() -> None:
     with st.container(border=True):
         song_col, key_col, tempo_col, meter_col, transpose_col = st.columns([3.2, 1.2, 1.2, 1.2, 1.2], vertical_alignment="bottom", gap="small")
         with song_col:
-            _render_header_field("Song", title)
+            _render_header_field("Song", title, render_title=True, has_song=bool(song))
         with key_col:
-            _render_header_field("Key", f"{key}{' ●' if st.session_state._editor_dirty else ''}")
+            _render_header_field("Key", key)
         with tempo_col:
             _render_header_field("Tempo", tempo)
         with meter_col:
@@ -686,6 +692,7 @@ def _render_songlist(show_import: bool = True) -> None:
         label_visibility="collapsed",
         key="_sl_search",
         disabled=ui_locked,
+        icon=":material/search:"
     )
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
@@ -722,18 +729,19 @@ def _render_songlist(show_import: bool = True) -> None:
     table_key = f"_sl_table_{int(st.session_state._songlist_table_reset_token)}"
     edited_df = st.data_editor(
         orig_df,
+        height=260,
         hide_index=True,
         use_container_width=True,
         num_rows="fixed",
         disabled=ui_locked,
         key=table_key,
         column_config={
-            "Select": st.column_config.CheckboxColumn("", width="small"),
-            "Title": st.column_config.TextColumn("Title", width="large"),
+            "Select": st.column_config.CheckboxColumn("Select", width="small"),
+            "Title": st.column_config.TextColumn(f"{len(filtered)} song(s)", width="large"),
             "Key":   st.column_config.TextColumn("Key", width="small"),
             "Tempo": st.column_config.NumberColumn("Tempo", min_value=30, max_value=300, width="small"),
             "Meter": st.column_config.TextColumn("Meter", width="small"),
-            "Delete": st.column_config.CheckboxColumn("🗑", width="small"),
+            "Delete": st.column_config.CheckboxColumn("Delete", width="small"),
         },
     )
 
@@ -854,8 +862,6 @@ def _render_songlist(show_import: bool = True) -> None:
                     "changes": changed_fields,
                 }
                 st.rerun()
-
-    st.caption(f"{len(filtered)} song(s)")
 
     # ── Confirmation / warning dialogs ──────────────────────────────────────
     if table_save_pending:
@@ -1564,10 +1570,6 @@ def _render_settings() -> None:
 def _render_main() -> None:
     _render_compose()
     _render_songlist(show_import=False)
-    with st.expander("Import / Settings", expanded=False):
-        _render_import_section()
-        st.divider()
-        _render_settings()
 
 
 def _has_any_layer(settings: AppSettings) -> bool:
@@ -1640,20 +1642,22 @@ def _render_preview_send() -> None:
     has_selected_song = st.session_state.get("_selected_path") is not None
     settings: AppSettings = st.session_state._settings
 
-    st.markdown("**Preview / Send**")
+    mode, section = st.columns([1,2], border=False, gap="medium", vertical_alignment="bottom")
+    # ── Send mode ──────────────────────────────────────────────────────────────
+    with mode:
+        st.caption("Preview / Send Mode")
+        send_mode = st.radio(
+            "Send mode",
+            ["Linear", "By Section"],
+            key="_send_mode",
+            horizontal=True,
+            label_visibility="collapsed",
+        )
 
     # ── Section filter ─────────────────────────────────────────────────────────
-    if song:
-        _render_section_filter(song)
-
-    # ── Send mode ──────────────────────────────────────────────────────────────
-    send_mode = st.radio(
-        "Send mode",
-        ["Linear", "Bundle by Section"],
-        key="_send_mode",
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+    with section:
+        if song:
+            _render_section_filter(song)
 
     # ── Compute disable conditions ─────────────────────────────────────────────
     song_path = st.session_state.get("_selected_path")
@@ -1721,16 +1725,16 @@ def _render_preview_send() -> None:
 
     # ── Destination ────────────────────────────────────────────────────────────
     ports = ["(Select MIDI Port Destination)"]
-    try:
-        import mido
-        ports += mido.get_output_names()
-    except Exception:
-        pass
-    dest = st.selectbox("Destination", ports, key="_dest_sel", label_visibility="collapsed")
-
-    ps1, ps2 = st.columns(2)
+    ps0, ps1, ps2 = st.columns(3)
 
     # Preview (Realtime MIDI)
+    with ps0:
+        try:
+            import mido
+            ports += mido.get_output_names()
+        except Exception:
+            pass
+        dest = st.selectbox("Destination", ports, key="_dest_sel", label_visibility="collapsed")
     with ps1:
         if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=actions_disabled):
             if not song:
@@ -2117,6 +2121,10 @@ def main() -> None:
     _render_header()
     _render_main()
     _render_preview_send()
+    with st.expander("Import / Settings", expanded=False):
+        _render_import_section()
+        st.divider()
+        _render_settings()
 
 
 if __name__ == "__main__":

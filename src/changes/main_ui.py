@@ -1287,8 +1287,9 @@ def _render_settings() -> None:
         return result == on_label
 
     # ── Cloud ─────────────────────────────────────────────────────────────────
-    st.subheader("Cloud")
-    c1, c2, c3 = st.columns([2, 2, 3])
+    c0, c1, c2 = st.columns([1, 3, 3], vertical_alignment="bottom")
+    with c0:
+        st.image(_ICON_PATH, width=24, caption="Cloud", use_container_width=True)
     with c1:
         new_cloud_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_cloud_trig",
@@ -1298,17 +1299,24 @@ def _render_settings() -> None:
             settings.cloud_trigger_policy = new_cloud_trigger; changed = True
     with c2:
         cloud_notes = _note_options(36, 84)
+        cloud_note_labels = {
+            n: f"{_range_display(_name_to_midi(n), 12, 12)}"
+            for n in cloud_notes
+        }
         ci = _note_options_index(cloud_notes, settings.cloud_center_midi)
-        new_cloud_note = st.selectbox("Center note", cloud_notes, index=ci, key="_s_cloud_center")
+        new_cloud_note = st.selectbox(
+            "Center note(Range)",
+            cloud_notes,
+            index=ci,
+            key="_s_cloud_center",
+            format_func=lambda n: cloud_note_labels.get(n, n),
+        )
         new_cloud_midi = _name_to_midi(new_cloud_note)
         if new_cloud_midi != settings.cloud_center_midi:
             settings.cloud_center_midi = new_cloud_midi; changed = True
-    with c3:
-        st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, 12, 12)}`")
 
     # Per-voice track assignment (None = don't send)
-    _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 17)]
-    st.caption("Track per voice — select **None** to exclude that voice from output")
+    _TRACK_OPTS = ["None"] + [f"Tr. {i}" for i in range(1, 17)]
     cloud_cols = st.columns(6)
     new_cloud_tracks = list(settings.cloud_tracks[:6])
     while len(new_cloud_tracks) < 6:
@@ -1317,18 +1325,21 @@ def _render_settings() -> None:
         cur = new_cloud_tracks[vi]
         idx = 0 if cur is None else cur
         sel = cloud_cols[vi].selectbox(
-            f"V{vi + 1}", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
+            f"Voice{vi + 1} to", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
             label_visibility="visible",
         )
-        new_cloud_tracks[vi] = None if sel == "None" else int(sel)
+        if sel == "None":
+            new_cloud_tracks[vi] = None
+        else:
+            new_cloud_tracks[vi] = int(sel.removeprefix("Tr. "))
     if new_cloud_tracks != list(settings.cloud_tracks[:6]):
         settings.cloud_tracks = new_cloud_tracks; changed = True
 
-    st.divider()
-
     # ── Bass ──────────────────────────────────────────────────────────────────
-    st.subheader("Bass")
-    b1, b2, b3 = st.columns([2, 2, 3])
+    
+    b0, b1, b2, b3 = st.columns([1, 2, 2, 2], vertical_alignment="bottom")
+    with b0:
+        st.image(_ICON_PATH, width=24, caption="Bass", use_container_width=True)
     with b1:
         new_bass_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_bass_trig",
@@ -1338,24 +1349,33 @@ def _render_settings() -> None:
             settings.bass_trigger_policy = new_bass_trigger; changed = True
     with b2:
         bass_notes = _note_options(12, 60)
+        bass_note_labels = {
+            n: f"{_range_display(_name_to_midi(n), 0, 11)}"
+            for n in bass_notes
+        }
         bi = _note_options_index(bass_notes, settings.bass_center_midi)
-        new_bass_note = st.selectbox("Center note", bass_notes, index=bi, key="_s_bass_center")
+        new_bass_note = st.selectbox(
+            "Center note(Range)",
+            bass_notes,
+            index=bi,
+            key="_s_bass_center",
+            format_func=lambda n: bass_note_labels.get(n, n),
+        )
         new_bass_midi = _name_to_midi(new_bass_note)
         if new_bass_midi != settings.bass_center_midi:
             settings.bass_center_midi = new_bass_midi; changed = True
     with b3:
-        st.markdown(f"**Range:** `{_range_display(settings.bass_center_midi, 0, 11)}`")
-    bt1, _ = st.columns(2)
-    cur_bass = settings.bass_track
-    bass_idx = 0 if cur_bass is None else cur_bass
-    new_bass_sel = bt1.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
-    new_bass_track: int | None = None if new_bass_sel == "None" else int(new_bass_sel)
-    if new_bass_track != settings.bass_track:
-        settings.bass_track = new_bass_track; changed = True
+        cur_bass = settings.bass_track
+        bass_idx = 0 if cur_bass is None else cur_bass
+        new_bass_sel = st.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
+        if new_bass_sel == "None":
+            new_bass_track: int | None = None 
+        else:
+            new_bass_track = int(new_bass_sel.removeprefix("Tr. "))
+        if new_bass_track != settings.bass_track:
+            settings.bass_track = new_bass_track; changed = True
 
     st.caption("Bass Repeat Variation: planned")
-
-    st.divider()
 
     # ── Chord ─────────────────────────────────────────────────────────────────
     st.subheader("Chord")

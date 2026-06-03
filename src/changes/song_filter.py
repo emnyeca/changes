@@ -11,14 +11,20 @@ from fractions import Fraction
 
 from changes.models.song_model import SongModel
 
+FALLBACK_ALL_SECTION = "ALL"
+
 
 def extract_section_ids(song: SongModel) -> list[str]:
-    """Return ordered unique section_ids from a SongModel (first-occurrence order)."""
+    """Return ordered unique section_ids from a SongModel (first-occurrence order).
+
+    Falls back to [FALLBACK_ALL_SECTION] for songs whose measures have no section_id,
+    so callers always get at least one entry.
+    """
     seen: dict[str, None] = {}
     for m in song.measures:
         if m.section_id is not None:
             seen.setdefault(m.section_id, None)
-    return list(seen.keys())
+    return list(seen.keys()) if seen else [FALLBACK_ALL_SECTION]
 
 
 def filter_song_by_sections(song: SongModel, selected: set[str]) -> SongModel:
@@ -26,7 +32,13 @@ def filter_song_by_sections(song: SongModel, selected: set[str]) -> SongModel:
 
     absolute_start_quarters is re-computed from zero for the filtered measures.
     Measures with section_id=None are included only if None is in selected.
+
+    If FALLBACK_ALL_SECTION ("ALL") is in selected the original song is returned
+    unchanged — this handles songs that have no section markers at all.
     """
+    if FALLBACK_ALL_SECTION in selected:
+        return song
+
     filtered_measures = [m for m in song.measures if m.section_id in selected]
 
     new_measures = []

@@ -187,6 +187,54 @@ def song_to_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
                 pass
 
 
+def song_to_syx_bytes_bundle(
+    song: SongModel,
+    settings: AppSettings,
+) -> list[tuple[str, bytes]]:
+    """Compile song using the bundle planner and return one (pattern_name, syx_bytes) per segment.
+
+    Uses the shared timing plan so voice-leading is continuous across sections.
+    Raises on planning errors; individual segment SysEx failures propagate as well.
+    """
+    import os
+    import tempfile
+
+    import yaml
+
+    from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+    from changes.digitone_backend import build_digitone_syx_from_events_yaml
+    from changes.exporters.digitone_events import digitone_pattern_segment_to_events_yaml_payload
+
+    compiled = compile_song_for_ui(song, settings)
+    bundle_plan = compile_timeline_to_digitone_bundle_plan(
+        compiled.song, compiled.timeline, compiled.target_profile
+    )
+
+    result: list[tuple[str, bytes]] = []
+    for segment in bundle_plan.patterns:
+        payload = digitone_pattern_segment_to_events_yaml_payload(
+            segment,
+            bundle_plan.timing,
+            track_default_velocity=compiled.target_profile.track_default_velocity,
+        )
+        yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
+        syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")
+        try:
+            os.close(syx_fd)
+            with os.fdopen(yaml_fd, "w") as f:
+                yaml.safe_dump(payload, f, allow_unicode=False, sort_keys=False)
+            build_digitone_syx_from_events_yaml(yaml_path, syx_path)
+            result.append((segment.pattern_name, Path(syx_path).read_bytes()))
+        finally:
+            for p in (yaml_path, syx_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+
+    return result
+
+
 def song_to_preview_events(song: SongModel, settings: AppSettings) -> list[RenderedNoteEvent]:
     """Return the rendered timeline events for preview/debugging."""
     compiled = compile_song_for_ui(song, settings)

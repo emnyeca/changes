@@ -1486,10 +1486,29 @@ def _render_settings() -> None:
     st.divider()
     st.subheader("Advanced")
     song = _playback_song()
+
+    # Compute disabled state for Advanced actions using the same conditions as
+    # Preview / Send (no layers, no sections selected, no song loaded).
+    _adv_selected_sections: set[str] = set()
+    _adv_song_has_real = False
+    if song:
+        _adv_selected_sections = st.session_state.get("_section_filter_selected") or set(extract_section_ids(song))
+        from changes.song_filter import FALLBACK_ALL_SECTION
+        _adv_all_sec = extract_section_ids(song)
+        _adv_song_has_real = _adv_all_sec != [FALLBACK_ALL_SECTION]
+    _adv_disable_reason = _action_disabled_reason(
+        has_selected_song=song is not None,
+        settings=settings,
+        selected_sections=_adv_selected_sections,
+        song_has_sections=_adv_song_has_real,
+    )
+    adv_actions_disabled = song is None or _adv_disable_reason is not None
+
     if song:
         adv1, adv2 = st.columns(2)
         with adv1:
-            if st.button("Export SYX", type="primary", use_container_width=True, key="_adv_syx_btn"):
+            if st.button("Export SYX", type="primary", use_container_width=True,
+                         key="_adv_syx_btn", disabled=adv_actions_disabled):
                 # Clear previous state before new action
                 st.session_state._adv_syx_ok = False
                 st.session_state._adv_syx_bytes = None
@@ -1497,14 +1516,16 @@ def _render_settings() -> None:
                 st.session_state._adv_syx_error = None
                 with st.spinner("Generating SYX..."):
                     try:
-                        syx = _export_syx_bytes(song, settings)
+                        effective_adv = _filtered_song_for_send(song)
+                        syx = _export_syx_bytes(effective_adv, settings)
                         st.session_state._adv_syx_ok = True
                         st.session_state._adv_syx_bytes = syx
                         st.session_state._adv_syx_fname = f"{song.title or 'changes'}.syx"
                     except ModuleNotFoundError:
                         st.session_state._adv_syx_error = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
                     except Exception as exc:
-                        st.session_state._adv_syx_error = str(exc)
+                        import traceback as _tb_exp
+                        st.session_state._adv_syx_error = f"{type(exc).__name__}: {exc}\n\n{_tb_exp.format_exc()}"
             if st.session_state.get("_adv_syx_ok") and st.session_state.get("_adv_syx_bytes"):
                 syx_b = st.session_state._adv_syx_bytes
                 st.success(f"Export done — {len(syx_b):,} bytes")
@@ -1518,8 +1539,11 @@ def _render_settings() -> None:
                 )
             elif st.session_state.get("_adv_syx_error"):
                 st.error(st.session_state._adv_syx_error)
+            if _adv_disable_reason and song:
+                st.caption(f"⚠ {_adv_disable_reason}")
         with adv2:
-            if st.button("Dry-run", use_container_width=True, key="_adv_dry"):
+            if st.button("Dry-run", use_container_width=True, key="_adv_dry",
+                         disabled=adv_actions_disabled):
                 st.session_state._dry_run_result = None
                 st.session_state._dry_run_error = None
                 with st.spinner("Analyzing..."):
@@ -1528,13 +1552,15 @@ def _render_settings() -> None:
                         from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
                         from changes.song_filter import extract_section_ids as _sec_ids
                         from changes.ui_pipeline import compile_song_for_ui
-                        compiled = compile_song_for_ui(song, settings)
+                        effective_dry = _filtered_song_for_send(song)
+                        compiled = compile_song_for_ui(effective_dry, settings)
                         bp = compile_timeline_to_digitone_bundle_plan(
                             compiled.song, compiled.timeline, compiled.target_profile
                         )
                         timing = bp.timing
-                        all_secs = _sec_ids(compiled.song)
-                        sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs)
+                        all_secs_orig = _sec_ids(song)
+                        all_secs_eff = _sec_ids(compiled.song)
+                        sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs_orig)
                         enabled_layers: list[str] = []
                         if any(t is not None for t in settings.cloud_tracks[:6]):
                             enabled_layers.append(f"Cloud ({sum(1 for t in settings.cloud_tracks[:6] if t is not None)}/6 voices)")
@@ -1544,19 +1570,37 @@ def _render_settings() -> None:
                             enabled_layers.append(f"Chord → Track {settings.chord_track}")
                         disabled_layers = [lbl for lbl in ["Cloud", "Bass", "Chord"] if not any(lbl in x for x in enabled_layers)]
                         total_events = sum(len(p.events) for p in bp.patterns)
+                        _TRIGGER_MAX = 128
+                        per_pattern_validation = [
+                            {
+                                "name": p.pattern_name,
+                                "steps": p.total_steps,
+                                "section_id": p.section_id,
+                                "events": len(p.events),
+                                "within_128_limit": len(p.events) <= _TRIGGER_MAX,
+                                "warning": f"EXCEEDS hardware limit ({len(p.events)} > {_TRIGGER_MAX})" if len(p.events) > _TRIGGER_MAX else None,
+                            }
+                            for p in bp.patterns
+                        ]
                         st.session_state._dry_run_result = {
                             "song": {
-                                "title": compiled.song.title,
+                                "original_title": song.title,
+                                "original_measures": len(song.measures),
+                                "effective_title": effective_dry.title,
+                                "effective_measures": len(effective_dry.measures),
+                                "selected_sections": sel_secs,
+                                "section_filter_active": effective_dry is not song,
+                            },
+                            "song_meta": {
                                 "key_mode": f"{compiled.song.working_key} {compiled.song.working_key_mode or ''}".strip(),
                                 "tempo": float(compiled.song.performance_tempo),
                                 "meter": (f"{compiled.song.measures[0].meter_numerator}/{compiled.song.measures[0].meter_denominator}"
                                           if compiled.song.measures else "?"),
-                                "source_measures": len(compiled.song.measures),
                             },
                             "sections": {
-                                "all_section_ids": all_secs,
-                                "selected_section_ids": sel_secs,
-                                "fallback_ALL_used": all_secs == ["ALL"],
+                                "all_section_ids_original": all_secs_orig,
+                                "all_section_ids_effective": all_secs_eff,
+                                "fallback_ALL_used": all_secs_orig == ["ALL"],
                             },
                             "render_settings": {
                                 "cloud_tracks": list(settings.cloud_tracks[:6]),
@@ -1574,6 +1618,8 @@ def _render_settings() -> None:
                                 "disabled_layers": disabled_layers,
                                 "total_timeline_events": len(compiled.timeline.events),
                                 "total_compiled_events": total_events,
+                                "toolkit_slot_limit": _TRIGGER_MAX,
+                                "exceeds_limit_patterns": [p["name"] for p in per_pattern_validation if not p["within_128_limit"]],
                             },
                             "timing": {
                                 "performance_tempo": float(compiled.timeline.performance_tempo),
@@ -1583,16 +1629,7 @@ def _render_settings() -> None:
                             },
                             "bundle": {
                                 "pattern_count": len(bp.patterns),
-                                "patterns": [
-                                    {
-                                        "name": p.pattern_name,
-                                        "steps": p.total_steps,
-                                        "section_id": p.section_id,
-                                        "section_label": p.section_label,
-                                        "events": len(p.events),
-                                    }
-                                    for p in bp.patterns
-                                ],
+                                "patterns": per_pattern_validation,
                                 "warnings": list(bp.warnings),
                             },
                         }
@@ -1699,7 +1736,7 @@ def _render_preview_send() -> None:
         st.caption("Preview / Send Mode")
         send_mode = st.radio(
             "Send mode",
-            ["Linear", "By Section"],
+            ["Linear", "Bundle by Section"],
             key="_send_mode",
             horizontal=True,
             label_visibility="collapsed",
@@ -1746,19 +1783,23 @@ def _render_preview_send() -> None:
             else:
                 sections = extract_section_ids(effective_song)
                 autosplit_warnings = []
+                n_patterns_total = 0
                 for sec_id in sections:
                     sec_song = filter_song_by_sections(effective_song, {sec_id})
                     try:
                         n = _count_patterns(sec_song, settings)
+                        n_patterns_total += max(1, n)
                         if n > 1:
                             autosplit_warnings.append(f"⚠ {_display_section_label(sec_id)} Auto Split → {n} patterns")
                     except Exception:
-                        pass
-                n_patterns = sum(
-                    max(1, _count_patterns(filter_song_by_sections(effective_song, {s}), settings))
-                    for s in sections
-                ) if sections != ["ALL"] else 1
-                label = "ALL (no sections)" if sections == ["ALL"] else f"{len(sections)} section(s) / {n_patterns} pattern(s)"
+                        n_patterns_total += 1
+                if not n_patterns_total:
+                    n_patterns_total = 1
+                label = (
+                    "ALL (no sections)"
+                    if sections == ["ALL"]
+                    else f"{len(sections)} section(s) / {n_patterns_total} pattern(s)"
+                )
                 if autosplit_warnings:
                     st.markdown(
                         f'<span class="autosplit-warn">{", ".join(autosplit_warnings)}</span>',

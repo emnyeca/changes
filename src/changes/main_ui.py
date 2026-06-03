@@ -30,6 +30,9 @@ _ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
 _LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo_header.png"
 _LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
 _ICON_PATH = _ASSETS / "icon_cloud.png"
+_ICON_PATH_CLOUD = _ASSETS / "icon_cloud.png"
+_ICON_PATH_BASS = _ASSETS / "icon_bass.png"
+_ICON_PATH_CHORD = _ASSETS / "icon_chord.png"
 _APP_VERSION = "v0.1.0"
 
 # ── Music constants ───────────────────────────────────────────────────────────
@@ -1289,7 +1292,7 @@ def _render_settings() -> None:
     # ── Cloud ─────────────────────────────────────────────────────────────────
     c0, c1, c2 = st.columns([1, 3, 3], vertical_alignment="bottom")
     with c0:
-        st.image(_ICON_PATH, width=24, caption="Cloud", use_container_width=True)
+        st.image(_ICON_PATH_CLOUD, width=60)
     with c1:
         new_cloud_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_cloud_trig",
@@ -1316,30 +1319,33 @@ def _render_settings() -> None:
             settings.cloud_center_midi = new_cloud_midi; changed = True
 
     # Per-voice track assignment (None = don't send)
-    _TRACK_OPTS = ["None"] + [f"Tr. {i}" for i in range(1, 17)]
-    cloud_cols = st.columns(6)
+    _TRACK_OPTS = ["None"] + [f"Tr.{i}" for i in range(1, 17)]
+    cloud_cols = st.columns([1,1,1,1,1,1,1])
+    cloud_cols[0].write(" ")
     new_cloud_tracks = list(settings.cloud_tracks[:6])
     while len(new_cloud_tracks) < 6:
         new_cloud_tracks.append(None)
     for vi in range(6):
         cur = new_cloud_tracks[vi]
         idx = 0 if cur is None else cur
-        sel = cloud_cols[vi].selectbox(
+        sel = cloud_cols[vi + 1].selectbox(
             f"Voice{vi + 1} to", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
             label_visibility="visible",
         )
         if sel == "None":
             new_cloud_tracks[vi] = None
         else:
-            new_cloud_tracks[vi] = int(sel.removeprefix("Tr. "))
+            new_cloud_tracks[vi] = int(sel.removeprefix("Tr."))
     if new_cloud_tracks != list(settings.cloud_tracks[:6]):
         settings.cloud_tracks = new_cloud_tracks; changed = True
+
+    st.space("small")
 
     # ── Bass ──────────────────────────────────────────────────────────────────
     
     b0, b1, b2, b3 = st.columns([1, 2, 2, 2], vertical_alignment="bottom")
     with b0:
-        st.image(_ICON_PATH, width=24, caption="Bass", use_container_width=True)
+        st.image(_ICON_PATH_BASS, width=60)
     with b1:
         new_bass_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_bass_trig",
@@ -1367,19 +1373,24 @@ def _render_settings() -> None:
     with b3:
         cur_bass = settings.bass_track
         bass_idx = 0 if cur_bass is None else cur_bass
-        new_bass_sel = st.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
+        new_bass_sel = st.selectbox("Voice to", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
         if new_bass_sel == "None":
             new_bass_track: int | None = None 
         else:
-            new_bass_track = int(new_bass_sel.removeprefix("Tr. "))
+            new_bass_track = int(new_bass_sel.removeprefix("Tr."))
         if new_bass_track != settings.bass_track:
             settings.bass_track = new_bass_track; changed = True
-
-    st.caption("Bass Repeat Variation: planned")
+    bass_annotation = st.columns([1, 6])
+    bass_annotation[0].write(" ")
+    bass_annotation[1].caption("Bass Repeat Variation: planned")
+    st.space("small")
 
     # ── Chord ─────────────────────────────────────────────────────────────────
-    st.subheader("Chord")
-    ch1, ch2, ch3 = st.columns([2, 2, 3])
+    ch0, ch1, ch2, ch3 = st.columns([1, 2, 2, 2], vertical_alignment="bottom")
+
+    with ch0:
+        st.image(_ICON_PATH_CHORD, width=60)
+
     with ch1:
         new_chord_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_chord_trig",
@@ -1387,25 +1398,44 @@ def _render_settings() -> None:
         ) else "hold_until_change"
         if new_chord_trigger != settings.chord_trigger_policy:
             settings.chord_trigger_policy = new_chord_trigger; changed = True
+
     with ch2:
         chord_notes = _note_options(36, 84)
+        chord_note_labels = {
+            n: f"{_range_display(_name_to_midi(n), 12, 12)}"
+            for n in chord_notes
+        }
         chi = _note_options_index(chord_notes, settings.chord_center_midi)
-        new_chord_note = st.selectbox("Center note", chord_notes, index=chi, key="_s_chord_center")
+        new_chord_note = st.selectbox(
+            "Center note(Range)",
+            chord_notes,
+            index=chi,
+            key="_s_chord_center",
+            format_func=lambda n: chord_note_labels.get(n, n),
+        )
         new_chord_midi = _name_to_midi(new_chord_note)
         if new_chord_midi != settings.chord_center_midi:
             settings.chord_center_midi = new_chord_midi; changed = True
+
     with ch3:
-        st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 12)}`")
-    # Chord is polyphonic — toolkit currently only supports multi-note on track 8.
-    _CHORD_TRACK_OPTS = ["None", "8"]
-    cur_chord = settings.chord_track
-    chord_track_val = "None" if cur_chord is None else ("8" if cur_chord == 8 else "None")
-    if cur_chord not in (None, 8):
-        st.caption(f"⚠ Chord track {cur_chord} is not supported (polyphonic requires Track 8). Reset to None.")
-    new_chord_sel = st.selectbox("Track", _CHORD_TRACK_OPTS, index=_CHORD_TRACK_OPTS.index(chord_track_val), key="_s_chord_track")
-    new_chord_track: int | None = None if new_chord_sel == "None" else int(new_chord_sel)
-    if new_chord_track != settings.chord_track:
-        settings.chord_track = new_chord_track; changed = True
+        _CHORD_TRACK_OPTS = ["None", "Tr.8"]
+        cur_chord = settings.chord_track
+        chord_track_val = "None" if cur_chord is None else ("Tr.8" if cur_chord == 8 else "None")
+        if cur_chord not in (None, 8):
+            st.caption(f"⚠ Chord track {cur_chord} is not supported (polyphonic requires Track 8). Reset to None.")
+        chord_track_index = _CHORD_TRACK_OPTS.index(chord_track_val) if chord_track_val in _CHORD_TRACK_OPTS else 0
+        new_chord_sel = st.selectbox(
+            "Voices to",
+            _CHORD_TRACK_OPTS,
+            index=chord_track_index,
+            key="_s_chord_track",
+        )
+        if new_chord_sel == "None":
+            new_chord_track: int | None = None
+        else:
+            new_chord_track = int(new_chord_sel.removeprefix("Tr."))
+        if new_chord_track != settings.chord_track:
+            settings.chord_track = new_chord_track; changed = True
 
     st.divider()
 

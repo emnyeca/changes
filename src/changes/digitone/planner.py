@@ -13,6 +13,10 @@ from changes.models.digitone_compile_plan import CompiledDigitoneEvent, Digitone
 from changes.models.digitone_target_profile import DigitoneTargetProfile, speed_fraction_to_label
 from changes.models.rendered_timeline import RenderedTimeline
 
+DIGITONE2_MIN_TRACK = 1
+DIGITONE2_MAX_TRACK = 16
+DIGITONE2_MAX_NOTES_PER_TRIG = 16
+
 
 def compute_digitone_device_tempo(performance_tempo: Fraction, q_step: Fraction, speed_ratio: Fraction) -> Fraction:
     return Fraction(performance_tempo, 1) / (Fraction(4, 1) * speed_ratio * q_step)
@@ -214,14 +218,18 @@ def compile_timeline_events_with_timing(
         raise ValueError(f"step_end must be >= step_start, got {step_end} < {step_start}")
 
     events: list[CompiledDigitoneEvent] = []
-    seen_pairs: set[tuple[int, int]] = set()
-    polyphonic_tracks = set(target.polyphonic_tracks)
+    note_counts_by_trig: dict[tuple[int, int], int] = {}
 
     for event in sorted(timeline.events, key=lambda e: (e.onset_quarters, e.voice_id, e.id)):
         if event.voice_id not in target.voice_to_track:
             continue
 
         track = target.voice_to_track[event.voice_id]
+        if track < DIGITONE2_MIN_TRACK or track > DIGITONE2_MAX_TRACK:
+            raise ValueError(
+                f"target track out of Digitone II range {DIGITONE2_MIN_TRACK}..{DIGITONE2_MAX_TRACK}: "
+                f"voice_id={event.voice_id} track={track}"
+            )
         global_start_fraction = event.onset_quarters / timing.q_step
         if global_start_fraction.denominator != 1:
             raise ValueError(f"event onset is not on planner step grid: {event.id}")
@@ -255,11 +263,14 @@ def compile_timeline_events_with_timing(
         for chunk_index, (chunk_steps, code) in enumerate(chunks, start=1):
             chunk_local_step = local_step + offset
             pair = (track, chunk_local_step)
-            if pair in seen_pairs and track not in polyphonic_tracks:
+            note_count = note_counts_by_trig.get(pair, 0) + 1
+            if note_count > DIGITONE2_MAX_NOTES_PER_TRIG:
                 raise ValueError(
-                    f"Compile conflict: duplicate track/step detected for track={track}, local_step={chunk_local_step}"
+                    "Compile conflict: Digitone II per-trig note count exceeded "
+                    f"for track={track}, local_step={chunk_local_step}: "
+                    f"{note_count} > {DIGITONE2_MAX_NOTES_PER_TRIG}"
                 )
-            seen_pairs.add(pair)
+            note_counts_by_trig[pair] = note_count
 
             source_event_id = event.id if len(chunks) == 1 else f"{event.id}#chunk{chunk_index}"
             events.append(

@@ -26,6 +26,8 @@ from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.models.song_model import SongModel
 
 CLOUD_RANGE_SEMITONES = 18
+DIGITONE2_MIN_TRACK = 1
+DIGITONE2_MAX_TRACK = 16
 
 
 @dataclass
@@ -67,8 +69,37 @@ def settings_to_target_profile(settings: AppSettings) -> DigitoneTargetProfile:
     """Build a DigitoneTargetProfile from AppSettings routing fields.
 
     Voices assigned to None are excluded from the routing entirely.
-    Track conflicts are allowed; polyphonic_tracks is computed automatically.
+    Cloud voices may share tracks with each other. Cloud, Bass, and Chord
+    layer categories must not share tracks.
     """
+    layer_tracks: dict[str, set[int]] = {"cloud": set(), "bass": set(), "chord": set()}
+
+    def _validate_track(track: int | None, label: str) -> None:
+        if track is None:
+            return
+        if track < DIGITONE2_MIN_TRACK or track > DIGITONE2_MAX_TRACK:
+            raise ValueError(
+                f"{label} track must be in {DIGITONE2_MIN_TRACK}..{DIGITONE2_MAX_TRACK}: {track}"
+            )
+
+    for i, track in enumerate(settings.cloud_tracks[:6], start=1):
+        _validate_track(track, f"Cloud voice {i}")
+        if track is not None:
+            layer_tracks["cloud"].add(track)
+    _validate_track(settings.bass_track, "Bass")
+    if settings.bass_track is not None:
+        layer_tracks["bass"].add(settings.bass_track)
+    _validate_track(settings.chord_track, "Chord")
+    if settings.chord_track is not None:
+        layer_tracks["chord"].add(settings.chord_track)
+
+    for left, right in (("cloud", "bass"), ("cloud", "chord"), ("bass", "chord")):
+        shared = sorted(layer_tracks[left] & layer_tracks[right])
+        if shared:
+            raise ValueError(
+                f"Digitone layer track conflict: {left} and {right} cannot share track(s) {shared}"
+            )
+
     cloud_voices: dict[str, VoiceRouting] = {}
     for i, track in enumerate(settings.cloud_tracks[:6]):
         if track is not None:

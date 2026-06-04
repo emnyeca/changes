@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from fractions import Fraction
+
+
+def derive_voice_leading_seed(content: str | bytes) -> int:
+    """Return a deterministic 31-bit seed derived from content via SHA-256.
+
+    Same content always yields the same seed; different content likely yields different seeds.
+    """
+    if isinstance(content, str):
+        content = content.encode("utf-8")
+    digest = hashlib.sha256(content).digest()
+    return int.from_bytes(digest[:4], "big") & 0x7FFF_FFFF
 
 
 def _fraction_to_text(v: Fraction) -> str:
@@ -40,6 +52,7 @@ class SongModel:
     performance_tempo: Fraction
     measures: tuple[Measure, ...]
     working_key_mode: str | None = None
+    cloud_voice_leading_seed: int | None = None
 
 
 def song_model_to_dict(song: SongModel) -> dict:
@@ -48,6 +61,7 @@ def song_model_to_dict(song: SongModel) -> dict:
         "working_key": song.working_key,
         "working_key_mode": song.working_key_mode,
         "performance_tempo": _fraction_to_text(song.performance_tempo),
+        "cloud_voice_leading_seed": song.cloud_voice_leading_seed,
         "measures": [
             {
                 "number": m.number,
@@ -95,10 +109,14 @@ def song_model_from_dict(data: dict) -> SongModel:
             )
         )
 
+    raw_seed = data.get("cloud_voice_leading_seed")
+    seed = int(raw_seed) if raw_seed is not None else None
+
     return SongModel(
         title=str(data.get("title") or "Untitled"),
         working_key=(None if data.get("working_key") is None else str(data.get("working_key"))),
         working_key_mode=(None if data.get("working_key_mode") is None else str(data.get("working_key_mode"))),
         performance_tempo=_fraction_from_text(data.get("performance_tempo", "120")),
         measures=tuple(measures),
+        cloud_voice_leading_seed=seed,
     )

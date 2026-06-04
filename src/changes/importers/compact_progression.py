@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from fractions import Fraction
 from pathlib import Path
 
 import yaml
 
-from changes.models.song_model import HarmonyEvent, Measure, SongModel
+from changes.models.song_model import HarmonyEvent, Measure, SongModel, derive_voice_leading_seed
 
 
 def _parse_time_signature(text: str) -> tuple[int, int]:
@@ -92,11 +93,14 @@ def compact_progression_to_song_model(payload: dict) -> SongModel:
     if not measures:
         raise ValueError("compact progression produced no measures")
 
+    seed = derive_voice_leading_seed(json.dumps(payload, sort_keys=True, ensure_ascii=True, default=str))
+
     return SongModel(
         title=title,
         working_key=working_key,
         performance_tempo=performance_tempo,
         measures=tuple(measures),
+        cloud_voice_leading_seed=seed,
     )
 
 

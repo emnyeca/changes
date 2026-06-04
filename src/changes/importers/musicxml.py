@@ -680,6 +680,15 @@ def extract_musicxml_groove(xml_text: str) -> str | None:
     return None
 
 
+def _seed_from_imported_song(imported: ImportedSong) -> int:
+    from changes.models.song_model import derive_voice_leading_seed
+    parts = [imported.title or ""]
+    for bar in imported.bars:
+        for event in bar.events:
+            parts.append(event.symbol)
+    return derive_voice_leading_seed("|".join(parts))
+
+
 def imported_song_to_song_model(
     imported: ImportedSong,
     *,
@@ -744,6 +753,7 @@ def imported_song_to_song_model(
         working_key_mode=None,
         performance_tempo=Fraction(str(tempo)),
         measures=tuple(measures),
+        cloud_voice_leading_seed=_seed_from_imported_song(imported),
     )
 
 

@@ -1284,6 +1284,7 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "tempo": float(compiled.song.performance_tempo),
             "meter": (f"{compiled.song.measures[0].meter_numerator}/{compiled.song.measures[0].meter_denominator}"
                       if compiled.song.measures else "?"),
+            "cloud_voice_leading_seed": compiled.song.cloud_voice_leading_seed,
         },
         "sections": {
             "all_section_ids_original": all_secs_orig,

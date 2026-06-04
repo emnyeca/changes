@@ -99,6 +99,7 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
         raw_cloud_voicings,
         min_midi=active_profile.cloud_min_midi,
         max_midi=active_profile.cloud_max_midi,
+        tie_break_seed=song.cloud_voice_leading_seed,
     )
 
     if len(cloud_voicings) != len(playable_events):

@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+import hashlib
 from bisect import bisect_left
 from collections import Counter
 from itertools import permutations
 from typing import List, Sequence
+
+
+def _deterministic_bit(*parts: object) -> int:
+    """Return 0 or 1 from a stable SHA-256 hash of the given parts."""
+    key = "|".join(str(p) for p in parts).encode("utf-8")
+    return hashlib.sha256(key).digest()[0] & 1
 
 
 class RegisterFitError(ValueError):
@@ -31,7 +38,13 @@ def _unique_permutations(values: Sequence[int]) -> list[tuple[int, ...]]:
     return sorted(set(permutations(tuple(values))))
 
 
-def _assign_minimum_motion_target(previous_notes: Sequence[int], target_notes: Sequence[int]) -> list[int]:
+def _assign_minimum_motion_target(
+    previous_notes: Sequence[int],
+    target_notes: Sequence[int],
+    *,
+    tie_break_seed: int | None = None,
+    chord_index: int = 0,
+) -> list[int]:
     """Assign target pitch classes to current lanes with unrestricted minimum-motion search."""
     previous = [int(n) for n in previous_notes]
     target_pcs = [int(n) % 12 for n in sorted(int(n) for n in target_notes)]
@@ -42,11 +55,20 @@ def _assign_minimum_motion_target(previous_notes: Sequence[int], target_notes: S
     for perm in _unique_permutations(target_pcs):
         notes: list[int] = []
         distances: list[int] = []
-        for prev_note, pc in zip(previous, perm):
+        for voice_index, (prev_note, pc) in enumerate(zip(previous, perm)):
             near_octave = prev_note // 12
             # Keep ordinary voice leading local; bounded repair stage handles register overflow.
             candidates = [pc + 12 * (near_octave + d) for d in (-1, 0, 1)]
-            picked = min(candidates, key=lambda n: (abs(n - prev_note), n))
+            if tie_break_seed is None:
+                picked = min(candidates, key=lambda n: (abs(n - prev_note), n))
+            else:
+                min_dist = min(abs(n - prev_note) for n in candidates)
+                tied = [n for n in candidates if abs(n - prev_note) == min_dist]
+                if len(tied) == 1:
+                    picked = tied[0]
+                else:
+                    bit = _deterministic_bit(tie_break_seed, "cloud_tiebreak", chord_index, voice_index, pc)
+                    picked = max(tied) if bit else min(tied)
             notes.append(int(picked))
             distances.append(abs(int(picked) - prev_note))
 
@@ -142,6 +164,8 @@ def fit_bounded_voice_vector(
     min_midi: int,
     max_midi: int,
     context: str | None = None,
+    tie_break_seed: int | None = None,
+    chord_index: int = 0,
 ) -> List[int]:
     """Repair out-of-range lanes by boundary-slide operations on an already lane-assigned vector."""
     if min_midi > max_midi:
@@ -192,15 +216,23 @@ def fit_bounded_voice_vector(
             f" range={min_midi}..{max_midi}"
         )
 
-    best_candidate = min(
-        finals,
-        key=lambda candidate: (
-            sum(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference))),
-            max(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference))),
-            max(int(n) for n in candidate),
-            tuple(int(n) for n in candidate),
-        ),
-    )
+    if tie_break_seed is None:
+        best_candidate = min(
+            finals,
+            key=lambda candidate: (
+                sum(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference))),
+                max(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference))),
+                max(int(n) for n in candidate),
+                tuple(int(n) for n in candidate),
+            ),
+        )
+    else:
+        def _bounded_key(candidate: tuple[int, ...]) -> tuple[int, int, int]:
+            sum_dist = sum(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference)))
+            max_dist = max(abs(int(candidate[idx]) - reference[idx]) for idx in range(len(reference)))
+            det = _deterministic_bit(tie_break_seed, "cloud_bounded_tiebreak", chord_index, candidate)
+            return (sum_dist, max_dist, det)
+        best_candidate = min(finals, key=_bounded_key)
     return [int(n) for n in best_candidate]
 
 
@@ -221,8 +253,13 @@ def generate_voice_leading(
     *,
     min_midi: int | None = None,
     max_midi: int | None = None,
+    tie_break_seed: int | None = None,
 ) -> List[List[int]]:
-    """Apply sequential minimum-motion voice leading with optional bounded register fitting."""
+    """Apply sequential minimum-motion voice leading with optional bounded register fitting.
+
+    tie_break_seed: if None, uses the existing downward-biased tie-break (backwards-compatible).
+    If set, uses a deterministic pseudo-random tie-break derived from the seed.
+    """
     if not voicings:
         return []
 
@@ -239,6 +276,8 @@ def generate_voice_leading(
             min_midi=min_midi,
             max_midi=max_midi,
             context="chord_index=1",
+            tie_break_seed=tie_break_seed,
+            chord_index=1,
         )
     ]
 
@@ -247,7 +286,12 @@ def generate_voice_leading(
         previous_bounded = led[-1]
 
         # Stage 1: ordinary minimum-motion assignment from previous audible bounded state.
-        pre_fit = _assign_minimum_motion_target(previous_bounded, target_notes)
+        pre_fit = _assign_minimum_motion_target(
+            previous_bounded,
+            target_notes,
+            tie_break_seed=tie_break_seed,
+            chord_index=chord_index,
+        )
 
         # Stage 2: bounded register repair by boundary-slide operations.
         fitted = fit_bounded_voice_vector(
@@ -256,6 +300,8 @@ def generate_voice_leading(
             min_midi=min_midi,
             max_midi=max_midi,
             context=f"chord_index={chord_index}",
+            tie_break_seed=tie_break_seed,
+            chord_index=chord_index,
         )
         led.append(fitted)
 

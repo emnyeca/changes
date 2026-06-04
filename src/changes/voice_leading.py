@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+import warnings
 from bisect import bisect_left
 from collections import Counter
 from itertools import permutations
@@ -223,7 +224,13 @@ def fit_cloud_center_spread_voice_vector(
                     notes = list(_slide_on_pitch_order(notes, donor_lane=low_lane, missing_note=missing))
 
             if notes == prev:
-                return notes  # no progress; bail
+                warnings.warn(
+                    f"fit_cloud_center_spread_voice_vector: avg_repair made no progress; "
+                    f"returning partially repaired voicing {notes} "
+                    f"(avg={sum(notes)/n:.2f}, target={center_midi}±{average_tolerance})",
+                    stacklevel=3,
+                )
+                return notes
 
             if abs(sum(notes) / n - center_midi) <= average_tolerance:
                 averageOK = True
@@ -302,7 +309,14 @@ def fit_cloud_center_spread_voice_vector(
                         notes = list(_slide_on_pitch_order(notes, donor_lane=notes.index(low), missing_note=target))
 
             if notes == prev:
-                return notes  # no progress; bail
+                spread = max(notes) - min(notes)
+                warnings.warn(
+                    f"fit_cloud_center_spread_voice_vector: spread_repair made no progress; "
+                    f"returning partially repaired voicing {notes} "
+                    f"(spread={spread}, target=[{spread_min},{spread_max}])",
+                    stacklevel=3,
+                )
+                return notes
 
             if spread_min <= max(notes) - min(notes) <= spread_max:
                 spreadOK = True
@@ -311,6 +325,15 @@ def fit_cloud_center_spread_voice_vector(
             else:
                 state = "spread_repair"
 
+    avg = sum(notes) / n
+    spread = max(notes) - min(notes)
+    warnings.warn(
+        f"fit_cloud_center_spread_voice_vector: reached _MAX_ITER={_MAX_ITER} without convergence; "
+        f"returning best-effort voicing {notes} "
+        f"(avg={avg:.2f}, target={center_midi}±{average_tolerance}; "
+        f"spread={spread}, target=[{spread_min},{spread_max}])",
+        stacklevel=3,
+    )
     return notes
 
 

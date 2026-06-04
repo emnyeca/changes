@@ -1363,6 +1363,33 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
         for group in cloud_groups
     ]
 
+    cloud_repaired_voicings = []
+    for idx, occ in enumerate(compiled.arrangement.occurrences):
+        if occ.cloud is None:
+            continue
+        notes = sorted(int(n.note_midi) for n in occ.cloud.notes)
+        if not notes:
+            continue
+        avg = sum(notes) / len(notes)
+        spread = max(notes) - min(notes)
+        avg_ok = abs(avg - rp.cloud_center_midi) <= rp.cloud_average_tolerance
+        spread_ok = rp.cloud_spread_min <= spread <= rp.cloud_spread_max
+        cloud_repaired_voicings.append({
+            "index": idx + 1,
+            "symbol": occ.symbol,
+            "onset_quarters": _q(occ.onset_quarters),
+            "notes": notes,
+            "average": round(avg, 2),
+            "spread": spread,
+            "average_ok": avg_ok,
+            "spread_ok": spread_ok,
+        })
+
+    _crv_total = len(cloud_repaired_voicings)
+    _crv_avg_ok = sum(1 for v in cloud_repaired_voicings if v["average_ok"])
+    _crv_spread_ok = sum(1 for v in cloud_repaired_voicings if v["spread_ok"])
+    _crv_both_ok = sum(1 for v in cloud_repaired_voicings if v["average_ok"] and v["spread_ok"])
+
     return {
         "song": {
             "original_title": song.title,
@@ -1438,12 +1465,22 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
                 "chord": _layer_stats("chord"),
             },
         },
-        "cloud_range_validation": {
+        "cloud_legacy_range_reference": {
+            "note": "legacy compat field; cloud voice leading uses center/spread, not this range",
             "range": [rp.cloud_min_midi, rp.cloud_max_midi],
             "out_of_range_count": len(cloud_out_of_range),
             "out_of_range": cloud_out_of_range,
         },
+        "cloud_repaired_voicings": {
+            "note": "repaired voicings from render_arrangement(); not affected by hold_until_change",
+            "total": _crv_total,
+            "average_ok_count": _crv_avg_ok,
+            "spread_ok_count": _crv_spread_ok,
+            "both_ok_count": _crv_both_ok,
+            "voicings": cloud_repaired_voicings,
+        },
         "cloud_voice_leading": {
+            "note": "timeline-event based; may undercount due to hold_until_change — use cloud_repaired_voicings for accuracy",
             "centers_by_onset": cloud_centers_by_onset,
             "average_min": min((g["average"] for g in cloud_centers_by_onset), default=None),
             "average_max": max((g["average"] for g in cloud_centers_by_onset), default=None),

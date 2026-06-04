@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from fractions import Fraction
 
 from changes.chord_engine import ChordConstructionResult, construct_chord_pitch_classes
@@ -97,8 +96,10 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
     raw_cloud_voicings = progression_to_voicings([progression])
     cloud_voicings = generate_voice_leading(
         raw_cloud_voicings,
-        min_midi=active_profile.cloud_min_midi,
-        max_midi=active_profile.cloud_max_midi,
+        center_midi=active_profile.cloud_center_midi,
+        spread_min=active_profile.cloud_spread_min,
+        spread_max=active_profile.cloud_spread_max,
+        average_tolerance=active_profile.cloud_average_tolerance,
         tie_break_seed=song.cloud_voice_leading_seed,
     )
 
@@ -170,16 +171,6 @@ def render_arrangement(song: SongModel, profile: RenderProfile | None = None) ->
                 start=1,
             )
         )
-        out_of_range = [
-            n.note_midi for n in cloud_notes
-            if not (active_profile.cloud_min_midi <= n.note_midi <= active_profile.cloud_max_midi)
-        ]
-        if out_of_range:
-            warnings.warn(
-                f"Cloud voice(s) outside range {active_profile.cloud_min_midi}..{active_profile.cloud_max_midi} "
-                f"at chord '{harmony.symbol}': {out_of_range}",
-                stacklevel=2,
-            )
         cloud_layer = RenderedCloudLayer(role="cloud", notes=cloud_notes)
 
         bass_layer = None

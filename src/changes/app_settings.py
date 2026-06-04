@@ -20,6 +20,9 @@ class AppSettings:
     # Cloud — one track assignment per voice (None = don't send)
     cloud_trigger_policy: str = "hold_until_change"  # hold_until_change | retrigger
     cloud_center_midi: int = 60   # C4
+    cloud_spread_min: int = 14
+    cloud_spread_max: int = 16
+    cloud_average_tolerance: int = 2
     cloud_tracks: list[int | None] = field(default_factory=lambda: [1, 2, 3, 4, 5, 6])
 
     # Bass — single track assignment (None = don't send)

@@ -78,7 +78,7 @@ def test_render_arrangement_single_cmaj7_occurrence_chord_layer_shape():
     assert occ.duration_quarters == Fraction(4, 1)
 
     assert occ.cloud is not None
-    assert tuple(note.note_midi for note in occ.cloud.notes) == (52, 55, 57, 59, 60, 62)
+    assert tuple(note.note_midi for note in occ.cloud.notes) == (52, 57, 59, 60, 62, 67)  # center/spread repair
     assert tuple(note.lane_id for note in occ.cloud.notes) == (
         "cloud_voice_1",
         "cloud_voice_2",

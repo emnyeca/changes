@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import math
+import warnings
 from bisect import bisect_left
 from collections import Counter
 from itertools import permutations
@@ -110,6 +112,229 @@ def _slide_on_pitch_order(
     for pos, lane in enumerate(ordered_lanes):
         lane_to_note[lane] = transformed[pos]
     return tuple(lane_to_note[lane] for lane in range(len(vector)))
+
+
+def _pc_target_at_or_below(pc: int, max_val: int) -> int:
+    """Largest int with (result % 12 == pc) and result <= max_val."""
+    return max_val - (max_val - pc) % 12
+
+
+def _pc_target_at_or_above(pc: int, min_val: int) -> int:
+    """Smallest int with (result % 12 == pc) and result >= min_val."""
+    return min_val + (pc - min_val) % 12
+
+
+def _donor_for_down_target(notes: list[int], missing: int) -> int | None:
+    """Lane index of a note with same PC as missing that is > missing (can slide down to it)."""
+    pc = missing % 12
+    candidates = [i for i, n in enumerate(notes) if n % 12 == pc and n > missing]
+    return min(candidates, key=lambda i: notes[i]) if candidates else None
+
+
+def _donor_for_up_target(notes: list[int], missing: int) -> int | None:
+    """Lane index of a note with same PC as missing that is < missing (can slide up to it)."""
+    pc = missing % 12
+    candidates = [i for i, n in enumerate(notes) if n % 12 == pc and n < missing]
+    return max(candidates, key=lambda i: notes[i]) if candidates else None
+
+
+def fit_cloud_center_spread_voice_vector(
+    target_notes: Sequence[int],
+    reference_notes: Sequence[int],
+    *,
+    center_midi: int,
+    spread_min: int,
+    spread_max: int,
+    average_tolerance: int,
+    tie_break_seed: int | None = None,
+    chord_index: int = 0,
+) -> list[int]:
+    """Repair cloud voicing via a center/average/spread re-validation loop.
+
+    reference_notes is accepted for API symmetry with fit_bounded_voice_vector but is unused.
+
+    State machine:
+      ① avg_validate → OK → spread_validate; NG → avg_repair
+      ② spread_validate → OK → check; NG → spread_repair
+      ③ check: both OK → return; else → avg_validate
+      ④ avg_repair: compute exact PC-matching target; after OK → spread_validate
+      ⑤ spread_repair: compute PC-matching target from middle/extreme analysis; after OK → avg_validate
+    """
+    notes = [int(n) for n in target_notes]
+    n = len(notes)
+
+    averageOK = False
+    spreadOK = False
+    state = "avg_validate"
+    _MAX_ITER = 24  # internal safety limit; not a user parameter
+
+    for _ in range(_MAX_ITER):
+
+        # ① Average validation ─────────────────────────────────────────────────
+        if state == "avg_validate":
+            avg = sum(notes) / n
+            if abs(avg - center_midi) <= average_tolerance:
+                averageOK = True
+                state = "spread_validate"
+            else:
+                state = "avg_repair"
+
+        # ② Spread validation ──────────────────────────────────────────────────
+        elif state == "spread_validate":
+            spread = max(notes) - min(notes)
+            if spread_min <= spread <= spread_max:
+                spreadOK = True
+                state = "check"
+            else:
+                state = "spread_repair"
+
+        # ③ Flag check ─────────────────────────────────────────────────────────
+        elif state == "check":
+            if averageOK and spreadOK:
+                return notes
+            state = "avg_validate"
+
+        # ④ Average repair ─────────────────────────────────────────────────────
+        elif state == "avg_repair":
+            prev = list(notes)
+            avg = sum(notes) / n
+            delta = avg - center_midi
+
+            if delta > average_tolerance:
+                high = max(notes)
+                high_lane = notes.index(high)
+                S = sum(notes) - high
+                # Compute the largest PC-matching note that brings avg within tolerance.
+                target_max = math.floor(n * (center_midi + average_tolerance) - S)
+                missing = _pc_target_at_or_below(high % 12, target_max)
+                if missing >= high:
+                    missing -= 12
+                if missing not in notes:
+                    notes = list(_slide_on_pitch_order(notes, donor_lane=high_lane, missing_note=missing))
+            elif delta < -average_tolerance:
+                low = min(notes)
+                low_lane = notes.index(low)
+                S = sum(notes) - low
+                # Compute the smallest PC-matching note that brings avg within tolerance.
+                target_min = math.ceil(n * (center_midi - average_tolerance) - S)
+                missing = _pc_target_at_or_above(low % 12, target_min)
+                if missing <= low:
+                    missing += 12
+                if missing not in notes:
+                    notes = list(_slide_on_pitch_order(notes, donor_lane=low_lane, missing_note=missing))
+
+            if notes == prev:
+                warnings.warn(
+                    f"fit_cloud_center_spread_voice_vector: avg_repair made no progress; "
+                    f"returning partially repaired voicing {notes} "
+                    f"(avg={sum(notes)/n:.2f}, target={center_midi}±{average_tolerance})",
+                    stacklevel=3,
+                )
+                return notes
+
+            if abs(sum(notes) / n - center_midi) <= average_tolerance:
+                averageOK = True
+                spreadOK = False
+                state = "spread_validate"
+            else:
+                state = "avg_repair"
+
+        # ⑤ Spread repair ──────────────────────────────────────────────────────
+        elif state == "spread_repair":
+            prev = list(notes)
+            spread = max(notes) - min(notes)
+
+            if spread < spread_min:
+                sorted_n = sorted(notes)
+                mid_lo = sorted_n[n // 2 - 1]
+                mid_hi = sorted_n[n // 2]
+                dist_lo = abs(mid_lo - center_midi)
+                dist_hi = abs(mid_hi - center_midi)
+
+                if dist_lo < dist_hi:
+                    direction = "down"
+                elif dist_hi < dist_lo:
+                    direction = "up"
+                else:
+                    bit = _deterministic_bit(
+                        tie_break_seed if tie_break_seed is not None else 0,
+                        "spread_closed_tiebreak", chord_index, mid_lo, mid_hi,
+                    )
+                    direction = "up" if bit else "down"
+
+                if direction == "down":
+                    # Place a PC-matching note at max - spread_min, expanding downward.
+                    for target in range(max(notes) - spread_min, max(notes) - spread_min - 12, -1):
+                        lane = _donor_for_down_target(notes, target)
+                        if lane is not None and target not in notes:
+                            notes = list(_slide_on_pitch_order(notes, donor_lane=lane, missing_note=target))
+                            break
+                else:
+                    # Place a PC-matching note at min + spread_min, expanding upward.
+                    for target in range(min(notes) + spread_min, min(notes) + spread_min + 12):
+                        lane = _donor_for_up_target(notes, target)
+                        if lane is not None and target not in notes:
+                            notes = list(_slide_on_pitch_order(notes, donor_lane=lane, missing_note=target))
+                            break
+
+            elif spread > spread_max:
+                high = max(notes)
+                low = min(notes)
+                dist_hi = abs(high - center_midi)
+                dist_lo = abs(low - center_midi)
+
+                if dist_hi > dist_lo:
+                    compress_high = True
+                elif dist_lo > dist_hi:
+                    compress_high = False
+                else:
+                    compress_high = bool(_deterministic_bit(
+                        tie_break_seed if tie_break_seed is not None else 0,
+                        "spread_open_tiebreak", chord_index, high, low,
+                    ))
+
+                if compress_high:
+                    # Move high note to the PC-matching position at min + spread_max.
+                    target = _pc_target_at_or_below(high % 12, min(notes) + spread_max)
+                    if target >= high:
+                        target -= 12
+                    if target not in notes:
+                        notes = list(_slide_on_pitch_order(notes, donor_lane=notes.index(high), missing_note=target))
+                else:
+                    # Move low note to the PC-matching position at max - spread_max.
+                    target = _pc_target_at_or_above(low % 12, max(notes) - spread_max)
+                    if target <= low:
+                        target += 12
+                    if target not in notes:
+                        notes = list(_slide_on_pitch_order(notes, donor_lane=notes.index(low), missing_note=target))
+
+            if notes == prev:
+                spread = max(notes) - min(notes)
+                warnings.warn(
+                    f"fit_cloud_center_spread_voice_vector: spread_repair made no progress; "
+                    f"returning partially repaired voicing {notes} "
+                    f"(spread={spread}, target=[{spread_min},{spread_max}])",
+                    stacklevel=3,
+                )
+                return notes
+
+            if spread_min <= max(notes) - min(notes) <= spread_max:
+                spreadOK = True
+                averageOK = False
+                state = "avg_validate"
+            else:
+                state = "spread_repair"
+
+    avg = sum(notes) / n
+    spread = max(notes) - min(notes)
+    warnings.warn(
+        f"fit_cloud_center_spread_voice_vector: reached _MAX_ITER={_MAX_ITER} without convergence; "
+        f"returning best-effort voicing {notes} "
+        f"(avg={avg:.2f}, target={center_midi}±{average_tolerance}; "
+        f"spread={spread}, target=[{spread_min},{spread_max}])",
+        stacklevel=3,
+    )
+    return notes
 
 
 def _repair_single_overflow_states(
@@ -254,25 +479,71 @@ def generate_voice_leading(
     min_midi: int | None = None,
     max_midi: int | None = None,
     tie_break_seed: int | None = None,
+    center_midi: int | None = None,
+    spread_min: int | None = None,
+    spread_max: int | None = None,
+    average_tolerance: int | None = None,
 ) -> List[List[int]]:
-    """Apply sequential minimum-motion voice leading with optional bounded register fitting.
+    """Apply sequential minimum-motion voice leading with optional repair.
+
+    Two repair modes (mutually exclusive):
+      center/spread mode: all of center_midi, spread_min, spread_max, average_tolerance provided.
+      bounded range mode: both min_midi and max_midi provided.
 
     tie_break_seed: if None, uses the existing downward-biased tie-break (backwards-compatible).
-    If set, uses a deterministic pseudo-random tie-break derived from the seed.
     """
     if not voicings:
         return []
 
-    if min_midi is None and max_midi is None:
-        return _generate_unbounded_voice_leading(voicings)
-    if min_midi is None or max_midi is None:
+    _center_mode = all(p is not None for p in (center_midi, spread_min, spread_max, average_tolerance))
+    _range_mode = min_midi is not None and max_midi is not None
+
+    if any(p is not None for p in (center_midi, spread_min, spread_max, average_tolerance)) and not _center_mode:
+        raise ValueError("center_midi, spread_min, spread_max, and average_tolerance must all be provided together")
+    if (min_midi is None) != (max_midi is None):
         raise ValueError("Both min_midi and max_midi are required for bounded voice leading")
+    if _center_mode and _range_mode:
+        raise ValueError("Cannot combine center/spread mode with min/max range mode")
+
+    if not _center_mode and not _range_mode:
+        return _generate_unbounded_voice_leading(voicings)
 
     first_target = [int(n) for n in voicings[0]]
-    led: List[List[int]] = [
+
+    if _center_mode:
+        led: List[List[int]] = [
+            fit_cloud_center_spread_voice_vector(
+                first_target, first_target,
+                center_midi=center_midi,
+                spread_min=spread_min,
+                spread_max=spread_max,
+                average_tolerance=average_tolerance,
+                tie_break_seed=tie_break_seed,
+                chord_index=1,
+            )
+        ]
+        for chord_index, target in enumerate(voicings[1:], start=2):
+            target_notes = [int(n) for n in target]
+            pre_fit = _assign_minimum_motion_target(
+                led[-1], target_notes,
+                tie_break_seed=tie_break_seed,
+                chord_index=chord_index,
+            )
+            led.append(fit_cloud_center_spread_voice_vector(
+                pre_fit, pre_fit,
+                center_midi=center_midi,
+                spread_min=spread_min,
+                spread_max=spread_max,
+                average_tolerance=average_tolerance,
+                tie_break_seed=tie_break_seed,
+                chord_index=chord_index,
+            ))
+        return led
+
+    # bounded range mode
+    led = [
         fit_bounded_voice_vector(
-            first_target,
-            first_target,
+            first_target, first_target,
             min_midi=min_midi,
             max_midi=max_midi,
             context="chord_index=1",
@@ -280,23 +551,20 @@ def generate_voice_leading(
             chord_index=1,
         )
     ]
-
     for chord_index, target in enumerate(voicings[1:], start=2):
         target_notes = [int(n) for n in target]
         previous_bounded = led[-1]
 
         # Stage 1: ordinary minimum-motion assignment from previous audible bounded state.
         pre_fit = _assign_minimum_motion_target(
-            previous_bounded,
-            target_notes,
+            previous_bounded, target_notes,
             tie_break_seed=tie_break_seed,
             chord_index=chord_index,
         )
 
         # Stage 2: bounded register repair by boundary-slide operations.
         fitted = fit_bounded_voice_vector(
-            pre_fit,
-            pre_fit,
+            pre_fit, pre_fit,
             min_midi=min_midi,
             max_midi=max_midi,
             context=f"chord_index={chord_index}",

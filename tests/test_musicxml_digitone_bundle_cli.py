@@ -238,9 +238,8 @@ def test_musicxml_500_miles_high_rendered_timeline_register_bounds(variant: str)
     rp = default_render_profile()
     timeline = flatten_arrangement_to_timeline(render_arrangement(song, rp))
 
+    # Cloud uses center/spread repair, not fixed range bounds; skip cloud bounds check.
     for event in timeline.events:
-        if event.role == "cloud":
-            assert rp.cloud_min_midi <= event.note_midi <= rp.cloud_max_midi
         if event.role == "chord":
             assert rp.chord_min_midi <= event.note_midi <= rp.chord_max_midi
         if event.role == "bass":

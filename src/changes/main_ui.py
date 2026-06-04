@@ -1270,6 +1270,99 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
         for p in bp.patterns
     ]
 
+    from collections import defaultdict
+
+    rp = compiled.render_profile
+    tl_events = list(compiled.timeline.events)
+
+    def _q(v):
+        """FractionをJSONで見やすい文字列にする"""
+        return str(v.numerator) if v.denominator == 1 else f"{v.numerator}/{v.denominator}"
+
+    def _event_detail(e) -> dict:
+        return {
+            "id": e.id,
+            "onset_quarters": _q(e.onset_quarters),
+            "duration_quarters": _q(e.duration_quarters),
+            "role": e.role,
+            "voice_id": e.voice_id,
+            "note_midi": e.note_midi,
+            "velocity": e.velocity,
+            "source_harmony_id": e.source_harmony_id,
+            "retrigger": e.retrigger,
+        }
+
+    def _layer_stats(role: str) -> dict:
+        evs = [e for e in tl_events if e.role == role]
+        notes = [e.note_midi for e in evs]
+
+        by_onset = defaultdict(list)
+        for e in evs:
+            by_onset[e.onset_quarters].append(e)
+
+        onset_groups = []
+        for onset, onset_evs in sorted(by_onset.items(), key=lambda x: x[0]):
+            onset_notes = [e.note_midi for e in onset_evs]
+            onset_groups.append({
+                "onset_quarters": _q(onset),
+                "count": len(onset_evs),
+                "notes": sorted(onset_notes),
+                "note_min": min(onset_notes),
+                "note_max": max(onset_notes),
+                "spread": max(onset_notes) - min(onset_notes),
+                "details": [
+                    _event_detail(e)
+                    for e in sorted(
+                        onset_evs,
+                        key=lambda x: (
+                            x.voice_id,
+                            x.note_midi,
+                        ),
+                    )
+                ],
+            })
+
+        return {
+            "count": len(evs),
+            "note_min": min(notes) if notes else None,
+            "note_max": max(notes) if notes else None,
+            "unique_onsets": len(by_onset),
+            "events": {
+                "details": [
+                    _event_detail(e)
+                    for e in sorted(
+                        evs,
+                        key=lambda x: (
+                            x.onset_quarters,
+                            x.voice_id,
+                            x.note_midi,
+                        ),
+                    )
+                ]
+            },
+            "by_onset": onset_groups,
+        }
+
+    cloud_evs = [e for e in tl_events if e.role == "cloud"]
+
+    cloud_out_of_range = [
+        _event_detail(e)
+        for e in cloud_evs
+        if not (rp.cloud_min_midi <= e.note_midi <= rp.cloud_max_midi)
+    ]
+
+    cloud_groups = _layer_stats("cloud")["by_onset"]
+    cloud_centers_by_onset = [
+        {
+            "onset_quarters": group["onset_quarters"],
+            "average": sum(group["notes"]) / len(group["notes"]),
+            "note_min": group["note_min"],
+            "note_max": group["note_max"],
+            "spread": group["spread"],
+        }
+        for group in cloud_groups
+    ]
+
     return {
         "song": {
             "original_title": song.title,
@@ -1320,6 +1413,32 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "pattern_count": len(bp.patterns),
             "patterns": per_pattern_validation,
             "warnings": list(bp.warnings),
+        },
+        "render_profile": {
+            "cloud_min_midi": rp.cloud_min_midi,
+            "cloud_max_midi": rp.cloud_max_midi,
+            "chord_min_midi": rp.chord_min_midi,
+            "chord_max_midi": rp.chord_max_midi,
+            "bass_min_midi": rp.bass_min_midi,
+            "bass_max_midi": rp.bass_max_midi,
+        },
+        "timeline": {
+            "total_events": len(tl_events),
+            "roles": {
+                "cloud": _layer_stats("cloud"),
+                "bass": _layer_stats("bass"),
+                "chord": _layer_stats("chord"),
+            },
+        },
+        "cloud_range_validation": {
+            "range": [rp.cloud_min_midi, rp.cloud_max_midi],
+            "out_of_range_count": len(cloud_out_of_range),
+            "out_of_range": cloud_out_of_range,
+        },
+        "cloud_voice_leading": {
+            "centers_by_onset": cloud_centers_by_onset,
+            "average_min": min((g["average"] for g in cloud_centers_by_onset), default=None),
+            "average_max": max((g["average"] for g in cloud_centers_by_onset), default=None),
         },
     }
 

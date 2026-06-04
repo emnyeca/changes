@@ -202,19 +202,57 @@ def test_bundle_polyphonic_same_track_same_step_does_not_force_event_capacity_sp
     }
 
 
-def test_bundle_non_polyphonic_same_track_same_step_is_compile_conflict():
-    song = _synthetic_song_with_steps("NON POLY CONFLICT", 2)
+def test_bundle_track1_same_step_polyphonic_chord_is_valid():
+    song = _synthetic_song_with_steps("TRACK1 POLY", 2)
     target = replace(
         default_digitone_target_profile(),
-        polyphonic_tracks=(),
+        routing={
+            "chord": default_digitone_target_profile().routing["chord"],
+        },
     )
     events = (
-        _rendered_event("e1", "cloud_voice_1", 0, 60),
-        _rendered_event("e2", "cloud_voice_1", 0, 64),
+        _rendered_event("e1", "chord_note_1", 0, 60),
+        _rendered_event("e2", "chord_note_2", 0, 64),
+        _rendered_event("e3", "chord_note_3", 0, 67),
+        _rendered_event("e4", "chord_note_4", 0, 71),
     )
     timeline = RenderedTimeline(title=song.title, performance_tempo=Fraction(120, 1), events=events)
 
-    with pytest.raises(ValueError, match="duplicate track/step"):
+    target = replace(
+        target,
+        routing={
+            "chord": replace(
+                target.routing["chord"],
+                voices={key: replace(value, track=1) for key, value in target.routing["chord"].voices.items()},
+            )
+        },
+    )
+
+    bundle = compile_timeline_to_digitone_bundle_plan(song, timeline, target)
+
+    assert len(bundle.patterns) == 1
+    assert {(event.track, event.step) for event in bundle.patterns[0].events} == {(1, 1)}
+
+
+def test_bundle_rejects_17_notes_on_one_trig():
+    song = _synthetic_song_with_steps("TOO MANY NOTES", 2)
+    base = default_digitone_target_profile()
+    target = replace(
+        base,
+        routing={
+            "chord": replace(
+                base.routing["chord"],
+                voices={f"chord_note_{i + 1}": replace(next(iter(base.routing["chord"].voices.values())), track=1) for i in range(17)},
+            )
+        },
+    )
+    events = tuple(
+        _rendered_event(f"e{i}", f"chord_note_{i + 1}", 0, 36 + i)
+        for i in range(17)
+    )
+    timeline = RenderedTimeline(title=song.title, performance_tempo=Fraction(120, 1), events=events)
+
+    with pytest.raises(ValueError, match="per-trig note count exceeded"):
         compile_timeline_to_digitone_bundle_plan(song, timeline, target)
 
 

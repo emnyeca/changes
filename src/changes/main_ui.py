@@ -257,6 +257,14 @@ def _current_song() -> SongModel | None:
         return selected
     return _dirty_song() or selected
 
+
+def _section_filter_label(section_id: str | None) -> str:
+    return _display_section_label(section_id)
+
+
+def _playback_song() -> SongModel | None:
+    return _current_song()
+
 # ── Logo ─────────────────────────────────────────────────────────────
 st.logo(
     _LOGO_PATH_HEADER, 
@@ -1316,15 +1324,13 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
         enabled_layers.append(f"Chord → Track {settings.chord_track}")
     disabled_layers = [lbl for lbl in ["Cloud", "Bass", "Chord"] if not any(lbl in x for x in enabled_layers)]
 
-    _TRIGGER_MAX = 128
     per_pattern_validation = [
         {
             "name": p.pattern_name,
             "steps": p.total_steps,
             "section_id": p.section_id,
             "events": len(p.events),
-            "within_128_limit": len(p.events) <= _TRIGGER_MAX,
-            "warning": f"EXCEEDS hardware limit ({len(p.events)} > {_TRIGGER_MAX})" if len(p.events) > _TRIGGER_MAX else None,
+            "events_note": "diagnostic only; Digitone II is not limited to 128 note events per pattern",
         }
         for p in bp.patterns
     ]
@@ -1486,8 +1492,7 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "disabled_layers": disabled_layers,
             "total_timeline_events": len(compiled.timeline.events),
             "total_compiled_events": sum(len(p.events) for p in bp.patterns),
-            "toolkit_slot_limit": _TRIGGER_MAX,
-            "exceeds_limit_patterns": [p["name"] for p in per_pattern_validation if not p["within_128_limit"]],
+            "total_events_note": "diagnostic only; Digitone II is not limited to 128 note events per pattern",
         },
         "timing": {
             "performance_tempo": float(compiled.timeline.performance_tempo),
@@ -1584,7 +1589,7 @@ def _render_settings() -> None:
             settings.cloud_center_midi = new_cloud_midi; changed = True
 
     # Per-voice track assignment (None = don't send)
-    _TRACK_OPTS = ["None"] + [f"Tr.{i}" for i in range(1, 17)]
+    _TRACK_OPTS = ["None"] + [f"Tr.{i}" for i in range(1, 9)]
     cloud_cols = st.columns([1,1,1,1,1,1,1])
     cloud_cols[0].write(" ")
     new_cloud_tracks = list(settings.cloud_tracks[:6])
@@ -1592,7 +1597,8 @@ def _render_settings() -> None:
         new_cloud_tracks.append(None)
     for vi in range(6):
         cur = new_cloud_tracks[vi]
-        idx = 0 if cur is None else cur
+        cur_val = "None" if cur is None else f"Tr.{cur}"
+        idx = _TRACK_OPTS.index(cur_val) if cur_val in _TRACK_OPTS else 0
         sel = cloud_cols[vi + 1].selectbox(
             f"Voice{vi + 1} to", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
             label_visibility="visible",
@@ -1633,7 +1639,8 @@ def _render_settings() -> None:
             settings.bass_center_midi = new_bass_midi; changed = True
     with b3:
         cur_bass = settings.bass_track
-        bass_idx = 0 if cur_bass is None else cur_bass
+        bass_val = "None" if cur_bass is None else f"Tr.{cur_bass}"
+        bass_idx = _TRACK_OPTS.index(bass_val) if bass_val in _TRACK_OPTS else 0
         new_bass_sel = st.selectbox("Voice to", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
         if new_bass_sel == "None":
             new_bass_track: int | None = None 
@@ -1675,15 +1682,12 @@ def _render_settings() -> None:
             settings.chord_center_midi = new_chord_midi; changed = True
 
     with ch3:
-        _CHORD_TRACK_OPTS = ["None", "Tr.8"]
         cur_chord = settings.chord_track
-        chord_track_val = "None" if cur_chord is None else ("Tr.8" if cur_chord == 8 else "None")
-        if cur_chord not in (None, 8):
-            st.caption(f"⚠ Chord track {cur_chord} is not supported (polyphonic requires Track 8). Reset to None.")
-        chord_track_index = _CHORD_TRACK_OPTS.index(chord_track_val) if chord_track_val in _CHORD_TRACK_OPTS else 0
+        chord_track_val = "None" if cur_chord is None else f"Tr.{cur_chord}"
+        chord_track_index = _TRACK_OPTS.index(chord_track_val) if chord_track_val in _TRACK_OPTS else 0
         new_chord_sel = st.selectbox(
             "Voices to",
-            _CHORD_TRACK_OPTS,
+            _TRACK_OPTS,
             index=chord_track_index,
             key="_s_chord_track",
         )

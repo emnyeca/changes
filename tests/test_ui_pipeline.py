@@ -136,23 +136,37 @@ def test_target_profile_cloud_voices_may_share_track() -> None:
     assert 1 in tp.polyphonic_tracks
 
 
-def test_target_profile_enabled_layers_may_use_any_track_1_to_16() -> None:
+def test_target_profile_enabled_changes_layers_may_use_tracks_1_to_8() -> None:
     s = AppSettings(
-        cloud_tracks=[16, None, None, None, None, None],
-        bass_track=15,
-        chord_track=14,
+        cloud_tracks=[8, None, None, None, None, None],
+        bass_track=7,
+        chord_track=6,
     )
     tp = settings_to_target_profile(s)
 
-    assert tp.voice_to_track["cloud_voice_1"] == 16
-    assert tp.voice_to_track["bass"] == 15
-    assert tp.voice_to_track["chord_note_1"] == 14
+    assert tp.voice_to_track["cloud_voice_1"] == 8
+    assert tp.voice_to_track["bass"] == 7
+    assert tp.voice_to_track["chord_note_1"] == 6
 
 
-def test_target_profile_rejects_track_outside_1_to_16() -> None:
+@pytest.mark.parametrize(
+    "settings",
+    [
+        AppSettings(cloud_tracks=[9, None, None, None, None, None], bass_track=None, chord_track=None),
+        AppSettings(cloud_tracks=[None, None, None, None, None, None], bass_track=9, chord_track=None),
+        AppSettings(cloud_tracks=[None, None, None, None, None, None], bass_track=None, chord_track=9),
+        AppSettings(cloud_tracks=[16, None, None, None, None, None], bass_track=None, chord_track=None),
+    ],
+)
+def test_target_profile_rejects_changes_layer_tracks_9_to_16(settings: AppSettings) -> None:
+    with pytest.raises(ValueError, match="Tracks 9..16 are reserved"):
+        settings_to_target_profile(settings)
+
+
+def test_target_profile_rejects_track_outside_1_to_8() -> None:
     s = AppSettings(bass_track=17, chord_track=None)
 
-    with pytest.raises(ValueError, match="1..16"):
+    with pytest.raises(ValueError, match="1..8"):
         settings_to_target_profile(s)
 
 

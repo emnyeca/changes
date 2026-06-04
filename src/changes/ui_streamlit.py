@@ -699,7 +699,7 @@ def main() -> None:
 
     hold_same_pitch = st.checkbox("Hold repeated same pitch", value=True)
 
-    channel_options = ["off"] + [str(i) for i in range(1, 17)]
+    channel_options = ["off"] + [str(i) for i in range(1, 9)]
     channel_cols = st.columns(4)
     chord_channels = [
         channel_cols[0].selectbox("Track 1", channel_options, index=1),
@@ -712,7 +712,7 @@ def main() -> None:
         channel_cols2[0].selectbox("Track 5", channel_options, index=5),
         channel_cols2[1].selectbox("Track 6", channel_options, index=6),
     ])
-    bass_channel = channel_cols2[2].selectbox("Bass", channel_options, index=9)
+    bass_channel = channel_cols2[2].selectbox("Bass", channel_options, index=7)
 
     channel_map = _resolve_channel_map([_channel_option_to_value(x) for x in chord_channels] + [_channel_option_to_value(bass_channel)])
 

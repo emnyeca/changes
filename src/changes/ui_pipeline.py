@@ -26,8 +26,8 @@ from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 from changes.models.song_model import SongModel
 
 CLOUD_RANGE_SEMITONES = 18
-DIGITONE2_MIN_TRACK = 1
-DIGITONE2_MAX_TRACK = 16
+CHANGES_LAYER_MIN_TRACK = 1
+CHANGES_LAYER_MAX_TRACK = 8
 
 
 @dataclass
@@ -77,9 +77,10 @@ def settings_to_target_profile(settings: AppSettings) -> DigitoneTargetProfile:
     def _validate_track(track: int | None, label: str) -> None:
         if track is None:
             return
-        if track < DIGITONE2_MIN_TRACK or track > DIGITONE2_MAX_TRACK:
+        if track < CHANGES_LAYER_MIN_TRACK or track > CHANGES_LAYER_MAX_TRACK:
             raise ValueError(
-                f"{label} track must be in {DIGITONE2_MIN_TRACK}..{DIGITONE2_MAX_TRACK}: {track}"
+                f"{label} track must be in {CHANGES_LAYER_MIN_TRACK}..{CHANGES_LAYER_MAX_TRACK} "
+                "because Tracks 9..16 are reserved for user arrangement tracks"
             )
 
     for i, track in enumerate(settings.cloud_tracks[:6], start=1):

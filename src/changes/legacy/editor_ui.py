@@ -979,7 +979,7 @@ def _render_settings() -> None:
         st.markdown(f"**Range:** `{_range_display(settings.cloud_center_midi, CLOUD_RANGE_SEMITONES // 2, CLOUD_RANGE_SEMITONES // 2)}`")
 
     # Per-voice track assignment (None = don't send)
-    _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 17)]
+    _TRACK_OPTS = ["None"] + [str(i) for i in range(1, 9)]
     st.caption("Track per voice — select **None** to exclude that voice from output")
     cloud_cols = st.columns(6)
     new_cloud_tracks = list(settings.cloud_tracks[:6])
@@ -987,7 +987,8 @@ def _render_settings() -> None:
         new_cloud_tracks.append(None)
     for vi in range(6):
         cur = new_cloud_tracks[vi]
-        idx = 0 if cur is None else cur
+        cur_val = "None" if cur is None else str(cur)
+        idx = _TRACK_OPTS.index(cur_val) if cur_val in _TRACK_OPTS else 0
         sel = cloud_cols[vi].selectbox(
             f"V{vi + 1}", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
             label_visibility="visible",
@@ -1019,7 +1020,8 @@ def _render_settings() -> None:
         st.markdown(f"**Range:** `{_range_display(settings.bass_center_midi, 0, 11)}`")
     bt1, _ = st.columns(2)
     cur_bass = settings.bass_track
-    bass_idx = 0 if cur_bass is None else cur_bass
+    bass_val = "None" if cur_bass is None else str(cur_bass)
+    bass_idx = _TRACK_OPTS.index(bass_val) if bass_val in _TRACK_OPTS else 0
     new_bass_sel = bt1.selectbox("Track", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
     new_bass_track: int | None = None if new_bass_sel == "None" else int(new_bass_sel)
     if new_bass_track != settings.bass_track:
@@ -1049,7 +1051,8 @@ def _render_settings() -> None:
     with ch3:
         st.markdown(f"**Range:** `{_range_display(settings.chord_center_midi, 12, 12)}`")
     cur_chord = settings.chord_track
-    chord_idx = 0 if cur_chord is None else cur_chord
+    chord_val = "None" if cur_chord is None else str(cur_chord)
+    chord_idx = _TRACK_OPTS.index(chord_val) if chord_val in _TRACK_OPTS else 0
     new_chord_sel = st.selectbox("Track", _TRACK_OPTS, index=chord_idx, key="_s_chord_track")
     new_chord_track: int | None = None if new_chord_sel == "None" else int(new_chord_sel)
     if new_chord_track != settings.chord_track:

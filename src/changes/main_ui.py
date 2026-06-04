@@ -1589,7 +1589,7 @@ def _render_settings() -> None:
             settings.cloud_center_midi = new_cloud_midi; changed = True
 
     # Per-voice track assignment (None = don't send)
-    _TRACK_OPTS = ["None"] + [f"Tr.{i}" for i in range(1, 17)]
+    _TRACK_OPTS = ["None"] + [f"Tr.{i}" for i in range(1, 9)]
     cloud_cols = st.columns([1,1,1,1,1,1,1])
     cloud_cols[0].write(" ")
     new_cloud_tracks = list(settings.cloud_tracks[:6])
@@ -1597,7 +1597,8 @@ def _render_settings() -> None:
         new_cloud_tracks.append(None)
     for vi in range(6):
         cur = new_cloud_tracks[vi]
-        idx = 0 if cur is None else cur
+        cur_val = "None" if cur is None else f"Tr.{cur}"
+        idx = _TRACK_OPTS.index(cur_val) if cur_val in _TRACK_OPTS else 0
         sel = cloud_cols[vi + 1].selectbox(
             f"Voice{vi + 1} to", _TRACK_OPTS, index=idx, key=f"_s_cloud_t{vi + 1}",
             label_visibility="visible",
@@ -1638,7 +1639,8 @@ def _render_settings() -> None:
             settings.bass_center_midi = new_bass_midi; changed = True
     with b3:
         cur_bass = settings.bass_track
-        bass_idx = 0 if cur_bass is None else cur_bass
+        bass_val = "None" if cur_bass is None else f"Tr.{cur_bass}"
+        bass_idx = _TRACK_OPTS.index(bass_val) if bass_val in _TRACK_OPTS else 0
         new_bass_sel = st.selectbox("Voice to", _TRACK_OPTS, index=bass_idx, key="_s_bass_track")
         if new_bass_sel == "None":
             new_bass_track: int | None = None 

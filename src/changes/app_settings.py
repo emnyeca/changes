@@ -38,6 +38,9 @@ class AppSettings:
     # Safety
     confirm_before_hardware_write: bool = True
 
+    # Display
+    note_accidental: str = "flat"  # "flat" | "sharp"
+
 
 def _migrate_raw(raw: dict[str, Any]) -> dict[str, Any]:
     """Convert legacy field names before merging with defaults."""

@@ -747,6 +747,7 @@ def imported_song_to_song_model(
         )
         absolute_start += measure_len
 
+    raw_composer = (imported.composer or "").strip() or None
     return SongModel(
         title=imported.title or "Untitled",
         working_key=None,
@@ -754,6 +755,7 @@ def imported_song_to_song_model(
         performance_tempo=Fraction(str(tempo)),
         measures=tuple(measures),
         cloud_voice_leading_seed=_seed_from_imported_song(imported),
+        composer=raw_composer,
     )
 
 

@@ -13,7 +13,7 @@ from changes.voicing import progression_to_voicings
 
 def _repair(notes, *, center=60, smin=14, smax=16, tol=2, seed=None, ci=1):
     return fit_cloud_center_spread_voice_vector(
-        notes, notes,
+        notes,
         center_midi=center, spread_min=smin, spread_max=smax,
         average_tolerance=tol, tie_break_seed=seed, chord_index=ci,
     )

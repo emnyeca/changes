@@ -140,7 +140,6 @@ def _donor_for_up_target(notes: list[int], missing: int) -> int | None:
 
 def fit_cloud_center_spread_voice_vector(
     target_notes: Sequence[int],
-    reference_notes: Sequence[int],
     *,
     center_midi: int,
     spread_min: int,
@@ -150,8 +149,6 @@ def fit_cloud_center_spread_voice_vector(
     chord_index: int = 0,
 ) -> list[int]:
     """Repair cloud voicing via a center/average/spread re-validation loop.
-
-    reference_notes is accepted for API symmetry with fit_bounded_voice_vector but is unused.
 
     State machine:
       ① avg_validate → OK → spread_validate; NG → avg_repair
@@ -513,7 +510,7 @@ def generate_voice_leading(
     if _center_mode:
         led: List[List[int]] = [
             fit_cloud_center_spread_voice_vector(
-                first_target, first_target,
+                first_target,
                 center_midi=center_midi,
                 spread_min=spread_min,
                 spread_max=spread_max,
@@ -530,7 +527,7 @@ def generate_voice_leading(
                 chord_index=chord_index,
             )
             led.append(fit_cloud_center_spread_voice_vector(
-                pre_fit, pre_fit,
+                pre_fit,
                 center_midi=center_midi,
                 spread_min=spread_min,
                 spread_max=spread_max,

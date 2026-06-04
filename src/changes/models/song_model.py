@@ -53,6 +53,7 @@ class SongModel:
     measures: tuple[Measure, ...]
     working_key_mode: str | None = None
     cloud_voice_leading_seed: int | None = None
+    composer: str | None = None
 
 
 def song_model_to_dict(song: SongModel) -> dict:
@@ -62,6 +63,7 @@ def song_model_to_dict(song: SongModel) -> dict:
         "working_key_mode": song.working_key_mode,
         "performance_tempo": _fraction_to_text(song.performance_tempo),
         "cloud_voice_leading_seed": song.cloud_voice_leading_seed,
+        "composer": song.composer,
         "measures": [
             {
                 "number": m.number,
@@ -112,6 +114,9 @@ def song_model_from_dict(data: dict) -> SongModel:
     raw_seed = data.get("cloud_voice_leading_seed")
     seed = int(raw_seed) if raw_seed is not None else None
 
+    raw_composer = data.get("composer")
+    composer = str(raw_composer).strip() or None if raw_composer else None
+
     return SongModel(
         title=str(data.get("title") or "Untitled"),
         working_key=(None if data.get("working_key") is None else str(data.get("working_key"))),
@@ -119,4 +124,5 @@ def song_model_from_dict(data: dict) -> SongModel:
         performance_tempo=_fraction_from_text(data.get("performance_tempo", "120")),
         measures=tuple(measures),
         cloud_voice_leading_seed=seed,
+        composer=composer,
     )

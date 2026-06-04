@@ -17,7 +17,6 @@ from changes.library import SongEntry, delete_song, list_songs, overwrite_song, 
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections
 from changes.ui_pipeline import (
-    CLOUD_RANGE_SEMITONES,
     count_auto_split_patterns,
     count_linear_patterns,
     song_to_syx_bytes,
@@ -99,8 +98,18 @@ _NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"]
 def _midi_name(n: int) -> str:
     return f"{_NOTE_NAMES[n % 12]}{n // 12 - 1}"
 
+def _active_accidental_scale() -> list[str]:
+    settings = getattr(st.session_state, "_settings", None)
+    if settings and getattr(settings, "note_accidental", "flat") == "sharp":
+        return _SHARP_SCALE
+    return _FLAT_SCALE
+
+def _midi_display_name(n: int) -> str:
+    scale = _active_accidental_scale()
+    return f"{scale[n % 12]}{n // 12 - 1}"
+
 def _range_display(center: int, lo: int, hi: int) -> str:
-    return f"{_midi_name(center)} ({_midi_name(center-lo)}–{_midi_name(center+hi)})"
+    return f"{_midi_display_name(center)} ({_midi_display_name(center-lo)}–{_midi_display_name(center+hi)})"
 
 def _note_options(lo_midi: int, hi_midi: int) -> list[str]:
     return [_midi_name(n) for n in range(lo_midi, hi_midi + 1)]
@@ -170,6 +179,7 @@ def _ss_init() -> None:
         ("_table_save_suppressed_signature", None),
         ("_songlist_table_reset_token", 0),
         ("_songlist_error_message", None),
+        ("_pending_deselect", False),
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
         ("_import_bundle_result", None),
         ("_import_progress_request", None), ("_import_progress_status", None),
@@ -191,7 +201,10 @@ def _refresh_library() -> None:
 
 
 def _reset_song_table_view() -> None:
+    saved_search = st.session_state.get("_sl_search")
     st.session_state._songlist_table_reset_token += 1
+    if saved_search is not None:
+        st.session_state["_sl_search"] = saved_search
 
 
 # ── Header data sources ───────────────────────────────────────────────────────
@@ -279,7 +292,9 @@ def _render_header() -> None:
     with st.container(border=True):
         song_col, key_col, tempo_col, meter_col, transpose_col = st.columns([3.2, 1.2, 1.2, 1.2, 1.2], vertical_alignment="bottom", gap="small")
         with song_col:
-            _render_header_field("Song", title, render_title=True, has_song=bool(song))
+            _composer = getattr(song, "composer", None) if song else None
+            _song_label = f"Song by {_composer}" if _composer else "Song"
+            _render_header_field(_song_label, title, render_title=True, has_song=bool(song))
         with key_col:
             _render_header_field("Key", key)
         with tempo_col:
@@ -314,7 +329,7 @@ def _is_valid_token(token: str) -> bool:
 def _transpose_root(root: str, semitones: int) -> str:
     pc = _ROOT_PC.get(root, 0)
     new_pc = (pc + semitones) % 12
-    return (_SHARP_SCALE if semitones > 0 else _FLAT_SCALE)[new_pc]
+    return _active_accidental_scale()[new_pc]
 
 
 def _transpose_chord(symbol: str, semitones: int) -> str:
@@ -451,6 +466,36 @@ def _dialog_pending_switch() -> None:
         st.rerun()
     if col_discard.button("Discard and switch", type="primary", key="sw_discard", use_container_width=True):
         _do_switch_song(pending_switch)
+
+
+def _do_deselect_song() -> None:
+    from changes.editor import EditorState
+    st.session_state._selected_path = None
+    st.session_state._pending_deselect = False
+    st.session_state.editor = EditorState()
+    st.session_state._editor_dirty = False
+
+
+def _try_deselect_song() -> None:
+    if st.session_state._editor_dirty:
+        _reset_song_table_view()
+        st.session_state._pending_deselect = True
+    else:
+        _do_deselect_song()
+
+
+@st.dialog("Discard Unsaved Changes?", dismissible=False)
+def _dialog_pending_deselect() -> None:
+    if not st.session_state.get("_pending_deselect"):
+        return
+    st.warning("Unsaved changes will be discarded.")
+    col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
+    if col_cancel.button("Cancel", key="desel_cancel", use_container_width=True):
+        st.session_state._pending_deselect = False
+        st.rerun()
+    if col_discard.button("Discard", type="primary", key="desel_discard", use_container_width=True):
+        _do_deselect_song()
+        st.rerun()
         st.rerun()
 
 
@@ -606,6 +651,7 @@ def _render_songlist(show_import: bool = True) -> None:
     entries: list[SongEntry] = st.session_state._library
     table_save_pending = st.session_state.get("_table_save_mode") == "pending"
     pending_switch = st.session_state.get("_pending_switch")
+    pending_deselect = bool(st.session_state.get("_pending_deselect"))
     del_path = st.session_state.get("_delete_confirm")
     import_conflict_pending = st.session_state.get("_import_conflict_mode") == "pending"
     import_progress_pending = (
@@ -617,6 +663,7 @@ def _render_songlist(show_import: bool = True) -> None:
     ui_locked = (
         table_save_pending
         or pending_switch is not None
+        or pending_deselect
         or del_path is not None
         or import_conflict_pending
         or import_progress_pending
@@ -717,6 +764,15 @@ def _render_songlist(show_import: bool = True) -> None:
             if st.session_state._selected_path != target_entry.path:
                 _try_select_song(target_entry)
                 st.rerun()
+    elif not selected_rows and not ui_locked and st.session_state._selected_path is not None:
+        # Deselect: user unchecked the currently selected row
+        deselected = [
+            i for i in range(min(len(edited_df), len(orig_df)))
+            if bool(orig_df.at[i, "Select"]) and not bool(edited_df.at[i, "Select"])
+        ]
+        if deselected:
+            _try_deselect_song()
+            st.rerun()
 
     # Table-integrated delete action (rightmost column)
     delete_rows = [
@@ -826,6 +882,8 @@ def _render_songlist(show_import: bool = True) -> None:
         _dialog_table_save()
     elif pending_switch is not None:
         _dialog_pending_switch()
+    elif pending_deselect:
+        _dialog_pending_deselect()
     elif del_path is not None:
         _dialog_delete_confirm()
     elif import_progress_pending:
@@ -904,6 +962,7 @@ def _load_song_into_editor(song: SongModel) -> None:
     state = EditorState()
     state.title = song.title
     state.tempo = int(song.performance_tempo)
+    state.composer = getattr(song, "composer", None)
     if song.working_key:
         state.working_key = song.working_key
     if song.measures:
@@ -1512,17 +1571,13 @@ def _render_settings() -> None:
             settings.cloud_trigger_policy = new_cloud_trigger; changed = True
     with c2:
         cloud_notes = _note_options(36, 84)
-        cloud_note_labels = {
-            n: f"{_range_display(_name_to_midi(n), CLOUD_RANGE_SEMITONES // 2, CLOUD_RANGE_SEMITONES // 2)}"
-            for n in cloud_notes
-        }
         ci = _note_options_index(cloud_notes, settings.cloud_center_midi)
         new_cloud_note = st.selectbox(
-            "Center note(Range)",
+            "Center note",
             cloud_notes,
             index=ci,
             key="_s_cloud_center",
-            format_func=lambda n: cloud_note_labels.get(n, n),
+            format_func=lambda n: _midi_display_name(_name_to_midi(n)),
         )
         new_cloud_midi = _name_to_midi(new_cloud_note)
         if new_cloud_midi != settings.cloud_center_midi:
@@ -1565,17 +1620,13 @@ def _render_settings() -> None:
             settings.bass_trigger_policy = new_bass_trigger; changed = True
     with b2:
         bass_notes = _note_options(12, 60)
-        bass_note_labels = {
-            n: f"{_range_display(_name_to_midi(n), 0, 11)}"
-            for n in bass_notes
-        }
         bi = _note_options_index(bass_notes, settings.bass_center_midi)
         new_bass_note = st.selectbox(
             "Center note(Range)",
             bass_notes,
             index=bi,
             key="_s_bass_center",
-            format_func=lambda n: bass_note_labels.get(n, n),
+            format_func=lambda n: _range_display(_name_to_midi(n), 0, 11),
         )
         new_bass_midi = _name_to_midi(new_bass_note)
         if new_bass_midi != settings.bass_center_midi:
@@ -1611,17 +1662,13 @@ def _render_settings() -> None:
 
     with ch2:
         chord_notes = _note_options(36, 84)
-        chord_note_labels = {
-            n: f"{_range_display(_name_to_midi(n), 12, 12)}"
-            for n in chord_notes
-        }
         chi = _note_options_index(chord_notes, settings.chord_center_midi)
         new_chord_note = st.selectbox(
             "Center note(Range)",
             chord_notes,
             index=chi,
             key="_s_chord_center",
-            format_func=lambda n: chord_note_labels.get(n, n),
+            format_func=lambda n: _range_display(_name_to_midi(n), 12, 12),
         )
         new_chord_midi = _name_to_midi(new_chord_note)
         if new_chord_midi != settings.chord_center_midi:
@@ -1646,6 +1693,19 @@ def _render_settings() -> None:
             new_chord_track = int(new_chord_sel.removeprefix("Tr."))
         if new_chord_track != settings.chord_track:
             settings.chord_track = new_chord_track; changed = True
+
+    st.divider()
+
+    # ── Display ───────────────────────────────────────────────────────────────
+    st.subheader("Display")
+    new_accidental = "flat" if _toggle(
+        "Accidentals", "_s_accidental",
+        getattr(settings, "note_accidental", "flat") == "flat",
+        on_label="Flat (Bb, Eb…)",
+        off_label="Sharp (A#, D#…)",
+    ) else "sharp"
+    if new_accidental != getattr(settings, "note_accidental", "flat"):
+        settings.note_accidental = new_accidental; changed = True
 
     st.divider()
 

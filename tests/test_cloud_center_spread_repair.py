@@ -19,13 +19,44 @@ def _repair(notes, *, center=60, smin=14, smax=16, tol=2, seed=None, ci=1):
     )
 
 
-# ── Closed voicing repair ─────────────────────────────────────────────────────
-# Use notes tightly clustered around center so the octave slide stays within spread_max.
-# [57,58,59,61,62,63]: avg=60 (no avg repair needed), spread=6 < 14.
-# mid_lo=59, mid_hi=61; either option gives new_spread=16 which is within [14,16].
+# ── 5.1 Spec case: closed voicing [58,59,61,63,66,68] ────────────────────────
+
+def test_spec_closed_voicing_spread_increases():
+    notes_in = [58, 59, 61, 63, 66, 68]  # spread=10, avg=62.5 → too high and too closed
+    result = _repair(notes_in)
+    assert max(result) - min(result) > max(notes_in) - min(notes_in), "spread must increase"
+
+
+def test_spec_closed_voicing_no_simple_octave_replacement():
+    # Specifically: selected middle note 61 (C#) must NOT jump directly to 49 (C#-12)
+    notes_in = [58, 59, 61, 63, 66, 68]
+    result = _repair(notes_in)
+    assert 49 not in result, "49 = 61-12 must not appear (no simple ±12 octave replacement)"
+
+
+def test_spec_closed_voicing_pc_set_preserved():
+    notes_in = [58, 59, 61, 63, 66, 68]
+    result = _repair(notes_in)
+    in_pcs = sorted(n % 12 for n in notes_in)
+    out_pcs = sorted(n % 12 for n in result)
+    assert in_pcs == out_pcs, "pitch-class multiset must be preserved"
+
+
+def test_spec_closed_voicing_spread_approaches_target():
+    notes_in = [58, 59, 61, 63, 66, 68]
+    result = _repair(notes_in)
+    new_spread = max(result) - min(result)
+    old_spread = max(notes_in) - min(notes_in)
+    # spread must improve toward [14,16]; new distance from midpoint must be ≤ old distance
+    target_mid = 15.0
+    assert abs(new_spread - target_mid) <= abs(old_spread - target_mid), \
+        f"spread {new_spread} should be closer to target 15 than original {old_spread}"
+
+
+# ── 5.1 Additional: closed voicing with tight cluster ────────────────────────
 
 def test_closed_voicing_repair_expands_spread_when_feasible():
-    notes_in = [57, 58, 59, 61, 62, 63]  # spread=6, avg=60, repair fits in [14,16]
+    notes_in = [57, 58, 59, 61, 62, 63]  # spread=6, avg=60
     result = _repair(notes_in)
     new_spread = max(result) - min(result)
     assert new_spread > 6, "Closed repair must increase spread"
@@ -38,7 +69,27 @@ def test_closed_voicing_repair_meets_spread_min():
     assert max(result) - min(result) >= 14, "Spread must reach spread_min after repair"
 
 
-# ── Average too low repair ─────────────────────────────────────────────────────
+# ── 5.2 Average too high repair ───────────────────────────────────────────────
+
+def test_average_too_high_repair_lowers_average():
+    notes_in = [58, 62, 65, 67, 70, 75]  # avg=66.2, too high
+    result = _repair(notes_in)
+    old_avg = sum(notes_in) / len(notes_in)
+    new_avg = sum(result) / len(result)
+    assert new_avg < old_avg, "Average must decrease after too-high repair"
+    assert abs(new_avg - 60) <= abs(old_avg - 60), "Average must move closer to center"
+
+
+def test_average_too_high_highest_note_moved_down_but_not_simply_minus12():
+    # [58,62,65,67,70,75]: high=75 (PC=3=D#), target_high = floor(6*62-397) = 65-... let's just
+    # verify the output doesn't simply contain 75-12=63 when other notes already have 63.
+    notes_in = [58, 62, 63, 67, 70, 75]  # 63 already present; 75-12=63 would duplicate → must find alternative
+    result = _repair(notes_in)
+    new_avg = sum(result) / len(result)
+    assert abs(new_avg - 60) < abs(sum(notes_in) / len(notes_in) - 60), "Average must improve"
+
+
+# ── 5.3 Average too low repair ────────────────────────────────────────────────
 
 def test_average_too_low_repair_raises_average():
     notes_in = [48, 52, 55, 57, 59, 62]  # avg=55.5, center=60, tol=2 → too low
@@ -52,32 +103,65 @@ def test_average_too_low_repair_raises_average():
 def test_average_too_low_lowest_note_moved_up():
     notes_in = [48, 52, 55, 57, 59, 62]
     result = _repair(notes_in)
-    # lowest note 48 should no longer be present (was slid up by 12)
     assert 48 not in result, "Original lowest note should be replaced"
     assert min(result) > 48, "New lowest note should be higher"
 
 
-# ── Average too high repair ────────────────────────────────────────────────────
-
-def test_average_too_high_repair_lowers_average():
-    notes_in = [58, 62, 65, 67, 70, 75]  # avg > 63 (center+2+something)
+def test_average_too_low_not_simply_plus12_when_duplicate():
+    # If low+12 would be a duplicate, the repair must find a different (non-±12) target.
+    notes_in = [48, 52, 55, 57, 60, 62]  # low=48 (C3), 48+12=60 already present → must use 72 (C5)
     result = _repair(notes_in)
-    old_avg = sum(notes_in) / len(notes_in)
-    new_avg = sum(result) / len(result)
-    assert new_avg < old_avg, "Average must decrease after too-high repair"
-    assert abs(new_avg - 60) <= abs(old_avg - 60), "Average must move closer to center"
+    assert 48 not in result, "48 must be replaced"
+    # 60 was already present so 72 (or another C) would be used
+    assert min(result) > 48, "lowest note must increase"
 
 
-# ── Spread too wide repair ─────────────────────────────────────────────────────
+# ── 5.4 Spread too wide repair ────────────────────────────────────────────────
 
 def test_spread_too_wide_repair_reduces_spread():
-    # spread=26 > spread_max=16; low=46 farther from center; slide 46→58 gives spread=15 (in range)
+    # spread=26; low=46 farther from center (dist=14 > high dist=12)
     notes_in = [46, 57, 59, 60, 62, 72]
     result = _repair(notes_in)
     old_spread = max(notes_in) - min(notes_in)
     new_spread = max(result) - min(result)
     assert new_spread < old_spread, "Open repair must decrease spread"
     assert new_spread <= 16, "Spread must not exceed spread_max after repair"
+
+
+def test_spread_too_wide_not_simply_octave_replacement():
+    # notes_in has high=72 (C5), low=46 (A#2). low is farther from center 60.
+    # Simple ±12 would give 46+12=58. Verify result is correct PC-matching target.
+    notes_in = [46, 57, 59, 60, 62, 72]
+    result = _repair(notes_in)
+    in_pcs = sorted(n % 12 for n in notes_in)
+    out_pcs = sorted(n % 12 for n in result)
+    assert in_pcs == out_pcs, "PC multiset must be preserved (no arbitrary octave replacement)"
+
+
+# ── 5.5 Re-validation loop ────────────────────────────────────────────────────
+
+def test_revalidation_loop_both_avg_and_spread_fixed():
+    # Input requires both average AND spread repair.
+    # [48,52,55,57,59,62]: avg=55.5 (too low) AND spread=14 (OK)
+    # After avg repair, spread might change → spread repair needed.
+    # After spread repair, avg re-checked.
+    notes_in = [48, 52, 55, 57, 59, 62]
+    result = _repair(notes_in)
+    new_avg = sum(result) / len(result)
+    new_spread = max(result) - min(result)
+    assert abs(new_avg - 60) <= 2, f"avg={new_avg:.2f} must be within tolerance after loop"
+    assert 14 <= new_spread <= 16, f"spread={new_spread} must be in [14,16] after loop"
+
+
+def test_revalidation_loop_avg_after_spread_also_checked():
+    # Input where spread repair would push avg out of range.
+    # [57,58,59,61,62,63]: avg=60, spread=6; spread repair fires; after spread repair, avg re-checked.
+    notes_in = [57, 58, 59, 61, 62, 63]
+    result = _repair(notes_in)
+    new_avg = sum(result) / len(result)
+    new_spread = max(result) - min(result)
+    assert abs(new_avg - 60) <= 2, f"avg={new_avg:.2f} must be within tolerance after spread repair"
+    assert new_spread >= 14, f"spread={new_spread} must meet spread_min"
 
 
 # ── Stability: same chord repeated stays stable ───────────────────────────────

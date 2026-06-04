@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from bisect import bisect_left
 from collections import Counter
 from itertools import permutations
@@ -112,11 +113,28 @@ def _slide_on_pitch_order(
     return tuple(lane_to_note[lane] for lane in range(len(vector)))
 
 
-def _cloud_slide(notes: list[int], donor_lane: int, missing: int) -> list[int]:
-    """Apply one pitch-order slide; skips silently if missing note already present."""
-    if missing in notes:
-        return notes
-    return list(_slide_on_pitch_order(notes, donor_lane=donor_lane, missing_note=missing))
+def _pc_target_at_or_below(pc: int, max_val: int) -> int:
+    """Largest int with (result % 12 == pc) and result <= max_val."""
+    return max_val - (max_val - pc) % 12
+
+
+def _pc_target_at_or_above(pc: int, min_val: int) -> int:
+    """Smallest int with (result % 12 == pc) and result >= min_val."""
+    return min_val + (pc - min_val) % 12
+
+
+def _donor_for_down_target(notes: list[int], missing: int) -> int | None:
+    """Lane index of a note with same PC as missing that is > missing (can slide down to it)."""
+    pc = missing % 12
+    candidates = [i for i, n in enumerate(notes) if n % 12 == pc and n > missing]
+    return min(candidates, key=lambda i: notes[i]) if candidates else None
+
+
+def _donor_for_up_target(notes: list[int], missing: int) -> int | None:
+    """Lane index of a note with same PC as missing that is < missing (can slide up to it)."""
+    pc = missing % 12
+    candidates = [i for i, n in enumerate(notes) if n % 12 == pc and n < missing]
+    return max(candidates, key=lambda i: notes[i]) if candidates else None
 
 
 def fit_cloud_center_spread_voice_vector(
@@ -130,78 +148,168 @@ def fit_cloud_center_spread_voice_vector(
     tie_break_seed: int | None = None,
     chord_index: int = 0,
 ) -> list[int]:
-    """Repair cloud voicing so average pitch stays near center_midi and spread is in [spread_min, spread_max].
+    """Repair cloud voicing via a center/average/spread re-validation loop.
 
-    Uses pitch-order based slide repair (single pass). reference_notes is accepted for API symmetry
-    with fit_bounded_voice_vector but is not used in the current repair logic.
+    reference_notes is accepted for API symmetry with fit_bounded_voice_vector but is unused.
+
+    State machine:
+      ① avg_validate → OK → spread_validate; NG → avg_repair
+      ② spread_validate → OK → check; NG → spread_repair
+      ③ check: both OK → return; else → avg_validate
+      ④ avg_repair: compute exact PC-matching target; after OK → spread_validate
+      ⑤ spread_repair: compute PC-matching target from middle/extreme analysis; after OK → avg_validate
     """
     notes = [int(n) for n in target_notes]
     n = len(notes)
 
-    # ── Average repair (up to 2 passes so deeply offset starting voicings converge) ──
-    for _ in range(2):
-        avg = sum(notes) / n
-        delta = avg - center_midi
-        if delta > average_tolerance:
-            high = max(notes)
-            notes = _cloud_slide(notes, notes.index(high), high - 12)
-        elif delta < -average_tolerance:
-            low = min(notes)
-            notes = _cloud_slide(notes, notes.index(low), low + 12)
-        else:
-            break
+    averageOK = False
+    spreadOK = False
+    state = "avg_validate"
+    _MAX_ITER = 24  # internal safety limit; not a user parameter
 
-    # ── Spread repair ─────────────────────────────────────────────────────────
-    spread = max(notes) - min(notes)
+    for _ in range(_MAX_ITER):
 
-    if spread < spread_min:
-        sorted_n = sorted(notes)
-        mid_lo = sorted_n[n // 2 - 1]  # index 2 for 6 voices
-        mid_hi = sorted_n[n // 2]       # index 3 for 6 voices
-        dist_lo = abs(mid_lo - center_midi)
-        dist_hi = abs(mid_hi - center_midi)
-
-        if dist_lo < dist_hi:
-            sel, missing = mid_lo, mid_lo - 12   # lower of pair → slide down
-        elif dist_hi < dist_lo:
-            sel, missing = mid_hi, mid_hi + 12   # upper of pair → slide up
-        else:
-            bit = _deterministic_bit(
-                tie_break_seed if tie_break_seed is not None else 0,
-                "spread_closed_tiebreak", chord_index, mid_lo, mid_hi,
-            )
-            if bit:
-                sel, missing = mid_hi, mid_hi + 12
+        # ① Average validation ─────────────────────────────────────────────────
+        if state == "avg_validate":
+            avg = sum(notes) / n
+            if abs(avg - center_midi) <= average_tolerance:
+                averageOK = True
+                state = "spread_validate"
             else:
-                sel, missing = mid_lo, mid_lo - 12
-        candidate = _cloud_slide(notes, notes.index(sel), missing)
-        # Only apply if the slide doesn't overshoot above spread_max (prevents oscillation).
-        if max(candidate) - min(candidate) <= spread_max:
-            notes = candidate
+                state = "avg_repair"
 
-    elif spread > spread_max:
-        high = max(notes)
-        low = min(notes)
-        dist_hi = abs(high - center_midi)
-        dist_lo = abs(low - center_midi)
-
-        if dist_hi > dist_lo:
-            donor, missing = high, high - 12
-        elif dist_lo > dist_hi:
-            donor, missing = low, low + 12
-        else:
-            bit = _deterministic_bit(
-                tie_break_seed if tie_break_seed is not None else 0,
-                "spread_open_tiebreak", chord_index, high, low,
-            )
-            if bit:
-                donor, missing = high, high - 12
+        # ② Spread validation ──────────────────────────────────────────────────
+        elif state == "spread_validate":
+            spread = max(notes) - min(notes)
+            if spread_min <= spread <= spread_max:
+                spreadOK = True
+                state = "check"
             else:
-                donor, missing = low, low + 12
-        candidate = _cloud_slide(notes, notes.index(donor), missing)
-        # Only apply if the slide doesn't undershoot below spread_min (prevents oscillation).
-        if max(candidate) - min(candidate) >= spread_min:
-            notes = candidate
+                state = "spread_repair"
+
+        # ③ Flag check ─────────────────────────────────────────────────────────
+        elif state == "check":
+            if averageOK and spreadOK:
+                return notes
+            state = "avg_validate"
+
+        # ④ Average repair ─────────────────────────────────────────────────────
+        elif state == "avg_repair":
+            prev = list(notes)
+            avg = sum(notes) / n
+            delta = avg - center_midi
+
+            if delta > average_tolerance:
+                high = max(notes)
+                high_lane = notes.index(high)
+                S = sum(notes) - high
+                # Compute the largest PC-matching note that brings avg within tolerance.
+                target_max = math.floor(n * (center_midi + average_tolerance) - S)
+                missing = _pc_target_at_or_below(high % 12, target_max)
+                if missing >= high:
+                    missing -= 12
+                if missing not in notes:
+                    notes = list(_slide_on_pitch_order(notes, donor_lane=high_lane, missing_note=missing))
+            elif delta < -average_tolerance:
+                low = min(notes)
+                low_lane = notes.index(low)
+                S = sum(notes) - low
+                # Compute the smallest PC-matching note that brings avg within tolerance.
+                target_min = math.ceil(n * (center_midi - average_tolerance) - S)
+                missing = _pc_target_at_or_above(low % 12, target_min)
+                if missing <= low:
+                    missing += 12
+                if missing not in notes:
+                    notes = list(_slide_on_pitch_order(notes, donor_lane=low_lane, missing_note=missing))
+
+            if notes == prev:
+                return notes  # no progress; bail
+
+            if abs(sum(notes) / n - center_midi) <= average_tolerance:
+                averageOK = True
+                spreadOK = False
+                state = "spread_validate"
+            else:
+                state = "avg_repair"
+
+        # ⑤ Spread repair ──────────────────────────────────────────────────────
+        elif state == "spread_repair":
+            prev = list(notes)
+            spread = max(notes) - min(notes)
+
+            if spread < spread_min:
+                sorted_n = sorted(notes)
+                mid_lo = sorted_n[n // 2 - 1]
+                mid_hi = sorted_n[n // 2]
+                dist_lo = abs(mid_lo - center_midi)
+                dist_hi = abs(mid_hi - center_midi)
+
+                if dist_lo < dist_hi:
+                    direction = "down"
+                elif dist_hi < dist_lo:
+                    direction = "up"
+                else:
+                    bit = _deterministic_bit(
+                        tie_break_seed if tie_break_seed is not None else 0,
+                        "spread_closed_tiebreak", chord_index, mid_lo, mid_hi,
+                    )
+                    direction = "up" if bit else "down"
+
+                if direction == "down":
+                    # Place a PC-matching note at max - spread_min, expanding downward.
+                    for target in range(max(notes) - spread_min, max(notes) - spread_min - 12, -1):
+                        lane = _donor_for_down_target(notes, target)
+                        if lane is not None and target not in notes:
+                            notes = list(_slide_on_pitch_order(notes, donor_lane=lane, missing_note=target))
+                            break
+                else:
+                    # Place a PC-matching note at min + spread_min, expanding upward.
+                    for target in range(min(notes) + spread_min, min(notes) + spread_min + 12):
+                        lane = _donor_for_up_target(notes, target)
+                        if lane is not None and target not in notes:
+                            notes = list(_slide_on_pitch_order(notes, donor_lane=lane, missing_note=target))
+                            break
+
+            elif spread > spread_max:
+                high = max(notes)
+                low = min(notes)
+                dist_hi = abs(high - center_midi)
+                dist_lo = abs(low - center_midi)
+
+                if dist_hi > dist_lo:
+                    compress_high = True
+                elif dist_lo > dist_hi:
+                    compress_high = False
+                else:
+                    compress_high = bool(_deterministic_bit(
+                        tie_break_seed if tie_break_seed is not None else 0,
+                        "spread_open_tiebreak", chord_index, high, low,
+                    ))
+
+                if compress_high:
+                    # Move high note to the PC-matching position at min + spread_max.
+                    target = _pc_target_at_or_below(high % 12, min(notes) + spread_max)
+                    if target >= high:
+                        target -= 12
+                    if target not in notes:
+                        notes = list(_slide_on_pitch_order(notes, donor_lane=notes.index(high), missing_note=target))
+                else:
+                    # Move low note to the PC-matching position at max - spread_max.
+                    target = _pc_target_at_or_above(low % 12, max(notes) - spread_max)
+                    if target <= low:
+                        target += 12
+                    if target not in notes:
+                        notes = list(_slide_on_pitch_order(notes, donor_lane=notes.index(low), missing_note=target))
+
+            if notes == prev:
+                return notes  # no progress; bail
+
+            if spread_min <= max(notes) - min(notes) <= spread_max:
+                spreadOK = True
+                averageOK = False
+                state = "avg_validate"
+            else:
+                state = "spread_repair"
 
     return notes
 

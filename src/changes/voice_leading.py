@@ -112,6 +112,100 @@ def _slide_on_pitch_order(
     return tuple(lane_to_note[lane] for lane in range(len(vector)))
 
 
+def _cloud_slide(notes: list[int], donor_lane: int, missing: int) -> list[int]:
+    """Apply one pitch-order slide; skips silently if missing note already present."""
+    if missing in notes:
+        return notes
+    return list(_slide_on_pitch_order(notes, donor_lane=donor_lane, missing_note=missing))
+
+
+def fit_cloud_center_spread_voice_vector(
+    target_notes: Sequence[int],
+    reference_notes: Sequence[int],
+    *,
+    center_midi: int,
+    spread_min: int,
+    spread_max: int,
+    average_tolerance: int,
+    tie_break_seed: int | None = None,
+    chord_index: int = 0,
+) -> list[int]:
+    """Repair cloud voicing so average pitch stays near center_midi and spread is in [spread_min, spread_max].
+
+    Uses pitch-order based slide repair (single pass). reference_notes is accepted for API symmetry
+    with fit_bounded_voice_vector but is not used in the current repair logic.
+    """
+    notes = [int(n) for n in target_notes]
+    n = len(notes)
+
+    # ── Average repair (up to 2 passes so deeply offset starting voicings converge) ──
+    for _ in range(2):
+        avg = sum(notes) / n
+        delta = avg - center_midi
+        if delta > average_tolerance:
+            high = max(notes)
+            notes = _cloud_slide(notes, notes.index(high), high - 12)
+        elif delta < -average_tolerance:
+            low = min(notes)
+            notes = _cloud_slide(notes, notes.index(low), low + 12)
+        else:
+            break
+
+    # ── Spread repair ─────────────────────────────────────────────────────────
+    spread = max(notes) - min(notes)
+
+    if spread < spread_min:
+        sorted_n = sorted(notes)
+        mid_lo = sorted_n[n // 2 - 1]  # index 2 for 6 voices
+        mid_hi = sorted_n[n // 2]       # index 3 for 6 voices
+        dist_lo = abs(mid_lo - center_midi)
+        dist_hi = abs(mid_hi - center_midi)
+
+        if dist_lo < dist_hi:
+            sel, missing = mid_lo, mid_lo - 12   # lower of pair → slide down
+        elif dist_hi < dist_lo:
+            sel, missing = mid_hi, mid_hi + 12   # upper of pair → slide up
+        else:
+            bit = _deterministic_bit(
+                tie_break_seed if tie_break_seed is not None else 0,
+                "spread_closed_tiebreak", chord_index, mid_lo, mid_hi,
+            )
+            if bit:
+                sel, missing = mid_hi, mid_hi + 12
+            else:
+                sel, missing = mid_lo, mid_lo - 12
+        candidate = _cloud_slide(notes, notes.index(sel), missing)
+        # Only apply if the slide doesn't overshoot above spread_max (prevents oscillation).
+        if max(candidate) - min(candidate) <= spread_max:
+            notes = candidate
+
+    elif spread > spread_max:
+        high = max(notes)
+        low = min(notes)
+        dist_hi = abs(high - center_midi)
+        dist_lo = abs(low - center_midi)
+
+        if dist_hi > dist_lo:
+            donor, missing = high, high - 12
+        elif dist_lo > dist_hi:
+            donor, missing = low, low + 12
+        else:
+            bit = _deterministic_bit(
+                tie_break_seed if tie_break_seed is not None else 0,
+                "spread_open_tiebreak", chord_index, high, low,
+            )
+            if bit:
+                donor, missing = high, high - 12
+            else:
+                donor, missing = low, low + 12
+        candidate = _cloud_slide(notes, notes.index(donor), missing)
+        # Only apply if the slide doesn't undershoot below spread_min (prevents oscillation).
+        if max(candidate) - min(candidate) >= spread_min:
+            notes = candidate
+
+    return notes
+
+
 def _repair_single_overflow_states(
     current: Sequence[int],
     overflow_index: int,
@@ -254,25 +348,71 @@ def generate_voice_leading(
     min_midi: int | None = None,
     max_midi: int | None = None,
     tie_break_seed: int | None = None,
+    center_midi: int | None = None,
+    spread_min: int | None = None,
+    spread_max: int | None = None,
+    average_tolerance: int | None = None,
 ) -> List[List[int]]:
-    """Apply sequential minimum-motion voice leading with optional bounded register fitting.
+    """Apply sequential minimum-motion voice leading with optional repair.
+
+    Two repair modes (mutually exclusive):
+      center/spread mode: all of center_midi, spread_min, spread_max, average_tolerance provided.
+      bounded range mode: both min_midi and max_midi provided.
 
     tie_break_seed: if None, uses the existing downward-biased tie-break (backwards-compatible).
-    If set, uses a deterministic pseudo-random tie-break derived from the seed.
     """
     if not voicings:
         return []
 
-    if min_midi is None and max_midi is None:
-        return _generate_unbounded_voice_leading(voicings)
-    if min_midi is None or max_midi is None:
+    _center_mode = all(p is not None for p in (center_midi, spread_min, spread_max, average_tolerance))
+    _range_mode = min_midi is not None and max_midi is not None
+
+    if any(p is not None for p in (center_midi, spread_min, spread_max, average_tolerance)) and not _center_mode:
+        raise ValueError("center_midi, spread_min, spread_max, and average_tolerance must all be provided together")
+    if (min_midi is None) != (max_midi is None):
         raise ValueError("Both min_midi and max_midi are required for bounded voice leading")
+    if _center_mode and _range_mode:
+        raise ValueError("Cannot combine center/spread mode with min/max range mode")
+
+    if not _center_mode and not _range_mode:
+        return _generate_unbounded_voice_leading(voicings)
 
     first_target = [int(n) for n in voicings[0]]
-    led: List[List[int]] = [
+
+    if _center_mode:
+        led: List[List[int]] = [
+            fit_cloud_center_spread_voice_vector(
+                first_target, first_target,
+                center_midi=center_midi,
+                spread_min=spread_min,
+                spread_max=spread_max,
+                average_tolerance=average_tolerance,
+                tie_break_seed=tie_break_seed,
+                chord_index=1,
+            )
+        ]
+        for chord_index, target in enumerate(voicings[1:], start=2):
+            target_notes = [int(n) for n in target]
+            pre_fit = _assign_minimum_motion_target(
+                led[-1], target_notes,
+                tie_break_seed=tie_break_seed,
+                chord_index=chord_index,
+            )
+            led.append(fit_cloud_center_spread_voice_vector(
+                pre_fit, pre_fit,
+                center_midi=center_midi,
+                spread_min=spread_min,
+                spread_max=spread_max,
+                average_tolerance=average_tolerance,
+                tie_break_seed=tie_break_seed,
+                chord_index=chord_index,
+            ))
+        return led
+
+    # bounded range mode
+    led = [
         fit_bounded_voice_vector(
-            first_target,
-            first_target,
+            first_target, first_target,
             min_midi=min_midi,
             max_midi=max_midi,
             context="chord_index=1",
@@ -280,23 +420,20 @@ def generate_voice_leading(
             chord_index=1,
         )
     ]
-
     for chord_index, target in enumerate(voicings[1:], start=2):
         target_notes = [int(n) for n in target]
         previous_bounded = led[-1]
 
         # Stage 1: ordinary minimum-motion assignment from previous audible bounded state.
         pre_fit = _assign_minimum_motion_target(
-            previous_bounded,
-            target_notes,
+            previous_bounded, target_notes,
             tie_break_seed=tie_break_seed,
             chord_index=chord_index,
         )
 
         # Stage 2: bounded register repair by boundary-slide operations.
         fitted = fit_bounded_voice_vector(
-            pre_fit,
-            pre_fit,
+            pre_fit, pre_fit,
             min_midi=min_midi,
             max_midi=max_midi,
             context=f"chord_index={chord_index}",

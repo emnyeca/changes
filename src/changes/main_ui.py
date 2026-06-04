@@ -1415,12 +1415,20 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "warnings": list(bp.warnings),
         },
         "render_profile": {
-            "cloud_min_midi": rp.cloud_min_midi,
-            "cloud_max_midi": rp.cloud_max_midi,
+            "cloud_center_midi": rp.cloud_center_midi,
+            "cloud_spread_min": rp.cloud_spread_min,
+            "cloud_spread_max": rp.cloud_spread_max,
+            "cloud_average_tolerance": rp.cloud_average_tolerance,
             "chord_min_midi": rp.chord_min_midi,
             "chord_max_midi": rp.chord_max_midi,
             "bass_min_midi": rp.bass_min_midi,
             "bass_max_midi": rp.bass_max_midi,
+        },
+        "cloud_voicing_control": {
+            "center_midi": rp.cloud_center_midi,
+            "spread_min": rp.cloud_spread_min,
+            "spread_max": rp.cloud_spread_max,
+            "average_tolerance": rp.cloud_average_tolerance,
         },
         "timeline": {
             "total_events": len(tl_events),

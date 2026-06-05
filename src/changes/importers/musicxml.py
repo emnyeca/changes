@@ -689,6 +689,72 @@ def _seed_from_imported_song(imported: ImportedSong) -> int:
     return derive_voice_leading_seed("|".join(parts))
 
 
+def _harmony_from_source_positions(
+    *,
+    measure_index: int,
+    bar: ImportedBar,
+    measure_len: Fraction,
+) -> list[HarmonyEvent] | None:
+    if any(event.source_position_quarters is None for event in bar.events):
+        return None
+
+    positioned = sorted(
+        bar.events,
+        key=lambda event: (
+            event.source_position_quarters,
+            event.source_order_in_measure,
+        ),
+    )
+    positions = [event.source_position_quarters for event in positioned]
+    if any(position is None for position in positions):
+        return None
+    if any(position < 0 or position >= measure_len for position in positions):
+        return None
+    if any(prev >= curr for prev, curr in zip(positions, positions[1:])):
+        return None
+
+    harmony: list[HarmonyEvent] = []
+    for event_index, event in enumerate(positioned, start=1):
+        position = positions[event_index - 1]
+        next_position = positions[event_index] if event_index < len(positions) else measure_len
+        duration = next_position - position
+        if duration <= 0:
+            return None
+        harmony.append(
+            HarmonyEvent(
+                id=f"m{measure_index}_h{event_index}",
+                symbol=event.symbol,
+                measure_number=measure_index,
+                offset_quarters=position,
+                duration_quarters=duration,
+            )
+        )
+    return harmony
+
+
+def _harmony_from_equal_division(
+    *,
+    measure_index: int,
+    events: tuple[ImportedHarmonyEvent, ...],
+    measure_len: Fraction,
+) -> list[HarmonyEvent]:
+    duration = measure_len / len(events)
+    harmony: list[HarmonyEvent] = []
+    offset = Fraction(0, 1)
+    for event_index, event in enumerate(events, start=1):
+        harmony.append(
+            HarmonyEvent(
+                id=f"m{measure_index}_h{event_index}",
+                symbol=event.symbol,
+                measure_number=measure_index,
+                offset_quarters=offset,
+                duration_quarters=duration,
+            )
+        )
+        offset += duration
+    return harmony
+
+
 def imported_song_to_song_model(
     imported: ImportedSong,
     *,
@@ -720,20 +786,17 @@ def imported_song_to_song_model(
             absolute_start += measure_len
             continue
 
-        duration = measure_len / event_count
-        harmony: list[HarmonyEvent] = []
-        offset = Fraction(0, 1)
-        for event_index, event in enumerate(bar.events, start=1):
-            harmony.append(
-                HarmonyEvent(
-                    id=f"m{measure_index}_h{event_index}",
-                    symbol=event.symbol,
-                    measure_number=measure_index,
-                    offset_quarters=offset,
-                    duration_quarters=duration,
-                )
+        harmony = _harmony_from_source_positions(
+            measure_index=measure_index,
+            bar=bar,
+            measure_len=measure_len,
+        )
+        if harmony is None:
+            harmony = _harmony_from_equal_division(
+                measure_index=measure_index,
+                events=bar.events,
+                measure_len=measure_len,
             )
-            offset += duration
 
         measures.append(
             Measure(

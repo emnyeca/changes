@@ -13,12 +13,17 @@ from changes.harmonic_context import (
     resolve_scale_collection_with_retry,
 )
 from changes.importers.musicxml import (
+    ImportedBar,
+    ImportedHarmonyEvent,
+    ImportedSong,
     UnsupportedMusicXMLHarmonyError,
     import_musicxml_text,
     imported_song_to_song_model,
     load_musicxml_song,
     load_musicxml_song_model,
 )
+from changes.digitone.planner import infer_base_q_step
+from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
 
 
 FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "musicxml"
@@ -79,6 +84,40 @@ def _inline_musicxml(kind_blocks: str, *, version: str = "4.0") -> str:
   </part>
 </score-partwise>
 """
+
+
+def _imported_song_with_positions(
+    positions: list[Fraction | None],
+    *,
+    beats: int = 4,
+    beat_type: int = 4,
+) -> ImportedSong:
+    symbols = ["Cmaj7", "Dm7", "G7", "Fmaj7"][: len(positions)]
+    events = tuple(
+        ImportedHarmonyEvent(
+            symbol=symbol,
+            chord=parse_chord_core(symbol),
+            source_order_in_measure=index,
+            source_position_quarters=position,
+            raw_kind_value=None,
+            raw_kind_text=None,
+            raw_degrees=tuple(),
+            raw_root=None,
+            raw_bass=None,
+        )
+        for index, (symbol, position) in enumerate(zip(symbols, positions), start=1)
+    )
+    return ImportedSong(
+        title="Position Case",
+        composer=None,
+        source_software=None,
+        source_musicxml_version=None,
+        initial_key=None,
+        initial_time_signature={"beats": beats, "beat_type": beat_type},
+        bars=(ImportedBar(source_measure_number="1", events=events),),
+        raw_form_markers=tuple(),
+        warnings=tuple(),
+    )
 
 
 def _flatten_imported_symbols(song) -> list[str]:
@@ -295,7 +334,7 @@ def test_mapping_rules_for_dual_encodings_and_alt_override():
     assert direct.bars[8].events[0].raw_degrees != converted.bars[8].events[0].raw_degrees
 
 
-def test_position_policy_keeps_semantic_equality_and_ignores_positions_for_phase1_durations():
+def test_position_policy_keeps_semantic_equality_and_uses_source_positions_for_durations():
     direct = load_musicxml_song(DIRECT_FIXTURES / "position_case.musicxml")
     converted = load_musicxml_song(CONVERTED_FIXTURES / "position_case.musicxml")
 
@@ -309,9 +348,114 @@ def test_position_policy_keeps_semantic_equality_and_ignores_positions_for_phase
     converted_song = load_musicxml_song_model(CONVERTED_FIXTURES / "position_case.musicxml")
 
     assert direct_song.measures[0].harmony[0].offset_quarters == Fraction(0, 1)
-    assert direct_song.measures[0].harmony[1].offset_quarters == Fraction(2, 1)
+    assert direct_song.measures[0].harmony[1].offset_quarters == direct_second_pos
     assert converted_song.measures[0].harmony[0].offset_quarters == Fraction(0, 1)
-    assert converted_song.measures[0].harmony[1].offset_quarters == Fraction(2, 1)
+    assert converted_song.measures[0].harmony[1].offset_quarters == converted_second_pos
+
+
+def test_song_model_uses_4_4_uneven_source_positions_instead_of_equal_division():
+    imported = _imported_song_with_positions([Fraction(0, 1), Fraction(2, 1), Fraction(3, 1)])
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [
+        Fraction(0, 1),
+        Fraction(2, 1),
+        Fraction(3, 1),
+    ]
+    assert [event.duration_quarters for event in harmony] == [
+        Fraction(2, 1),
+        Fraction(1, 1),
+        Fraction(1, 1),
+    ]
+    assert [event.offset_quarters for event in harmony] != [
+        Fraction(0, 1),
+        Fraction(4, 3),
+        Fraction(8, 3),
+    ]
+
+
+def test_song_model_uses_3_4_dense_source_positions_instead_of_equal_division():
+    imported = _imported_song_with_positions(
+        [Fraction(0, 1), Fraction(1, 2), Fraction(1, 1)],
+        beats=3,
+        beat_type=4,
+    )
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [
+        Fraction(0, 1),
+        Fraction(1, 2),
+        Fraction(1, 1),
+    ]
+    assert [event.duration_quarters for event in harmony] == [
+        Fraction(1, 2),
+        Fraction(1, 2),
+        Fraction(2, 1),
+    ]
+    assert [event.offset_quarters for event in harmony] != [
+        Fraction(0, 1),
+        Fraction(1, 1),
+        Fraction(2, 1),
+    ]
+
+
+def test_song_model_keeps_3_4_two_chord_midpoint_position_and_planner_can_infer_it():
+    imported = _imported_song_with_positions(
+        [Fraction(0, 1), Fraction(3, 2)],
+        beats=3,
+        beat_type=4,
+    )
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [Fraction(0, 1), Fraction(3, 2)]
+    assert [event.duration_quarters for event in harmony] == [Fraction(3, 2), Fraction(3, 2)]
+
+    timeline = RenderedTimeline(
+        title=song.title,
+        performance_tempo=song.performance_tempo,
+        events=tuple(
+            RenderedNoteEvent(
+                id=event.id,
+                voice_id="cloud_voice_1",
+                role="cloud",
+                note_midi=60 + index,
+                onset_quarters=event.offset_quarters,
+                duration_quarters=event.duration_quarters,
+                source_harmony_id=event.id,
+                retrigger=True,
+            )
+            for index, event in enumerate(harmony)
+        ),
+    )
+    assert infer_base_q_step(timeline) == Fraction(3, 2)
+
+
+def test_song_model_falls_back_to_equal_division_when_source_positions_are_missing():
+    imported = _imported_song_with_positions([None, None])
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [Fraction(0, 1), Fraction(2, 1)]
+    assert [event.duration_quarters for event in harmony] == [Fraction(2, 1), Fraction(2, 1)]
+
+
+@pytest.mark.parametrize(
+    "positions",
+    [
+        [Fraction(0, 1), Fraction(4, 1)],
+        [Fraction(0, 1), Fraction(0, 1)],
+    ],
+)
+def test_song_model_falls_back_to_equal_division_when_source_positions_are_invalid(positions):
+    imported = _imported_song_with_positions(positions)
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [Fraction(0, 1), Fraction(2, 1)]
+    assert [event.duration_quarters for event in harmony] == [Fraction(2, 1), Fraction(2, 1)]
 
 
 def test_harmony_offset_is_relative_to_current_cursor_position():

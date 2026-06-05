@@ -114,7 +114,14 @@ def _imported_song_with_positions(
         source_musicxml_version=None,
         initial_key=None,
         initial_time_signature={"beats": beats, "beat_type": beat_type},
-        bars=(ImportedBar(source_measure_number="1", events=events),),
+        bars=(
+            ImportedBar(
+                source_measure_number="1",
+                events=events,
+                meter_numerator=beats,
+                meter_denominator=beat_type,
+            ),
+        ),
         raw_form_markers=tuple(),
         warnings=tuple(),
     )
@@ -161,6 +168,106 @@ def test_import_accepts_musicxml_40_converted_and_keeps_metadata():
     assert song.initial_key is not None and song.initial_key.get("fifths") == 0
     assert song.initial_time_signature == {"beats": 4, "beat_type": 4}
     assert len(song.bars) == 10
+
+
+def test_imported_bars_keep_measure_meter_changes():
+    song = import_musicxml_text(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="maj7">major-seventh</kind></harmony>
+    </measure>
+    <measure number="2">
+      <attributes><time><beats>5</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>D</root-step></root><kind text="m7">minor-seventh</kind></harmony>
+    </measure>
+    <measure number="3">
+      <attributes><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>G</root-step></root><kind text="7">dominant</kind></harmony>
+    </measure>
+  </part>
+</score-partwise>
+"""
+    )
+
+    assert [(bar.meter_numerator, bar.meter_denominator) for bar in song.bars] == [
+        (4, 4),
+        (5, 4),
+        (4, 4),
+    ]
+
+
+def test_song_model_absolute_starts_use_each_bar_meter_length():
+    song = import_musicxml_text(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="maj7">major-seventh</kind></harmony>
+    </measure>
+    <measure number="2">
+      <attributes><time><beats>5</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>D</root-step></root><kind text="m7">minor-seventh</kind></harmony>
+    </measure>
+    <measure number="3">
+      <attributes><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>G</root-step></root><kind text="7">dominant</kind></harmony>
+    </measure>
+  </part>
+</score-partwise>
+"""
+    )
+    model = imported_song_to_song_model(song, tempo=Fraction(120, 1))
+
+    assert [(m.meter_numerator, m.meter_denominator) for m in model.measures] == [
+        (4, 4),
+        (5, 4),
+        (4, 4),
+    ]
+    assert [m.absolute_start_quarters for m in model.measures] == [
+        Fraction(0, 1),
+        Fraction(4, 1),
+        Fraction(9, 1),
+    ]
+
+
+def test_song_model_keeps_3_4_source_positions_and_last_duration_to_measure_end():
+    song = import_musicxml_text(
+        """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="3.1">
+  <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+  <part id="P1">
+    <measure number="1">
+      <attributes><divisions>2</divisions><time><beats>3</beats><beat-type>4</beat-type></time></attributes>
+      <harmony><root><root-step>C</root-step></root><kind text="maj7">major-seventh</kind></harmony>
+      <note><rest/><duration>3</duration></note>
+      <harmony><root><root-step>F</root-step></root><kind text="maj7">major-seventh</kind></harmony>
+      <note><rest/><duration>3</duration></note>
+    </measure>
+  </part>
+</score-partwise>
+"""
+    )
+    model = imported_song_to_song_model(song, tempo=Fraction(120, 1))
+    harmony = model.measures[0].harmony
+
+    assert (model.measures[0].meter_numerator, model.measures[0].meter_denominator) == (3, 4)
+    assert [event.offset_quarters for event in harmony] == [Fraction(0, 1), Fraction(3, 2)]
+    assert [event.duration_quarters for event in harmony] == [Fraction(3, 2), Fraction(3, 2)]
+
+
+def test_song_model_source_position_fallback_uses_bar_meter_length():
+    imported = _imported_song_with_positions([None, None], beats=3, beat_type=4)
+    song = imported_song_to_song_model(imported, tempo=Fraction(120, 1))
+    harmony = song.measures[0].harmony
+
+    assert [event.offset_quarters for event in harmony] == [Fraction(0, 1), Fraction(3, 2)]
+    assert [event.duration_quarters for event in harmony] == [Fraction(3, 2), Fraction(3, 2)]
 
 
 def test_normalization_fixture_pair_equivalence_excludes_raw_representation_differences():

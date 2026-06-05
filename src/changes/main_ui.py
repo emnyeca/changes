@@ -777,20 +777,7 @@ def _render_songlist(show_import: bool = True) -> None:
     import pandas as pd
 
     def _meter(e: SongEntry) -> str:
-        if e.song and e.song.measures:
-            m = e.song.measures[0]
-            return f"{m.meter_numerator}/{m.meter_denominator}"
-        return "—"
-
-    def _parse_meter(text: str) -> tuple[int, int] | None:
-        m = re.match(r"^\s*(\d+)\s*/\s*(\d+)\s*$", text)
-        if not m:
-            return None
-        num = int(m.group(1))
-        den = int(m.group(2))
-        if num <= 0 or den not in (2, 4, 8):
-            return None
-        return num, den
+        return _song_meter_summary(e.song)
 
     # Keep column dtypes stable even when filtered is empty; Streamlit data_editor
     # rejects text column configs if pandas infers float dtype from empty data.
@@ -810,7 +797,7 @@ def _render_songlist(show_import: bool = True) -> None:
         hide_index=True,
         use_container_width=True,
         num_rows="fixed",
-        disabled=ui_locked,
+        disabled=True if ui_locked else ["Meter"],
         key=table_key,
         column_config={
             "Select": st.column_config.CheckboxColumn("Select", width="small"),
@@ -857,7 +844,7 @@ def _render_songlist(show_import: bool = True) -> None:
             st.session_state._delete_confirm = filtered[delete_idx].path
             st.rerun()
 
-    # Persist inline edits (Title / Key / Tempo / Meter)
+    # Persist inline edits (Title / Key / Tempo)
     if not table_save_pending and not ui_locked:
         for i, entry in enumerate(filtered):
             if entry.song is None:
@@ -865,23 +852,19 @@ def _render_songlist(show_import: bool = True) -> None:
             new_title = edited_df.at[i, "Title"] if i < len(edited_df) else entry.title
             new_key   = edited_df.at[i, "Key"]   if i < len(edited_df) else format_working_key(entry.song.working_key, getattr(entry.song, "working_key_mode", None))
             new_tempo = edited_df.at[i, "Tempo"] if i < len(edited_df) else int(entry.song.performance_tempo)
-            new_meter = edited_df.at[i, "Meter"] if i < len(edited_df) else _meter(entry)
 
             title_val = str(new_title).strip()
             key_val = str(new_key).strip()
             tempo_val = int(new_tempo)
-            meter_val = str(new_meter).strip()
 
             old_title = entry.title
             old_key = format_working_key(entry.song.working_key, getattr(entry.song, "working_key_mode", None))
             old_tempo = int(entry.song.performance_tempo)
-            old_meter = _meter(entry)
 
             if (
                 title_val != old_title
                 or key_val != old_key
                 or tempo_val != old_tempo
-                or meter_val != old_meter
             ):
                 if not title_val:
                     st.session_state._songlist_error_message = "Title cannot be empty"
@@ -900,13 +883,6 @@ def _render_songlist(show_import: bool = True) -> None:
                     _reset_song_table_view()
                     st.rerun()
 
-                parsed_meter = _parse_meter(meter_val)
-                if parsed_meter is None:
-                    st.session_state._songlist_error_message = "Meter must be in n/d format (e.g. 4/4) with denominator 2, 4, or 8"
-                    _reset_song_table_view()
-                    st.rerun()
-
-                meter_num, meter_den = parsed_meter
                 changed_fields: list[tuple[str, str, str]] = []
                 if title_val != old_title:
                     changed_fields.append(("Title", old_title, title_val))
@@ -914,19 +890,13 @@ def _render_songlist(show_import: bool = True) -> None:
                     changed_fields.append(("Key", old_key or "(empty)", key_val or "(empty)"))
                 if tempo_val != old_tempo:
                     changed_fields.append(("Tempo", str(old_tempo), str(tempo_val)))
-                if meter_val != old_meter:
-                    changed_fields.append(("Meter", old_meter, meter_val))
 
-                updated_measures = tuple(
-                    _replace(m, meter_numerator=meter_num, meter_denominator=meter_den)
-                    for m in entry.song.measures
-                )
                 updated_song = SongModel(
                     title=title_val,
                     working_key=parsed_key,
                     working_key_mode=parsed_mode,
                     performance_tempo=_Frac(tempo_val).limit_denominator(1000),
-                    measures=updated_measures,
+                    measures=entry.song.measures,
                 )
                 signature = (
                     str(entry.path),
@@ -934,8 +904,6 @@ def _render_songlist(show_import: bool = True) -> None:
                     parsed_key,
                     parsed_mode,
                     int(tempo_val),
-                    int(meter_num),
-                    int(meter_den),
                 )
                 if signature == st.session_state.get("_table_save_suppressed_signature"):
                     continue

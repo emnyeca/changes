@@ -1,5 +1,7 @@
 import pytest
 from fractions import Fraction
+from pathlib import Path
+from types import SimpleNamespace
 
 pytest.importorskip("streamlit")
 
@@ -213,3 +215,45 @@ def test_chord_display_missing_barline_mapping_does_not_crash(monkeypatch) -> No
 
     assert '<mark class="meter-lbl">4/4</mark>||' in html
     assert '<mark class="meter-lbl">3/4</mark>|' in html
+
+
+def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> None:
+    song = _song(
+        _measure(1, "Cmaj7", meter=(4, 4)),
+        _measure(2, "Dm7", meter=(3, 4)),
+        _measure(3, "G7", meter=(4, 4)),
+    )
+    monkeypatch.setattr(
+        main_ui.st,
+        "session_state",
+        _SessionState(
+            {
+                "_library": [SongEntry(path=Path("song.song.json"), title="Song", song=song)],
+                "_selected_path": None,
+                "_songlist_table_reset_token": 0,
+            }
+        ),
+    )
+    monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
+    captured: dict[str, object] = {}
+
+    def _data_editor(df, *args, **kwargs):
+        captured["df"] = df.copy()
+        captured["disabled"] = kwargs.get("disabled")
+        return df
+
+    monkeypatch.setattr(main_ui.st, "data_editor", _data_editor)
+    monkeypatch.setattr(
+        main_ui.st,
+        "column_config",
+        SimpleNamespace(
+            CheckboxColumn=lambda *args, **kwargs: object(),
+            TextColumn=lambda *args, **kwargs: object(),
+            NumberColumn=lambda *args, **kwargs: object(),
+        ),
+    )
+
+    main_ui._render_songlist(show_import=False)
+
+    assert captured["disabled"] == ["Meter"]
+    assert list(captured["df"]["Meter"]) == ["4/4, 3/4"]

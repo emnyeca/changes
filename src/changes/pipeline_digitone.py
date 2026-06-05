@@ -184,6 +184,7 @@ def compile_digitone_pipeline(
     render_profile: RenderProfile | None = None,
     target_profile: DigitoneTargetProfile | None = None,
     layers: str | list[str] | tuple[str, ...] | set[str] | None = None,
+    pattern_change_policy: str = "auto_song_mode",
 ) -> tuple[SongModel, RenderedTimeline, DigitoneCompilePlan, dict]:
     rp = render_profile or default_render_profile()
     tp = target_profile or default_digitone_target_profile()
@@ -195,6 +196,7 @@ def compile_digitone_pipeline(
     events_payload = digitone_compile_plan_to_events_yaml_payload(
         plan,
         track_default_velocity=tp.track_default_velocity,
+        pattern_change_policy=pattern_change_policy,
     )
 
     return song, timeline, plan, events_payload
@@ -294,6 +296,7 @@ def save_digitone_bundle_artifacts(
     bundle_syx_filename: str | None = None,
     harmony_resolution: dict | None = None,
     target_profile: DigitoneTargetProfile | None = None,
+    pattern_change_policy: str = "auto_song_mode",
 ) -> DigitonePipelineArtifacts:
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -329,6 +332,7 @@ def save_digitone_bundle_artifacts(
             pattern,
             bundle_plan.timing,
             track_default_velocity=tp.track_default_velocity,
+            pattern_change_policy=pattern_change_policy,
         )
         events_file.write_text(yaml.safe_dump(events_payload, sort_keys=False, allow_unicode=False), encoding="utf-8")
 

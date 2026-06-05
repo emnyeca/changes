@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import importlib
+from fractions import Fraction
 
 import yaml
 import pytest
@@ -46,7 +47,7 @@ def test_pipeline_artifacts_written(tmp_path: Path):
     assert loaded["pattern"] == {
         "mode": "per-track",
         "tempo": float(plan.device_tempo),
-        "change": "OFF",
+        "change": int(Fraction(plan.total_steps, 1) / plan.speed_ratio),
         "reset": "INF",
     }
     assert loaded["track_scale"][8] == {"length": plan.total_steps, "speed": plan.speed}

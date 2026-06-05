@@ -12,7 +12,12 @@ from changes.digitone.planner import _find_exact_length_code_for_units, compile_
 from changes.exporters.digitone_events import digitone_compile_plan_to_events_yaml_payload
 from changes.models.digitone_target_profile import DigitoneTargetProfile, default_digitone_target_profile
 from changes.models.rendered_timeline import RenderedNoteEvent, RenderedTimeline
-from changes.pipeline_digitone import compile_digitone_pipeline, save_digitone_pipeline_artifacts
+from changes.pipeline_digitone import (
+    compile_digitone_bundle_pipeline,
+    compile_digitone_pipeline,
+    save_digitone_bundle_artifacts,
+    save_digitone_pipeline_artifacts,
+)
 
 
 def _ensure_toolkit_or_skip():
@@ -61,7 +66,7 @@ def test_events_yaml_matches_toolkit_schema_and_validates(tmp_path: Path):
     assert assignment.device == "digitone2"
     assert assignment.pattern.tempo == float(plan.device_tempo)
     assert assignment.pattern.mode == "per-track"
-    assert assignment.pattern.change == "OFF"
+    assert assignment.pattern.change == int(Fraction(plan.total_steps, 1) / plan.speed_ratio)
     assert assignment.pattern.reset == "INF"
     assert len(assignment.track_scale) == 16
     assert assignment.track_scale[1].length == plan.total_steps
@@ -154,6 +159,27 @@ def test_total_steps_minimum_two_and_toolkit_validation(tmp_path: Path):
     out = save_digitone_pipeline_artifacts(tmp_path, song, timeline, plan, events_payload, write_syx=False)
     assignment = load_event_assignment_yaml(out["events_yaml"])
     assert all(2 <= scale.length <= 128 for scale in assignment.track_scale.values())
+
+
+def test_bundle_40_step_section_writes_change_320_syx(tmp_path: Path):
+    _ensure_toolkit_or_skip()
+    from digitone_syx_toolkit.events_yaml import load_event_assignment_yaml
+
+    payload = {
+        "name": "Forty Steps",
+        "tempo": 120,
+        "time_signature": "4/4",
+        "sections": [{"name": "A", "progression": [["Cmaj7"] for _ in range(40)]}],
+    }
+
+    song, timeline, bundle_plan = compile_digitone_bundle_pipeline(payload)
+    out = save_digitone_bundle_artifacts(tmp_path, song, timeline, bundle_plan, write_syx=True)
+    event_files = sorted(out["patterns_dir"].glob("*.digitone.events.yaml"))
+
+    assert len(event_files) == 1
+    assignment = load_event_assignment_yaml(event_files[0])
+    assert assignment.pattern.change == 320
+    assert out["bundle_syx"].exists()
 
 
 def test_e2e_simple_ii_v_i_to_syx_and_round_trip(tmp_path: Path):

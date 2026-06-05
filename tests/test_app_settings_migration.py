@@ -75,3 +75,14 @@ def test_default_settings_have_correct_tracks() -> None:
     assert s.cloud_tracks == [1, 2, 3, 4, 5, 6]
     assert s.bass_track == 7
     assert s.chord_track == 8
+    assert s.pattern_change_policy == "auto_song_mode"
+
+
+def test_load_legacy_settings_gets_default_pattern_change_policy(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr("changes.app_settings.SETTINGS_PATH", settings_path)
+    settings_path.write_text(json.dumps({"bass_track": 7, "chord_track": 8}), encoding="utf-8")
+
+    loaded = load_settings()
+
+    assert loaded.pattern_change_policy == "auto_song_mode"

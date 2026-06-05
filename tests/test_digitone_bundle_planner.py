@@ -448,7 +448,7 @@ def test_bundle_events_yaml_uses_per_track_mode_and_segment_scale(tmp_path: Path
         assert payload["pattern"] == {
             "mode": "per-track",
             "tempo": float(bundle.timing.device_tempo),
-            "change": "OFF",
+            "change": int(Fraction(segment.total_steps, 1) / bundle.timing.speed_ratio),
             "reset": "INF",
         }
         assert sorted(payload["track_scale"]) == list(range(1, 17))

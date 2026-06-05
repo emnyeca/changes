@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from fractions import Fraction
 
 from changes.models.digitone_bundle_plan import DigitonePatternSegment, DigitoneSongTimingPlan
 from changes.models.digitone_compile_plan import DigitoneCompilePlan
@@ -12,6 +13,8 @@ TRACK_SCALE_COMPUTED_RANGE = range(1, 9)
 TRACK_SCALE_FIXED_RANGE = range(9, 17)
 TRACK_SCALE_FIXED_LENGTH = 16
 TRACK_SCALE_FIXED_SPEED = "1"
+PATTERN_CHANGE_POLICY_AUTO_SONG_MODE = "auto_song_mode"
+PATTERN_CHANGE_POLICY_OFF = "off"
 
 
 def _compiled_events_to_yaml_rows(events: Iterable) -> list[dict]:
@@ -50,11 +53,40 @@ def _track_scale_payload(*, length: int, speed: str) -> dict[int, dict[str, int 
     return payload
 
 
+def pattern_change_value(*, length: int, speed_ratio: Fraction, policy: str) -> int | str:
+    normalized_policy = str(policy or PATTERN_CHANGE_POLICY_AUTO_SONG_MODE)
+    if normalized_policy == PATTERN_CHANGE_POLICY_OFF:
+        return "OFF"
+    if normalized_policy != PATTERN_CHANGE_POLICY_AUTO_SONG_MODE:
+        raise ValueError(f"Unknown pattern_change_policy: {policy!r}")
+
+    change = Fraction(int(length), 1) / Fraction(speed_ratio)
+    if change.denominator != 1:
+        raise ValueError("Cannot derive integer pattern CHANGE from length/speed")
+    if change < 2 or change > 1024:
+        raise ValueError("Cannot derive supported pattern CHANGE from length/speed (expected 2..1024)")
+    return int(change)
+
+
+def pattern_change_basis_payload(*, length: int, speed: str) -> dict[str, int | str]:
+    return {
+        "generated_tracks": "1..8",
+        "length": int(length),
+        "speed": str(speed),
+    }
+
+
 def digitone_compile_plan_to_events_yaml_payload(
     plan: DigitoneCompilePlan,
     *,
     track_default_velocity: dict[int, int] | None = None,
+    pattern_change_policy: str = PATTERN_CHANGE_POLICY_AUTO_SONG_MODE,
 ) -> dict:
+    pattern_change = pattern_change_value(
+        length=plan.total_steps,
+        speed_ratio=plan.speed_ratio,
+        policy=pattern_change_policy,
+    )
     payload: dict = {
         "version": 1,
         "device": "digitone2",
@@ -62,7 +94,7 @@ def digitone_compile_plan_to_events_yaml_payload(
         "pattern": {
             "mode": "per-track",
             "tempo": float(plan.device_tempo),
-            "change": "OFF",
+            "change": pattern_change,
             "reset": "INF",
         },
         "track_scale": _track_scale_payload(length=plan.total_steps, speed=plan.speed),
@@ -79,7 +111,13 @@ def digitone_pattern_segment_to_events_yaml_payload(
     timing: DigitoneSongTimingPlan,
     *,
     track_default_velocity: dict[int, int] | None = None,
+    pattern_change_policy: str = PATTERN_CHANGE_POLICY_AUTO_SONG_MODE,
 ) -> dict:
+    pattern_change = pattern_change_value(
+        length=segment.total_steps,
+        speed_ratio=timing.speed_ratio,
+        policy=pattern_change_policy,
+    )
     payload: dict = {
         "version": 1,
         "device": "digitone2",
@@ -87,7 +125,7 @@ def digitone_pattern_segment_to_events_yaml_payload(
         "pattern": {
             "mode": "per-track",
             "tempo": float(timing.device_tempo),
-            "change": "OFF",
+            "change": pattern_change,
             "reset": "INF",
         },
         "track_scale": _track_scale_payload(length=segment.total_steps, speed=timing.speed),

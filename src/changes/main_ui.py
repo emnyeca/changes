@@ -1303,6 +1303,7 @@ def _render_compose() -> None:
 
 def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: AppSettings) -> dict:
     from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
+    from changes.exporters.digitone_events import pattern_change_basis_payload, pattern_change_value
     from changes.song_filter import extract_section_ids as _sec_ids
     from changes.ui_pipeline import compile_song_for_ui
 
@@ -1329,11 +1330,31 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "name": p.pattern_name,
             "steps": p.total_steps,
             "section_id": p.section_id,
+            "pattern_change": pattern_change_value(
+                length=p.total_steps,
+                speed_ratio=timing.speed_ratio,
+                policy=settings.pattern_change_policy,
+            ),
             "events": len(p.events),
             "events_note": "diagnostic only; Digitone II is not limited to 128 note events per pattern",
         }
         for p in bp.patterns
     ]
+    first_pattern = bp.patterns[0] if bp.patterns else None
+    pattern_change = (
+        pattern_change_value(
+            length=first_pattern.total_steps,
+            speed_ratio=timing.speed_ratio,
+            policy=settings.pattern_change_policy,
+        )
+        if first_pattern is not None
+        else None
+    )
+    pattern_change_basis = (
+        pattern_change_basis_payload(length=first_pattern.total_steps, speed=timing.speed)
+        if first_pattern is not None
+        else None
+    )
 
     from collections import defaultdict
 
@@ -1487,6 +1508,9 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
             "bass_center_midi": settings.bass_center_midi,
             "chord_center_midi": settings.chord_center_midi,
         },
+        "pattern_change_policy": settings.pattern_change_policy,
+        "pattern_change": pattern_change,
+        "pattern_change_basis": pattern_change_basis,
         "output": {
             "enabled_layers": enabled_layers,
             "disabled_layers": disabled_layers,
@@ -1701,6 +1725,28 @@ def _render_settings() -> None:
     st.divider()
 
     # ── Display ───────────────────────────────────────────────────────────────
+    st.subheader("Digitone Pattern")
+    pattern_policy_options = ["Auto for Song Mode", "OFF"]
+    current_pattern_policy = getattr(settings, "pattern_change_policy", "auto_song_mode")
+    pattern_policy_index = 1 if current_pattern_policy == "off" else 0
+    new_pattern_policy_label = st.selectbox(
+        "Pattern Change",
+        pattern_policy_options,
+        index=pattern_policy_index,
+        key="_s_pattern_change_policy",
+        help=(
+            "Auto for Song Mode sets PATTERN CHANGE from the generated Track 1-8 length/speed "
+            "so queued Song mode patterns advance at the end of each generated section. "
+            "OFF keeps the previous behavior."
+        ),
+    )
+    new_pattern_policy = "off" if new_pattern_policy_label == "OFF" else "auto_song_mode"
+    if new_pattern_policy != current_pattern_policy:
+        settings.pattern_change_policy = new_pattern_policy
+        changed = True
+
+    st.divider()
+
     st.subheader("Display")
     new_accidental = "flat" if _toggle(
         "Accidentals", "_s_accidental",

@@ -37,6 +37,7 @@ class AppSettings:
 
     # Safety
     confirm_before_hardware_write: bool = True
+    pattern_change_policy: str = "auto_song_mode"  # auto_song_mode | off
 
     # Display
     note_accidental: str = "flat"  # "flat" | "sharp"

@@ -207,7 +207,9 @@ def song_to_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
     compiled = compile_song_for_ui(song, settings)
     plan = compile_timeline_to_digitone_plan(compiled.timeline, compiled.target_profile)
     events_payload = digitone_compile_plan_to_events_yaml_payload(
-        plan, track_default_velocity=compiled.target_profile.track_default_velocity
+        plan,
+        track_default_velocity=compiled.target_profile.track_default_velocity,
+        pattern_change_policy=settings.pattern_change_policy,
     )
     yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
     syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")
@@ -254,6 +256,7 @@ def song_to_syx_bytes_bundle(
             segment,
             bundle_plan.timing,
             track_default_velocity=compiled.target_profile.track_default_velocity,
+            pattern_change_policy=settings.pattern_change_policy,
         )
         yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
         syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")

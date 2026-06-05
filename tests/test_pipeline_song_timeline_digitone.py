@@ -230,7 +230,7 @@ def test_compile_plan_and_events_export_smoke():
     assert out["version"] == 1
     assert out["device"] == "digitone2"
     assert out["pattern"]["mode"] == "per-track"
-    assert out["pattern"]["change"] == "OFF"
+    assert out["pattern"]["change"] == int(Fraction(plan.total_steps, 1) / plan.speed_ratio)
     assert out["pattern"]["reset"] == "INF"
     assert sorted(out["track_scale"]) == list(range(1, 17))
     assert all(out["track_scale"][track]["length"] == plan.total_steps for track in range(1, 9))
@@ -239,6 +239,31 @@ def test_compile_plan_and_events_export_smoke():
     assert all(out["track_scale"][track]["speed"] == "1" for track in range(9, 17))
     assert out["events"]
     assert out["events"][0]["length_code"].startswith("0x")
+
+
+def test_events_export_can_keep_pattern_change_off_policy():
+    payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
+    song = compact_progression_to_song_model(payload)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+
+    out = digitone_compile_plan_to_events_yaml_payload(plan, pattern_change_policy="off")
+
+    assert out["pattern"]["change"] == "OFF"
+    assert out["pattern"]["reset"] == "INF"
+
+
+def test_events_export_derives_pattern_change_for_different_speed():
+    payload = _song_payload([["Cmaj7", "Dm7", "G7", "Cmaj7"]])
+    song = compact_progression_to_song_model(payload)
+    timeline = flatten_arrangement_to_timeline(render_arrangement(song, default_render_profile()))
+    plan = compile_timeline_to_digitone_plan(timeline, default_digitone_target_profile())
+    plan = replace(plan, total_steps=32, speed="1/4", speed_ratio=Fraction(1, 4))
+
+    out = digitone_compile_plan_to_events_yaml_payload(plan)
+
+    assert out["pattern"]["change"] == 128
+    assert out["pattern"]["reset"] == "INF"
 
 
 def test_default_target_profile_routing_and_velocity():
@@ -290,7 +315,7 @@ def test_compile_digitone_pipeline_exports_track_defaults_and_keeps_event_veloci
     assert events_payload["pattern"] == {
         "mode": "per-track",
         "tempo": float(plan.device_tempo),
-        "change": "OFF",
+        "change": int(Fraction(plan.total_steps, 1) / plan.speed_ratio),
         "reset": "INF",
     }
     assert len(events_payload["track_scale"]) == 16

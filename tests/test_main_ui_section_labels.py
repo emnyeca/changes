@@ -1,13 +1,15 @@
 import pytest
+from fractions import Fraction
 
 pytest.importorskip("streamlit")
 
 from changes import main_ui
 from changes.app_settings import AppSettings
+from changes.editor import EditorState
 from changes.exporters import digitone_events
 from changes.importers.compact_progression import compact_progression_to_song_model
 from changes.library import SongEntry
-from changes.models.song_model import SongModel
+from changes.models.song_model import HarmonyEvent, Measure, SongModel
 
 
 @pytest.mark.parametrize(
@@ -38,6 +40,42 @@ class _SessionState(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+
+
+def _measure(
+    number: int,
+    symbol: str,
+    *,
+    meter: tuple[int, int] = (4, 4),
+    section_id: str | None = None,
+) -> Measure:
+    numerator, denominator = meter
+    length = Fraction(4 * numerator, denominator)
+    return Measure(
+        number=number,
+        section_id=section_id,
+        meter_numerator=numerator,
+        meter_denominator=denominator,
+        absolute_start_quarters=Fraction(0),
+        harmony=(
+            HarmonyEvent(
+                id=f"m{number}_h1",
+                symbol=symbol,
+                measure_number=number,
+                offset_quarters=Fraction(0),
+                duration_quarters=length,
+            ),
+        ),
+    )
+
+
+def _song(*measures: Measure) -> SongModel:
+    return SongModel(
+        title="Meter UI",
+        working_key=None,
+        performance_tempo=Fraction(120),
+        measures=tuple(measures),
+    )
 
 
 def test_dry_run_result_includes_pattern_change_basis(monkeypatch) -> None:
@@ -95,3 +133,83 @@ def test_run_send_for_mode_respects_bundle_by_section(monkeypatch) -> None:
     main_ui._run_send_for_mode(song, object(), "DEBUG", "Linear")
 
     assert calls == ["bundle", "linear"]
+
+
+def test_header_meter_summary_keeps_first_seen_order_without_duplicates() -> None:
+    song = _song(
+        _measure(1, "Cmaj7", meter=(4, 4)),
+        _measure(2, "Dm7", meter=(4, 4)),
+        _measure(3, "Fmaj7", meter=(3, 4)),
+        _measure(4, "G7", meter=(3, 4)),
+        _measure(5, "Cmaj7", meter=(4, 4)),
+    )
+
+    assert main_ui._song_meter_summary(song) == "4/4, 3/4"
+
+
+def test_header_meter_summary_keeps_6_8_before_4_4() -> None:
+    song = _song(
+        _measure(1, "Dmaj7", meter=(6, 8)),
+        _measure(2, "C#m7", meter=(6, 8)),
+        _measure(3, "Em7", meter=(4, 4)),
+    )
+
+    assert main_ui._song_meter_summary(song) == "6/8, 4/4"
+
+
+def test_chord_display_initial_meter_with_section_label(monkeypatch) -> None:
+    monkeypatch.setattr(main_ui.st, "session_state", _SessionState({"_editor_section_labels": {"initial": "A1"}}))
+    state = EditorState(cells=["Cmaj7", "|"], cursor=2)
+    song = _song(_measure(1, "Cmaj7", meter=(4, 4), section_id="A1"))
+
+    html = main_ui._chord_display_html(state, song)
+
+    assert '<mark class="section-lbl">A1</mark><mark class="meter-lbl">4/4</mark>||' in html
+
+
+def test_chord_display_meter_change_with_section_label_order(monkeypatch) -> None:
+    monkeypatch.setattr(
+        main_ui.st,
+        "session_state",
+        _SessionState({"_editor_section_labels": {"initial": "A1", 4: "B1"}}),
+    )
+    state = EditorState(cells=["Cmaj7", "|", "Dm7", "G7", "||", "Cmaj7", "Am7", "|"], cursor=8)
+    song = _song(
+        _measure(1, "Cmaj7", meter=(4, 4), section_id="A1"),
+        _measure(2, "Dm7", meter=(4, 4), section_id="A1"),
+        _measure(3, "Cmaj7", meter=(3, 4), section_id="B1"),
+    )
+
+    html = main_ui._chord_display_html(state, song)
+
+    assert '<mark class="section-lbl">A1</mark><mark class="meter-lbl">4/4</mark>||' in html
+    assert '<mark class="section-lbl">B1</mark><mark class="meter-lbl">3/4</mark>||' in html
+
+
+def test_chord_display_meter_only_change_before_single_barline(monkeypatch) -> None:
+    monkeypatch.setattr(main_ui.st, "session_state", _SessionState({"_editor_section_labels": {}}))
+    state = EditorState(cells=["Fmaj7", "|", "Fmaj7", "|", "G7", "|"], cursor=6)
+    song = _song(
+        _measure(1, "Fmaj7", meter=(4, 4)),
+        _measure(2, "Fmaj7", meter=(3, 4)),
+        _measure(3, "G7", meter=(3, 4)),
+    )
+
+    html = main_ui._chord_display_html(state, song)
+
+    assert '<mark class="meter-lbl">3/4</mark>|' in html
+
+
+def test_chord_display_missing_barline_mapping_does_not_crash(monkeypatch) -> None:
+    monkeypatch.setattr(main_ui.st, "session_state", _SessionState({"_editor_section_labels": {}}))
+    state = EditorState(cells=["Cmaj7", "|"], cursor=2)
+    song = _song(
+        _measure(1, "Cmaj7", meter=(4, 4)),
+        _measure(2, "Dm7", meter=(3, 4)),
+        _measure(3, "G7", meter=(4, 4)),
+    )
+
+    html = main_ui._chord_display_html(state, song)
+
+    assert '<mark class="meter-lbl">4/4</mark>||' in html
+    assert '<mark class="meter-lbl">3/4</mark>|' in html

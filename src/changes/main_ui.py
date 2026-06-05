@@ -81,6 +81,7 @@ _CSS = """
 [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stButton"] button { height:36px; }
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
 .chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
+.chord-cell-display .meter-lbl { background:#E9EEF6; color:#53627A; border:1px solid #D5DEEA; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
 .autosplit-warn { color:#E07000; font-size:13px; }
 button[kind="primary"] { background:#7C5CBF !important; border-color:#7C5CBF !important; color:white !important; border-radius:10px !important; font-weight:600 !important; }
@@ -266,6 +267,57 @@ def _section_filter_label(section_id: str | None) -> str:
 def _playback_song() -> SongModel | None:
     return _current_song()
 
+
+def _meter_label(numerator: int, denominator: int) -> str:
+    return f"{int(numerator)}/{int(denominator)}"
+
+
+def _song_meter_summary(song: SongModel | None) -> str:
+    if song is None or not song.measures:
+        return "—"
+    seen: set[tuple[int, int]] = set()
+    labels: list[str] = []
+    for measure in song.measures:
+        meter = (int(measure.meter_numerator), int(measure.meter_denominator))
+        if meter in seen:
+            continue
+        seen.add(meter)
+        labels.append(_meter_label(*meter))
+    return ", ".join(labels) if labels else "—"
+
+
+def _barline_cell_indices(state: EditorState) -> list[int]:
+    return [i for i, cell in enumerate(state.cells) if cell in ("|", "||")]
+
+
+def _meter_labels_by_barline_index(
+    song: SongModel | None,
+    state: EditorState,
+) -> dict[int | str, str]:
+    if song is None or not song.measures:
+        return {}
+
+    labels: dict[int | str, str] = {
+        "initial": _meter_label(
+            song.measures[0].meter_numerator,
+            song.measures[0].meter_denominator,
+        )
+    }
+    previous = (
+        int(song.measures[0].meter_numerator),
+        int(song.measures[0].meter_denominator),
+    )
+    barline_indices = _barline_cell_indices(state)
+    for measure_index, measure in enumerate(song.measures[1:], start=2):
+        current = (int(measure.meter_numerator), int(measure.meter_denominator))
+        if current == previous:
+            continue
+        barline_offset = measure_index - 2
+        if barline_offset < len(barline_indices):
+            labels[barline_indices[barline_offset]] = _meter_label(*current)
+        previous = current
+    return labels
+
 # ── Logo ─────────────────────────────────────────────────────────────
 st.logo(
     _LOGO_PATH_HEADER, 
@@ -281,8 +333,7 @@ def _render_header() -> None:
     title = song.title if song else "Select a song"
     key = format_working_key(song.working_key, getattr(song, "working_key_mode", None)) if song else "—"
     tempo = str(int(song.performance_tempo)) if song else "—"
-    meter = (f"{song.measures[0].meter_numerator}/{song.measures[0].meter_denominator}"
-             if song and song.measures else "—")
+    meter = _song_meter_summary(song)
     has_selected_song = st.session_state.get("_selected_path") is not None
 
     def _render_transpose_controls() -> None:
@@ -396,31 +447,43 @@ def _process_text_input() -> None:
     st.session_state["ti"] = ""
 
 
-def _chord_display_html(state: EditorState) -> str:
-    """Build HTML chord display with highlighted section labels.
+def _badge_html(class_name: str, label: str) -> str:
+    return f'<mark class="{class_name}">{label}</mark>'
 
-    Section labels are shown as <mark> elements before each || separator,
-    and at the beginning when an initial section is set.
-    Example: <mark>A1</mark>|| Em7b5 A7b9 | Dm <mark>B1</mark>|| D#7 |
-    """
+
+def _chord_display_html(state: EditorState, song: SongModel | None = None) -> str:
+    """Build HTML chord display with highlighted section and meter labels."""
     section_labels: dict[int | str, str] = st.session_state.get(
         "_editor_section_labels", {}
     )
+    meter_labels = _meter_labels_by_barline_index(song, state)
     parts: list[str] = []
 
     initial = section_labels.get("initial", "")
+    initial_meter = meter_labels.get("initial", "")
+    initial_badges: list[str] = []
     if initial:
-        parts.append(f'<mark class="section-lbl">{_display_section_label(str(initial))}</mark>||')
+        initial_badges.append(_badge_html("section-lbl", _display_section_label(str(initial))))
+    if initial_meter:
+        initial_badges.append(_badge_html("meter-lbl", str(initial_meter)))
+    if initial_badges:
+        parts.append("".join(initial_badges) + "||")
 
     for i, cell in enumerate(state.cells):
         if i == state.cursor:
             parts.append("▸")
         if cell == "||":
             label = section_labels.get(i, "")
+            meter = meter_labels.get(i, "")
+            badges: list[str] = []
             if label:
-                parts.append(f'<mark class="section-lbl">{_display_section_label(str(label))}</mark>||')
-            else:
-                parts.append("||")
+                badges.append(_badge_html("section-lbl", _display_section_label(str(label))))
+            if meter:
+                badges.append(_badge_html("meter-lbl", str(meter)))
+            parts.append("".join(badges) + "||" if badges else "||")
+        elif cell == "|":
+            meter = meter_labels.get(i, "")
+            parts.append(_badge_html("meter-lbl", str(meter)) + "|" if meter else "|")
         else:
             parts.append(cell)
 
@@ -1293,7 +1356,7 @@ def _render_compose() -> None:
 
     # ── Cell display ───────────────────────────────────────────────────────────
     st.markdown(
-        f"<div class='chord-cell-display'>{_chord_display_html(state)}</div>",
+        f"<div class='chord-cell-display'>{_chord_display_html(state, _current_song())}</div>",
         unsafe_allow_html=True,
     )
 

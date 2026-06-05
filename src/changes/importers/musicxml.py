@@ -42,6 +42,8 @@ class ImportedHarmonyEvent:
 class ImportedBar:
     source_measure_number: str
     events: tuple[ImportedHarmonyEvent, ...]
+    meter_numerator: int = 4
+    meter_denominator: int = 4
 
 
 @dataclass(frozen=True)
@@ -549,6 +551,8 @@ def import_musicxml_text(xml_text: str) -> ImportedSong:
     divisions = 1
     initial_key: dict[str, int] | None = None
     initial_time_signature: dict[str, int] | None = None
+    current_beats = 4
+    current_beat_type = 4
 
     for measure in _children(part, "measure"):
         measure_number = measure.attrib.get("number", "")
@@ -565,10 +569,13 @@ def import_musicxml_text(xml_text: str) -> ImportedSong:
                 initial_key = {"fifths": fifths, "mode": mode}
 
             time = _first(attributes, "time")
-            if time is not None and initial_time_signature is None:
+            if time is not None:
                 beats = _parse_int(_text(_first(time, "beats")), default=4)
                 beat_type = _parse_int(_text(_first(time, "beat-type")), default=4)
-                initial_time_signature = {"beats": beats, "beat_type": beat_type}
+                current_beats = beats
+                current_beat_type = beat_type
+                if initial_time_signature is None:
+                    initial_time_signature = {"beats": beats, "beat_type": beat_type}
 
         harmony_events: list[ImportedHarmonyEvent] = []
         order = 0
@@ -598,7 +605,14 @@ def import_musicxml_text(xml_text: str) -> ImportedSong:
         if not harmony_events:
             warnings.append(f"measure {measure_number}: no harmony events")
 
-        bars.append(ImportedBar(source_measure_number=measure_number, events=tuple(harmony_events)))
+        bars.append(
+            ImportedBar(
+                source_measure_number=measure_number,
+                events=tuple(harmony_events),
+                meter_numerator=current_beats,
+                meter_denominator=current_beat_type,
+            )
+        )
         markers.extend(_parse_form_markers(measure, measure_number))
 
     return ImportedSong(
@@ -761,15 +775,13 @@ def imported_song_to_song_model(
     tempo: Fraction | int | str = 120,
     section_ids: tuple[str | None, ...] | None = None,
 ) -> SongModel:
-    meter = imported.initial_time_signature or {"beats": 4, "beat_type": 4}
-    beats = int(meter.get("beats", 4))
-    beat_type = int(meter.get("beat_type", 4))
-    measure_len = Fraction(4 * beats, beat_type)
-
     measures: list[Measure] = []
     absolute_start = Fraction(0, 1)
 
     for measure_index, bar in enumerate(imported.bars, start=1):
+        beats = bar.meter_numerator
+        beat_type = bar.meter_denominator
+        measure_len = Fraction(4 * beats, beat_type)
         sid = section_ids[measure_index - 1] if section_ids is not None else None
         event_count = len(bar.events)
         if event_count == 0:

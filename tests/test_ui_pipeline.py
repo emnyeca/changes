@@ -5,7 +5,13 @@ from __future__ import annotations
 import pytest
 
 from changes.app_settings import AppSettings
-from changes.ui_pipeline import count_auto_split_patterns, count_linear_patterns, settings_to_render_profile, settings_to_target_profile
+from changes.ui_pipeline import (
+    count_auto_split_patterns,
+    count_linear_patterns,
+    settings_to_render_profile,
+    settings_to_target_profile,
+    song_to_syx_bytes_linear_split,
+)
 from changes.importers.compact_progression import compact_progression_to_song_model
 
 
@@ -186,3 +192,36 @@ def test_count_linear_patterns_ignores_bundle_section_splits() -> None:
 
     assert count_auto_split_patterns(song, settings) == 2
     assert count_linear_patterns(song, settings) == 1
+
+
+def test_song_to_syx_bytes_linear_split_returns_section_boundary_patterns(monkeypatch, tmp_path) -> None:
+    song = compact_progression_to_song_model(
+        {
+            "name": "Linear Split",
+            "tempo": 120,
+            "time_signature": "4/4",
+            "sections": [
+                {"name": "A", "progression": [["Cmaj7"] for _ in range(40)]},
+                {"name": "B", "progression": [["Dm7"] for _ in range(40)]},
+                {"name": "C", "progression": [["G7"] for _ in range(40)]},
+                {"name": "D", "progression": [["Cmaj7"] for _ in range(40)]},
+            ],
+        }
+    )
+
+    def _fake_build(events_yaml_path, output_syx_path):
+        import yaml
+
+        data = yaml.safe_load(open(events_yaml_path, encoding="utf-8"))
+        marker = f"<{data['name']}:{data['track_scale'][1]['length']}:{data['pattern']['change']}>"
+        open(output_syx_path, "wb").write(marker.encode("ascii"))
+
+    monkeypatch.setattr("changes.digitone_backend.build_digitone_syx_from_events_yaml", _fake_build)
+
+    segments = song_to_syx_bytes_linear_split(song, AppSettings())
+
+    assert [name for name, _ in segments] == ["01 LINEAR SPLIT", "02 LINEAR SPLIT"]
+    assert [syx.decode("ascii") for _, syx in segments] == [
+        "<01 LINEAR SPLIT:120:960>",
+        "<02 LINEAR SPLIT:40:320>",
+    ]

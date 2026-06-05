@@ -181,18 +181,17 @@ def count_auto_split_patterns(song: SongModel, settings: AppSettings) -> int:
 
 
 def count_linear_patterns(song: SongModel, settings: AppSettings) -> int:
-    """Return how many 128-step linear pattern chunks the song needs.
-
-    This intentionally does not call the bundle planner, because the Linear UI
-    must not count section-based bundle splits.
-    """
+    """Return how many section-boundary Linear Auto Split patterns the song needs."""
     try:
-        from changes.digitone.bundle_planner import MAX_PATTERN_STEPS
-        from changes.digitone.planner import choose_shared_timing_plan
+        from changes.digitone.linear_split_planner import compile_timeline_to_digitone_linear_split_plan
 
         compiled = compile_song_for_ui(song, settings)
-        timing = choose_shared_timing_plan(compiled.timeline, compiled.target_profile)
-        return max(1, (timing.total_steps + MAX_PATTERN_STEPS - 1) // MAX_PATTERN_STEPS)
+        plan = compile_timeline_to_digitone_linear_split_plan(
+            compiled.song,
+            compiled.timeline,
+            compiled.target_profile,
+        )
+        return len(plan.patterns)
     except Exception:
         return 1
 
@@ -225,6 +224,50 @@ def song_to_syx_bytes(song: SongModel, settings: AppSettings) -> bytes:
                 os.unlink(p)
             except OSError:
                 pass
+
+
+def song_to_syx_bytes_linear_split(
+    song: SongModel,
+    settings: AppSettings,
+) -> list[tuple[str, bytes]]:
+    """Compile Linear mode through section-boundary Auto Split."""
+    import yaml
+
+    from changes.digitone.linear_split_planner import compile_timeline_to_digitone_linear_split_plan
+    from changes.digitone_backend import build_digitone_syx_from_events_yaml
+    from changes.exporters.digitone_events import digitone_pattern_segment_to_events_yaml_payload
+
+    compiled = compile_song_for_ui(song, settings)
+    split_plan = compile_timeline_to_digitone_linear_split_plan(
+        compiled.song,
+        compiled.timeline,
+        compiled.target_profile,
+    )
+
+    result: list[tuple[str, bytes]] = []
+    for segment in split_plan.patterns:
+        payload = digitone_pattern_segment_to_events_yaml_payload(
+            segment,
+            split_plan.timing,
+            track_default_velocity=compiled.target_profile.track_default_velocity,
+            pattern_change_policy=settings.pattern_change_policy,
+        )
+        yaml_fd, yaml_path = tempfile.mkstemp(suffix=".yaml")
+        syx_fd, syx_path = tempfile.mkstemp(suffix=".syx")
+        try:
+            os.close(syx_fd)
+            with os.fdopen(yaml_fd, "w") as f:
+                yaml.safe_dump(payload, f, allow_unicode=False, sort_keys=False)
+            build_digitone_syx_from_events_yaml(yaml_path, syx_path)
+            result.append((segment.pattern_name, Path(syx_path).read_bytes()))
+        finally:
+            for p in (yaml_path, syx_path):
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
+
+    return result
 
 
 def song_to_syx_bytes_bundle(

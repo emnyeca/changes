@@ -21,6 +21,7 @@ from changes.ui_pipeline import (
     count_linear_patterns,
     song_to_syx_bytes,
     song_to_syx_bytes_bundle,
+    song_to_syx_bytes_linear_split,
 )
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -1301,12 +1302,22 @@ def _render_compose() -> None:
 # Page: Settings
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _pattern_change_helpers():
+    from importlib import reload
+
+    from changes.exporters import digitone_events
+
+    if not hasattr(digitone_events, "pattern_change_basis_payload"):
+        digitone_events = reload(digitone_events)
+    return digitone_events.pattern_change_basis_payload, digitone_events.pattern_change_value
+
+
 def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: AppSettings) -> dict:
     from changes.digitone.bundle_planner import compile_timeline_to_digitone_bundle_plan
-    from changes.exporters.digitone_events import pattern_change_basis_payload, pattern_change_value
     from changes.song_filter import extract_section_ids as _sec_ids
     from changes.ui_pipeline import compile_song_for_ui
 
+    pattern_change_basis_payload, pattern_change_value = _pattern_change_helpers()
     compiled = compile_song_for_ui(effective_dry, settings)
     bp = compile_timeline_to_digitone_bundle_plan(
         compiled.song, compiled.timeline, compiled.target_profile
@@ -2084,7 +2095,7 @@ def _render_preview_send() -> None:
                 if send_mode == "Bundle by Section":
                     _run_send_bundle_by_section(effective, settings, dest, send_mode)
                 else:
-                    _run_send(effective, settings, dest, send_mode)
+                    _run_send_linear_split(effective, settings, dest, send_mode)
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -2276,7 +2287,7 @@ def _run_send_for_mode(song: SongModel, settings: AppSettings, dest: str, send_m
     if send_mode == "Bundle by Section":
         _run_send_bundle_by_section(song, settings, dest, send_mode)
     else:
-        _run_send(song, settings, dest, send_mode)
+        _run_send_linear_split(song, settings, dest, send_mode)
 
 
 @st.dialog("Send SysEx to Digitone II?", dismissible=False)
@@ -2401,6 +2412,60 @@ def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str 
     }
     st.session_state._send_area_syx_bytes = syx
     st.session_state._send_area_syx_fname = f"{song.title or 'changes'}.syx"
+
+
+def _run_send_linear_split(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Linear") -> None:
+    _clear_send_area_state()
+
+    with st.spinner("Generating Linear Auto Split SysEx..."):
+        try:
+            segments = song_to_syx_bytes_linear_split(song, settings)
+        except ModuleNotFoundError:
+            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
+            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
+            return
+        except Exception as exc:
+            _store_send_error(exc, action="linear_split_export", song=song, dest=dest, send_mode=send_mode, settings=settings)
+            return
+
+    if not segments:
+        st.session_state._send_area_error = {
+            "summary": "Linear Auto Split produced no patterns.",
+            "context": {"song": song.title, "send_mode": send_mode},
+            "traceback": "",
+        }
+        return
+
+    combined_syx = b"".join(syx for _, syx in segments)
+    pat_names = [name for name, _ in segments]
+    port_name = _port_name(dest)
+
+    if port_name != "DEBUG":
+        with st.spinner(f"Sending {len(segments)} Linear pattern(s) to {port_name}..."):
+            err = _send_syx_via_midi(combined_syx, port_name)
+            if err:
+                st.session_state._send_area_error = {
+                    "summary": err,
+                    "context": {
+                        "action": "midi_send",
+                        "song": song.title,
+                        "send_mode": send_mode,
+                        "destination": port_name,
+                        "pattern_names": pat_names,
+                    },
+                    "traceback": "",
+                }
+                return
+
+    st.session_state._send_area_ok = True
+    st.session_state._send_area_ok_detail = {
+        "dest": port_name,
+        "mode": send_mode,
+        "patterns": len(segments),
+        "pattern_names": pat_names,
+    }
+    st.session_state._send_area_syx_bytes = combined_syx
+    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}_linear.syx"
 
 
 def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:

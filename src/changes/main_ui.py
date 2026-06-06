@@ -96,12 +96,12 @@ _CSS = """
 .chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .chord-cell-display .meter-lbl { background:#E9EEF6; color:#53627A; border:1px solid #D5DEEA; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
-.eub-fixed-status { min-height:28px; margin:4px 0; padding:7px 10px; border-radius:7px; font-size:13px; line-height:1.35; white-space:pre-line; }
-.eub-fixed-status-hidden { visibility:hidden; }
-.eub-fixed-status-info { background:#EEF3FA; border:1px solid #C9D6E6; color:#31445F; }
-.eub-fixed-status-warning { background:#FFF4DF; border:1px solid #F2C572; color:#6F4A00; }
-.eub-fixed-status-error { background:#FFF0F0; border:1px solid #E4A2A2; color:#842029; }
-.eub-fixed-status-success { background:#EEF8EF; border:1px solid #B8D9BD; color:#24572F; }
+.eub-status-slot { margin:4px 0; display:flex; flex-direction:column; gap:4px; }
+.eub-status-line { padding:7px 10px; border-radius:7px; font-size:13px; line-height:1.35; white-space:pre-line; }
+.eub-status-line-info { background:#EEF3FA; border:1px solid #C9D6E6; color:#31445F; }
+.eub-status-line-warning { background:#FFF4DF; border:1px solid #F2C572; color:#6F4A00; }
+.eub-status-line-error { background:#FFF0F0; border:1px solid #E4A2A2; color:#842029; }
+.eub-status-line-success { background:#EEF8EF; border:1px solid #B8D9BD; color:#24572F; }
 .autosplit-warn { color:#E07000; font-size:13px; }
 button[kind="primary"] { background:#7C5CBF !important; border-color:#7C5CBF !important; color:white !important; border-radius:10px !important; font-weight:600 !important; }
 button[kind="primary"]:hover { background:#6B4FA0 !important; border-color:#6B4FA0 !important; }
@@ -193,7 +193,7 @@ def _ss_init() -> None:
         ("_send_confirm_mode", None),
         # Action-specific isolated result state
         ("_send_area_ok", False), ("_send_area_ok_detail", None),
-        ("_send_area_error", None), ("_send_area_syx_bytes", None), ("_send_area_syx_fname", None),
+        ("_send_area_error", None),
         ("_adv_syx_ok", False), ("_adv_syx_bytes", None), ("_adv_syx_fname", None), ("_adv_syx_error", None),
         ("_dry_run_result", None), ("_dry_run_error", None),
     ]:
@@ -2088,19 +2088,22 @@ def _action_disabled_reason(
     return None
 
 
-def _render_fixed_status_slot(
-    message: str | None,
-    *,
-    kind: str = "info",
-    visible: bool | None = None,
-) -> None:
-    is_visible = bool(message) if visible is None else bool(visible)
-    normalized_kind = kind if kind in {"info", "warning", "error", "success"} else "info"
-    css_class = f"eub-fixed-status eub-fixed-status-{normalized_kind}"
-    if not is_visible:
-        css_class += " eub-fixed-status-hidden"
-    safe_message = html.escape(message or "\u00a0")
-    st.markdown(f'<div class="{css_class}">{safe_message}</div>', unsafe_allow_html=True)
+def _render_status_slot(statuses: list[tuple[str, str | None]]) -> None:
+    visible_statuses = [(kind, message) for kind, message in statuses if message]
+    if not visible_statuses:
+        return
+
+    items: list[str] = []
+    for kind, message in visible_statuses:
+        normalized_kind = kind if kind in {"info", "warning", "error", "success"} else "info"
+        safe_message = html.escape(str(message))
+        items.append(
+            f'<div class="eub-status-line eub-status-line-{normalized_kind}">{safe_message}</div>'
+        )
+    st.markdown(
+        f'<div class="eub-status-slot">{"".join(items)}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 def _hardware_write_warning(settings: AppSettings) -> str | None:
@@ -2238,11 +2241,7 @@ def _render_preview_send() -> None:
         except Exception:
             pass
 
-    _render_fixed_status_slot(action_status_message, kind=action_status_kind)
-    _render_fixed_status_slot(disable_reason, kind="warning")
-    _render_fixed_status_slot(_hardware_write_warning(settings), kind="warning")
-
-    # ── Destination ────────────────────────────────────────────────────────────
+    # Destination
     ports = ["(Select MIDI Port Destination)"]
     ps0, ps1, ps2 = st.columns(3)
 
@@ -2282,54 +2281,44 @@ def _render_preview_send() -> None:
         confirm_mode = st.session_state.get("_send_confirm_mode", send_mode)
         _show_send_confirm_dialog(effective, settings, dest, confirm_mode)
 
-    # ── Persistent send results ────────────────────────────────────────────────
-    send_success_slot_rendered = False
-    send_error_slot_rendered = False
+    # Persistent send results
+    send_success_message: str | None = None
+    send_error = st.session_state.get("_send_area_error")
+    send_error_message = send_error.get("summary", "Send failed") if send_error else None
     if st.session_state.get("_send_area_ok"):
         detail = st.session_state.get("_send_area_ok_detail") or {}
         dest_label = detail.get("dest", "?")
         mode_label = detail.get("mode", "?")
         pat_names = detail.get("pattern_names", [])
         pat_count = detail.get("patterns", len(pat_names))
-        pat_info = f"  \nPatterns: {pat_count}" + (
-            (" (" + ", ".join(pat_names[:6]) + ("…" if len(pat_names) > 6 else "") + ")")
+        pat_info = f"\nPatterns: {pat_count}" + (
+            (" (" + ", ".join(pat_names[:6]) + ("..." if len(pat_names) > 6 else "") + ")")
             if pat_names else ""
         )
-        _render_fixed_status_slot(f"Send completed.\nDestination: {dest_label}\nMode: {mode_label}{pat_info}", kind="success")
-        send_success_slot_rendered = True
-        syx_b = st.session_state.get("_send_area_syx_bytes")
-        if syx_b:
-            st.download_button(
-                "↓ Download .syx",
-                data=syx_b,
-                file_name=st.session_state.get("_send_area_syx_fname", "changes.syx"),
-                mime="application/octet-stream",
-                use_container_width=True,
-                key="_ps_syx_dl",
-            )
-    elif st.session_state.get("_send_area_error"):
-        err = st.session_state._send_area_error
-        _render_fixed_status_slot(err.get("summary", "Send failed"), kind="error")
-        send_error_slot_rendered = True
+        send_success_message = f"Send completed.\nDestination: {dest_label}\nMode: {mode_label}{pat_info}"
+
+    _render_status_slot([
+        (action_status_kind, action_status_message),
+        ("warning", disable_reason),
+        ("warning", _hardware_write_warning(settings)),
+        ("success", send_success_message),
+        ("error", send_error_message),
+    ])
+
+    if send_error:
         with st.expander("Error details"):
-            ctx = err.get("context", {})
+            ctx = send_error.get("context", {})
             if ctx:
                 st.json(ctx)
-            tb = err.get("traceback")
+            tb = send_error.get("traceback")
             if tb:
                 st.code(tb, language="text")
-
-    if not send_success_slot_rendered:
-        _render_fixed_status_slot(None, kind="success")
-    if not send_error_slot_rendered:
-        _render_fixed_status_slot(None, kind="error")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 
 def _clear_send_area_state() -> None:
-    for k in ("_send_area_ok", "_send_area_ok_detail", "_send_area_error",
-              "_send_area_syx_bytes", "_send_area_syx_fname"):
+    for k in ("_send_area_ok", "_send_area_ok_detail", "_send_area_error"):
         st.session_state[k] = None if k != "_send_area_ok" else False
 
 
@@ -2394,7 +2383,6 @@ def _finish_send_segments(
     segments: list[tuple[str, bytes]],
     *,
     empty_summary: str,
-    filename_suffix: str,
     send_description: str,
 ) -> None:
     if not segments:
@@ -2433,8 +2421,6 @@ def _finish_send_segments(
         "patterns": len(segments),
         "pattern_names": pat_names,
     }
-    st.session_state._send_area_syx_bytes = combined_syx
-    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}{filename_suffix}.syx"
 
 
 def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Bundle by Section") -> None:
@@ -2458,7 +2444,6 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
         send_mode,
         segments,
         empty_summary="Bundle compile produced no segments.",
-        filename_suffix="_bundle",
         send_description="pattern(s)",
     )
 
@@ -2609,7 +2594,6 @@ def _run_send_linear_split(song: SongModel, settings: AppSettings, dest: str, se
         send_mode,
         segments,
         empty_summary="Linear Auto Split produced no patterns.",
-        filename_suffix="_linear",
         send_description="Linear pattern(s)",
     )
 

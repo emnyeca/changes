@@ -209,7 +209,7 @@ def test_no_explicit_rerun_marker(monkeypatch) -> None:
     assert state["_last_no_explicit_rerun_reason"] == "preview_result_rendered_in_current_run"
 
 
-def test_fixed_status_slot_renders_even_when_empty(monkeypatch) -> None:
+def test_status_slot_does_not_render_when_empty(monkeypatch) -> None:
     rendered: list[tuple[str, bool]] = []
     monkeypatch.setattr(
         main_ui.st,
@@ -217,15 +217,12 @@ def test_fixed_status_slot_renders_even_when_empty(monkeypatch) -> None:
         lambda body, unsafe_allow_html=False: rendered.append((str(body), bool(unsafe_allow_html))),
     )
 
-    main_ui._render_fixed_status_slot(None, kind="warning")
+    main_ui._render_status_slot([("warning", None), ("error", "")])
 
-    assert len(rendered) == 1
-    assert "eub-fixed-status-warning" in rendered[0][0]
-    assert "eub-fixed-status-hidden" in rendered[0][0]
-    assert rendered[0][1] is True
+    assert rendered == []
 
 
-def test_fixed_status_slot_escapes_html(monkeypatch) -> None:
+def test_status_slot_escapes_html_and_groups_messages(monkeypatch) -> None:
     rendered: list[str] = []
     monkeypatch.setattr(
         main_ui.st,
@@ -233,11 +230,18 @@ def test_fixed_status_slot_escapes_html(monkeypatch) -> None:
         lambda body, unsafe_allow_html=False: rendered.append(str(body)),
     )
 
-    main_ui._render_fixed_status_slot("<b>danger</b>", kind="error")
+    main_ui._render_status_slot([
+        ("warning", "Check settings"),
+        ("error", "<b>danger</b>"),
+    ])
 
+    assert len(rendered) == 1
+    assert "eub-status-slot" in rendered[0]
+    assert "eub-status-line-warning" in rendered[0]
+    assert "eub-status-line-error" in rendered[0]
+    assert "Check settings" in rendered[0]
     assert "&lt;b&gt;danger&lt;/b&gt;" in rendered[0]
     assert "<b>danger</b>" not in rendered[0]
-    assert "eub-fixed-status-error" in rendered[0]
 
 
 def test_hardware_write_warning_message_tracks_confirm_setting() -> None:

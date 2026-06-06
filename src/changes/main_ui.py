@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import queue
 import re
@@ -224,6 +225,12 @@ def _reset_song_table_view(*, clear_search: bool = False) -> None:
         st.session_state["_sl_search"] = ""
 
 
+def _song_table_search_signature(search: str) -> str:
+    """8-char hex hash of normalised search text; stable key component for data_editor."""
+    normalized = (search or "").strip().casefold()
+    return hashlib.sha1(normalized.encode()).hexdigest()[:8]
+
+
 def _request_rerun(
     *,
     reason: str | None = None,
@@ -299,6 +306,9 @@ def _dirty_song() -> SongModel | None:
     state: EditorState = st.session_state.get("editor")
     if state and state.cells:
         try:
+            # TODO: 手入力編集後にTransposeすると override が無効化されこのパスに落ちる。
+            # editor_to_song_model() は均等割りで再構築するため、importした曲の
+            # 非均等コードタイミングが失われる。低優先度・未解決。
             song = editor_to_song_model(state)
             mode = st.session_state.get("_editor_working_key_mode")
             if mode is not None:
@@ -676,6 +686,7 @@ def _do_deselect_song() -> None:
     st.session_state._editor_dirty = False
     st.session_state._dirty_song_override = None
     st.session_state._dirty_song_override_cells = None
+    _clear_section_filter_state()
 
 
 def _try_deselect_song() -> None:
@@ -929,7 +940,7 @@ def _render_songlist(show_import: bool = True) -> None:
         "Delete": pd.Series([False for _ in filtered], dtype="bool"),
     })
 
-    table_key = f"_sl_table_{int(st.session_state._songlist_table_reset_token)}"
+    table_key = f"_sl_table_{int(st.session_state._songlist_table_reset_token)}_{_song_table_search_signature(search)}"
     edited_df = st.data_editor(
         orig_df,
         height=260,
@@ -1184,6 +1195,7 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state._editor_dirty = False
     st.session_state._dirty_song_override = None
     st.session_state._dirty_song_override_cells = None
+    _clear_section_filter_state()
 
 
 @st.dialog("MIDI Metadata Update", dismissible=False)
@@ -2163,26 +2175,53 @@ def _section_filter_signature(song: SongModel, song_path) -> tuple:
     return (str(song_path), len(song.measures), tuple(extract_section_ids(song)))
 
 
+def _section_filter_song_identity(song: SongModel, song_path) -> tuple:
+    """Stable song identity for detecting song switches; unchanged by Transpose."""
+    return (
+        str(song_path or ""),
+        getattr(song, "title", "") or "",
+        len(getattr(song, "measures", ()) or ()),
+    )
+
+
+def _section_checkbox_namespace(song_path) -> str:
+    """Per-song 8-char namespace for checkbox keys; changes when song path changes."""
+    return hashlib.sha1(str(song_path or "").encode()).hexdigest()[:8]
+
+
+def _clear_section_filter_state() -> None:
+    """Clear section filter state on song switch to prevent cross-song carry-over.
+
+    Deletes both the stored selection state and any persisted checkbox widget state
+    so the next render starts fresh with all sections selected.
+    """
+    for key in ("_section_filter_song_identity", "_section_filter_signature",
+                "_section_filter_song_path", "_section_filter_selected"):
+        st.session_state.pop(key, None)
+    for key in [k for k in st.session_state if k.startswith("_sf_")]:
+        del st.session_state[key]
+
+
 def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
     """Return current section selection with the following policy:
 
-    - Path changed (new song): reset to all sections.
-    - Same path, signature changed:
+    - Identity changed (different song): reset to all sections.
+    - Same song, signature changed:
         - Valid subset: preserve selection.
         - Stale non-empty: reset to all sections.
         - Empty: preserve as user intent (all-unchecked state).
     """
     sections = set(extract_section_ids(song))
+    identity = _section_filter_song_identity(song, song_path)
     signature = _section_filter_signature(song, song_path)
+    cached_identity = st.session_state.get("_section_filter_song_identity")
     cached_signature = st.session_state.get("_section_filter_signature")
-    cached_path = st.session_state.get("_section_filter_song_path")
     selected: set[str] = set(st.session_state.get("_section_filter_selected") or [])
 
-    path_str = str(song_path)
-    path_changed = cached_path != path_str
+    identity_changed = cached_identity != identity
     signature_changed = cached_signature != signature
 
-    if path_changed:
+    if identity_changed:
         selected = sections
     elif signature_changed:
         if selected and selected.issubset(sections):
@@ -2191,8 +2230,9 @@ def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
             selected = sections  # stale non-empty: reset to all
         # else: empty is preserved as user intent
 
+    st.session_state._section_filter_song_identity = identity
     st.session_state._section_filter_signature = signature
-    st.session_state._section_filter_song_path = path_str
+    st.session_state._section_filter_song_path = str(song_path)
     st.session_state._section_filter_selected = selected
     return selected
 
@@ -2222,13 +2262,14 @@ def _render_section_filter(song: SongModel) -> None:
 
     song_path = st.session_state.get("_selected_path")
     selected = _get_or_init_section_filter(song, song_path)
+    ns = _section_checkbox_namespace(song_path)
 
     st.caption("Sections to send:")
     new_selected: set[str] = set()
 
     cols = st.columns(min(len(sections), 8))
     for i, sec_id in enumerate(sections):
-        if cols[i % len(cols)].checkbox(_display_section_label(sec_id), value=sec_id in selected, key=f"_sf_{sec_id}"):
+        if cols[i % len(cols)].checkbox(_display_section_label(sec_id), value=sec_id in selected, key=f"_sf_{ns}_{sec_id}"):
             new_selected.add(sec_id)
 
     st.session_state._section_filter_selected = new_selected

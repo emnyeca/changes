@@ -374,3 +374,176 @@ def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> Non
 
     assert captured["disabled"] == ["Meter"]
     assert list(captured["df"]["Meter"]) == ["4/4, 3/4"]
+
+
+# ---------------------------------------------------------------------------
+# Section filter: empty / stale / signature tests
+# ---------------------------------------------------------------------------
+
+def _song_with_sections(*section_ids: str) -> SongModel:
+    measures = tuple(
+        _measure(i + 1, "Cmaj7", section_id=sid)
+        for i, sid in enumerate(section_ids)
+    )
+    return SongModel(title="Test", working_key="C", performance_tempo=Fraction(120), measures=measures)
+
+
+# Test 4: empty selection means disabled, not all-selected
+
+def test_action_disabled_reason_empty_selection_is_disabled(monkeypatch) -> None:
+    """selected == empty must return a disabled reason, not treat it as all-selected."""
+    state = _SessionState({})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    from changes.app_settings import AppSettings
+    settings = AppSettings()
+
+    reason = main_ui._action_disabled_reason(
+        has_selected_song=True,
+        settings=settings,
+        selected_sections=set(),
+        song_has_sections=True,
+    )
+
+    assert reason is not None
+    assert "section" in reason.lower()
+
+
+def test_filtered_song_for_send_empty_selection_not_full_song(monkeypatch) -> None:
+    """_filtered_song_for_send with empty selected must not return the full song."""
+    path = Path("song.json")
+    song = _song_with_sections("S1", "S2")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": set(),
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._filtered_song_for_send(song)
+
+    assert len(result.measures) == 0
+
+
+# Test 5: stale non-empty section selection resets
+
+def test_stale_nonempty_selection_resets_to_all_sections(monkeypatch) -> None:
+    """selected not-empty but not a subset of current sections must reset to all sections."""
+    path = Path("song.json")
+    song = _song_with_sections("A__OCC1", "B__OCC1")
+    old_signature = (str(path), 2, ("S1", "S2"))
+    state = _SessionState(
+        {
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": old_signature,
+            "_section_filter_selected": {"S1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._get_or_init_section_filter(song, path)
+
+    assert result == {"A__OCC1", "B__OCC1"}
+    assert state["_section_filter_selected"] == {"A__OCC1", "B__OCC1"}
+
+
+# Test 6: empty selected is preserved across signature change
+
+def test_empty_selected_preserved_when_signature_changes(monkeypatch) -> None:
+    """When selected is empty and signature changes, empty must be preserved as user intent."""
+    path = Path("song.json")
+    song_v2 = _song_with_sections("A__OCC1", "B__OCC1")
+    old_signature = (str(path), 1, ("S1",))  # different signature
+    state = _SessionState(
+        {
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": old_signature,
+            "_section_filter_selected": set(),
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._get_or_init_section_filter(song_v2, path)
+
+    assert result == set()
+    assert state["_section_filter_selected"] == set()
+
+
+def test_valid_subset_preserved_when_signature_changes(monkeypatch) -> None:
+    """A valid subset must be kept even when signature changes (e.g. transpose)."""
+    path = Path("song.json")
+    song = _song_with_sections("S1", "S2")
+    old_signature = (str(path), 2, ("S1", "S2", "S3"))  # different signature
+    state = _SessionState(
+        {
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": old_signature,
+            "_section_filter_selected": {"S1"},  # still valid after signature change
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._get_or_init_section_filter(song, path)
+
+    assert result == {"S1"}
+
+
+def test_new_path_resets_to_all_sections(monkeypatch) -> None:
+    """Path change (new song selected) must reset to all sections."""
+    old_path = Path("old_song.json")
+    new_path = Path("new_song.json")
+    song = _song_with_sections("A__OCC1", "B__OCC1")
+    state = _SessionState(
+        {
+            "_section_filter_song_path": str(old_path),
+            "_section_filter_signature": (str(old_path), 2, ("X1", "X2")),
+            "_section_filter_selected": {"X1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._get_or_init_section_filter(song, new_path)
+
+    assert result == {"A__OCC1", "B__OCC1"}
+
+
+# Test 7: Transpose after selected section does not produce 0 measures
+
+def test_transpose_with_selected_section_preserves_measures(monkeypatch) -> None:
+    """After transpose (override set), _filtered_song_for_send must not return 0 measures."""
+    path = Path("song.json")
+    # Simulate library song with original section IDs
+    library_song = _song_with_sections("S1", "S2")
+    # Transposed override preserves the same section IDs
+    from changes.song_filter import transpose_song_model_preserving_structure
+    transposed = transpose_song_model_preserving_structure(library_song, lambda s: s, lambda k: k)
+
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(transposed, path),
+            "_section_filter_selected": {"S1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._filtered_song_for_send(transposed)
+
+    assert len(result.measures) > 0
+
+
+# Test 8: section filter signature changes when song structure changes
+
+def test_section_filter_signature_includes_section_ids(monkeypatch) -> None:
+    """Signature must differ when section IDs differ (detects dirty-song section change)."""
+    path = Path("song.json")
+    song_a = _song_with_sections("S1", "S2")
+    song_b = _song_with_sections("A__OCC1", "B__OCC1")
+
+    sig_a = main_ui._section_filter_signature(song_a, path)
+    sig_b = main_ui._section_filter_signature(song_b, path)
+
+    assert sig_a != sig_b

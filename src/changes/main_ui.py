@@ -21,7 +21,7 @@ from changes.editor import EditorState, editor_to_song_model
 from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
-from changes.song_filter import extract_section_ids, filter_song_by_sections
+from changes.song_filter import extract_section_ids, filter_song_by_sections, transpose_song_model_preserving_structure
 from changes.ui_pipeline import (
     count_auto_split_patterns,
     count_linear_patterns,
@@ -202,6 +202,8 @@ def _ss_init() -> None:
         ("_send_area_error", None),
         ("_adv_syx_ok", False), ("_adv_syx_bytes", None), ("_adv_syx_fname", None), ("_adv_syx_error", None),
         ("_dry_run_result", None), ("_dry_run_error", None),
+        # Transpose dirty override: preserves original SongModel structure on transpose
+        ("_dirty_song_override", None), ("_dirty_song_override_cells", None),
     ]:
         if key not in st.session_state:
             st.session_state[key] = default
@@ -283,6 +285,17 @@ def _render_pending_ui_messages() -> None:
 # ── Header data sources ───────────────────────────────────────────────────────
 
 def _dirty_song() -> SongModel | None:
+    override = st.session_state.get("_dirty_song_override")
+    if override is not None:
+        # Validate override is still consistent with editor cells (no manual edits since transpose)
+        override_cells = st.session_state.get("_dirty_song_override_cells")
+        state_for_check: EditorState = st.session_state.get("editor")
+        current_cells = tuple(state_for_check.cells) if state_for_check else ()
+        if override_cells == current_cells:
+            return override
+        # Editor cells changed since override was set (manual edit); invalidate
+        st.session_state["_dirty_song_override"] = None
+
     state: EditorState = st.session_state.get("editor")
     if state and state.cells:
         try:
@@ -411,13 +424,31 @@ def _render_header() -> None:
         down_col, up_col = st.columns([1,1], vertical_alignment="bottom", gap="small")
         with down_col:
             if st.button("▽", key="key_down", help="Transpose down by one semitone", disabled=not has_selected_song, width="stretch"):
+                base_song = _current_song()
                 _transpose_state(st.session_state.editor, -1)
                 st.session_state._editor_dirty = True
+                if base_song is not None:
+                    transposed = transpose_song_model_preserving_structure(
+                        base_song,
+                        lambda sym: _transpose_chord(sym, -1),
+                        lambda key: _transpose_root(key, -1),
+                    )
+                    st.session_state["_dirty_song_override"] = transposed
+                    st.session_state["_dirty_song_override_cells"] = tuple(st.session_state.editor.cells)
                 _request_rerun()
         with up_col:
             if st.button("△", key="key_up", help="Transpose up by one semitone", disabled=not has_selected_song, width="stretch"):
+                base_song = _current_song()
                 _transpose_state(st.session_state.editor, +1)
                 st.session_state._editor_dirty = True
+                if base_song is not None:
+                    transposed = transpose_song_model_preserving_structure(
+                        base_song,
+                        lambda sym: _transpose_chord(sym, +1),
+                        lambda key: _transpose_root(key, +1),
+                    )
+                    st.session_state["_dirty_song_override"] = transposed
+                    st.session_state["_dirty_song_override_cells"] = tuple(st.session_state.editor.cells)
                 _request_rerun()
 
     with st.container(border=True):
@@ -643,6 +674,8 @@ def _do_deselect_song() -> None:
     st.session_state._pending_deselect = False
     st.session_state.editor = EditorState()
     st.session_state._editor_dirty = False
+    st.session_state._dirty_song_override = None
+    st.session_state._dirty_song_override_cells = None
 
 
 def _try_deselect_song() -> None:
@@ -1149,6 +1182,8 @@ def _load_song_into_editor(song: SongModel) -> None:
     st.session_state.working_key_input = state.working_key
     st.session_state._editor_working_key_mode = song.working_key_mode
     st.session_state._editor_dirty = False
+    st.session_state._dirty_song_override = None
+    st.session_state._dirty_song_override_cells = None
 
 
 @st.dialog("MIDI Metadata Update", dismissible=False)
@@ -1465,7 +1500,7 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
     timing = bp.timing
     all_secs_orig = _sec_ids(song)
     all_secs_eff = _sec_ids(compiled.song)
-    sel_secs = list(st.session_state.get("_section_filter_selected") or all_secs_orig)
+    sel_secs = list(st.session_state.get("_section_filter_selected") or [])
 
     enabled_layers: list[str] = []
     if any(t is not None for t in settings.cloud_tracks[:6]):
@@ -1986,7 +2021,7 @@ def _render_settings() -> None:
     _adv_selected_sections: set[str] = set()
     _adv_song_has_real = False
     if song:
-        _adv_selected_sections = st.session_state.get("_section_filter_selected") or set(extract_section_ids(song))
+        _adv_selected_sections = set(st.session_state.get("_section_filter_selected") or [])
         from changes.song_filter import FALLBACK_ALL_SECTION
         _adv_all_sec = extract_section_ids(song)
         _adv_song_has_real = _adv_all_sec != [FALLBACK_ALL_SECTION]
@@ -2011,6 +2046,8 @@ def _render_settings() -> None:
                 with st.spinner("Generating SYX..."):
                     try:
                         effective_adv = _filtered_song_for_send(song)
+                        if not effective_adv.measures:
+                            raise ValueError("No measures selected. Select at least one section.")
                         syx = song_to_syx_bytes(effective_adv, settings)
                         st.session_state._adv_syx_ok = True
                         st.session_state._adv_syx_bytes = syx
@@ -2045,6 +2082,8 @@ def _render_settings() -> None:
                     try:
                         import traceback as _tb
                         effective_dry = _filtered_song_for_send(song)
+                        if not effective_dry.measures:
+                            raise ValueError("No measures selected. Select at least one section.")
                         st.session_state._dry_run_result = _build_dry_run_result(song, effective_dry, settings)
                     except Exception as exc:
                         st.session_state._dry_run_error = {
@@ -2120,22 +2159,57 @@ def _hardware_write_warning(settings: AppSettings) -> str | None:
     return "Hardware write confirmation is disabled. SysEx will be sent immediately."
 
 
+def _section_filter_signature(song: SongModel, song_path) -> tuple:
+    return (str(song_path), len(song.measures), tuple(extract_section_ids(song)))
+
+
 def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
-    """Return current section selection, resetting when the song changes."""
-    cache_key = st.session_state.get("_section_filter_song_path")
-    if cache_key != song_path:
-        sections = set(extract_section_ids(song))
-        st.session_state._section_filter_song_path = song_path
-        st.session_state._section_filter_selected = sections
-    return st.session_state.get("_section_filter_selected", set(extract_section_ids(song)))
+    """Return current section selection with the following policy:
+
+    - Path changed (new song): reset to all sections.
+    - Same path, signature changed:
+        - Valid subset: preserve selection.
+        - Stale non-empty: reset to all sections.
+        - Empty: preserve as user intent (all-unchecked state).
+    """
+    sections = set(extract_section_ids(song))
+    signature = _section_filter_signature(song, song_path)
+    cached_signature = st.session_state.get("_section_filter_signature")
+    cached_path = st.session_state.get("_section_filter_song_path")
+    selected: set[str] = set(st.session_state.get("_section_filter_selected") or [])
+
+    path_str = str(song_path)
+    path_changed = cached_path != path_str
+    signature_changed = cached_signature != signature
+
+    if path_changed:
+        selected = sections
+    elif signature_changed:
+        if selected and selected.issubset(sections):
+            pass  # valid subset: keep
+        elif selected:
+            selected = sections  # stale non-empty: reset to all
+        # else: empty is preserved as user intent
+
+    st.session_state._section_filter_signature = signature
+    st.session_state._section_filter_song_path = path_str
+    st.session_state._section_filter_selected = selected
+    return selected
 
 
 def _filtered_song_for_send(song: SongModel) -> SongModel:
-    """Apply section filter from session state to a song before sending."""
+    """Apply section filter from session state to a song before sending.
+
+    Empty selection is NOT treated as all-selected; it returns a song with 0 measures.
+    Callers must check len(result.measures) > 0 before passing to the planner.
+    The Preview/Send buttons are already disabled by _action_disabled_reason when empty.
+    """
     song_path = st.session_state.get("_selected_path")
     selected = _get_or_init_section_filter(song, song_path)
+    if not selected:
+        return _replace(song, measures=())
     all_sections = set(extract_section_ids(song))
-    if selected and selected != all_sections:
+    if selected != all_sections:
         return filter_song_by_sections(song, selected)
     return song
 

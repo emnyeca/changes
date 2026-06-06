@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import replace as _replace
 from fractions import Fraction
+from typing import Callable
 
 from changes.models.song_model import SongModel
 
@@ -56,3 +57,26 @@ def filter_song_by_sections(song: SongModel, selected: set[str]) -> SongModel:
         absolute_start += measure_len
 
     return _replace(song, measures=tuple(new_measures))
+
+
+def transpose_song_model_preserving_structure(
+    song: SongModel,
+    chord_transpose_fn: Callable[[str], str],
+    key_transpose_fn: Callable[[str], str],
+) -> SongModel:
+    """Return a copy of song with only chord symbols and working_key transposed.
+
+    All timing, meter, section_id, and absolute_start_quarters are preserved exactly.
+    This is the correct operation for Transpose on an imported/library SongModel —
+    as opposed to editor_to_song_model() which rebuilds structure from EditorState.
+    """
+    new_measures = []
+    for measure in song.measures:
+        new_harmony = tuple(
+            _replace(h, symbol=chord_transpose_fn(h.symbol))
+            for h in measure.harmony
+        )
+        new_measures.append(_replace(measure, harmony=new_harmony))
+
+    new_key = key_transpose_fn(song.working_key) if song.working_key else song.working_key
+    return _replace(song, working_key=new_key, measures=tuple(new_measures))

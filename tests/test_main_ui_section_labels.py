@@ -415,6 +415,7 @@ def test_filtered_song_for_send_empty_selection_not_full_song(monkeypatch) -> No
     state = _SessionState(
         {
             "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
             "_section_filter_song_path": str(path),
             "_section_filter_signature": main_ui._section_filter_signature(song, path),
             "_section_filter_selected": set(),
@@ -436,6 +437,7 @@ def test_stale_nonempty_selection_resets_to_all_sections(monkeypatch) -> None:
     old_signature = (str(path), 2, ("S1", "S2"))
     state = _SessionState(
         {
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
             "_section_filter_song_path": str(path),
             "_section_filter_signature": old_signature,
             "_section_filter_selected": {"S1"},
@@ -458,6 +460,7 @@ def test_empty_selected_preserved_when_signature_changes(monkeypatch) -> None:
     old_signature = (str(path), 1, ("S1",))  # different signature
     state = _SessionState(
         {
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song_v2, path),
             "_section_filter_song_path": str(path),
             "_section_filter_signature": old_signature,
             "_section_filter_selected": set(),
@@ -478,6 +481,7 @@ def test_valid_subset_preserved_when_signature_changes(monkeypatch) -> None:
     old_signature = (str(path), 2, ("S1", "S2", "S3"))  # different signature
     state = _SessionState(
         {
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
             "_section_filter_song_path": str(path),
             "_section_filter_signature": old_signature,
             "_section_filter_selected": {"S1"},  # still valid after signature change
@@ -491,12 +495,13 @@ def test_valid_subset_preserved_when_signature_changes(monkeypatch) -> None:
 
 
 def test_new_path_resets_to_all_sections(monkeypatch) -> None:
-    """Path change (new song selected) must reset to all sections."""
+    """Identity change (new song selected) must reset to all sections."""
     old_path = Path("old_song.json")
     new_path = Path("new_song.json")
     song = _song_with_sections("A__OCC1", "B__OCC1")
     state = _SessionState(
         {
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, old_path),
             "_section_filter_song_path": str(old_path),
             "_section_filter_signature": (str(old_path), 2, ("X1", "X2")),
             "_section_filter_selected": {"X1"},
@@ -514,15 +519,14 @@ def test_new_path_resets_to_all_sections(monkeypatch) -> None:
 def test_transpose_with_selected_section_preserves_measures(monkeypatch) -> None:
     """After transpose (override set), _filtered_song_for_send must not return 0 measures."""
     path = Path("song.json")
-    # Simulate library song with original section IDs
     library_song = _song_with_sections("S1", "S2")
-    # Transposed override preserves the same section IDs
     from changes.song_filter import transpose_song_model_preserving_structure
     transposed = transpose_song_model_preserving_structure(library_song, lambda s: s, lambda k: k)
 
     state = _SessionState(
         {
             "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(transposed, path),
             "_section_filter_song_path": str(path),
             "_section_filter_signature": main_ui._section_filter_signature(transposed, path),
             "_section_filter_selected": {"S1"},
@@ -547,3 +551,102 @@ def test_section_filter_signature_includes_section_ids(monkeypatch) -> None:
     sig_b = main_ui._section_filter_signature(song_b, path)
 
     assert sig_a != sig_b
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Song identity / checkbox namespace / search signature tests
+# ---------------------------------------------------------------------------
+
+def test_different_song_identity_resets_filter_even_when_section_ids_match(monkeypatch) -> None:
+    """Switching to a different song must reset to all sections even if section IDs are identical."""
+    path_a = Path("song_a.json")
+    path_b = Path("song_b.json")
+    song_a = _song_with_sections("A1", "B1")
+    song_b = _song_with_sections("A1", "B1")  # same section IDs, different song
+
+    state = _SessionState(
+        {
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song_a, path_a),
+            "_section_filter_song_path": str(path_a),
+            "_section_filter_signature": main_ui._section_filter_signature(song_a, path_a),
+            "_section_filter_selected": {"A1"},  # user unchecked B1 in song A
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    result = main_ui._get_or_init_section_filter(song_b, path_b)
+
+    assert result == {"A1", "B1"}
+
+
+def test_transpose_does_not_change_song_identity() -> None:
+    """Transpose preserves path, title, and measure count — identity must be stable."""
+    from changes.song_filter import transpose_song_model_preserving_structure
+
+    path = Path("song.json")
+    song = _song_with_sections("S1", "S2")
+    transposed = transpose_song_model_preserving_structure(song, lambda s: f"T({s})", lambda k: k)
+
+    assert (
+        main_ui._section_filter_song_identity(song, path)
+        == main_ui._section_filter_song_identity(transposed, path)
+    )
+
+
+def test_section_checkbox_namespace_differs_for_different_paths() -> None:
+    """Different song paths must yield different checkbox namespaces."""
+    assert (
+        main_ui._section_checkbox_namespace(Path("song_a.json"))
+        != main_ui._section_checkbox_namespace(Path("song_b.json"))
+    )
+
+
+def test_section_checkbox_namespace_stable_for_same_path() -> None:
+    """Same path must always produce the same checkbox namespace."""
+    path = Path("my_song.json")
+    assert main_ui._section_checkbox_namespace(path) == main_ui._section_checkbox_namespace(path)
+
+
+def test_clear_section_filter_state_removes_stored_state_and_checkbox_keys(monkeypatch) -> None:
+    """_clear_section_filter_state must delete all _sf_* widget keys and stored filter state."""
+    state = _SessionState(
+        {
+            "_sf_abc12345_A1": False,
+            "_sf_abc12345_B1": True,
+            "_section_filter_selected": {"B1"},
+            "_section_filter_song_identity": ("path", "Song", 2),
+            "_section_filter_signature": ("path", 2, ("A1", "B1")),
+            "_section_filter_song_path": "path",
+            "_other_key": "keep_me",
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    main_ui._clear_section_filter_state()
+
+    assert "_sf_abc12345_A1" not in state
+    assert "_sf_abc12345_B1" not in state
+    assert "_section_filter_selected" not in state
+    assert "_section_filter_song_identity" not in state
+    assert "_section_filter_signature" not in state
+    assert state["_other_key"] == "keep_me"
+
+
+def test_song_table_search_signature_differs_for_different_text() -> None:
+    """Different search strings must produce different signatures."""
+    assert (
+        main_ui._song_table_search_signature("autumn leaves")
+        != main_ui._song_table_search_signature("stella by starlight")
+    )
+
+
+def test_song_table_search_signature_normalises_case_and_whitespace() -> None:
+    """Signature must be case-insensitive and strip leading/trailing whitespace."""
+    assert main_ui._song_table_search_signature("Autumn") == main_ui._song_table_search_signature("autumn")
+    assert main_ui._song_table_search_signature("  autumn  ") == main_ui._song_table_search_signature("autumn")
+
+
+def test_song_table_search_signature_empty_and_blank_are_equal() -> None:
+    """Empty string and whitespace-only search must yield the same signature."""
+    assert main_ui._song_table_search_signature("") == main_ui._song_table_search_signature("   ")
+    assert main_ui._song_table_search_signature(None) == main_ui._song_table_search_signature("")

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import re
 from dataclasses import replace as _replace
 from fractions import Fraction as _Frac
@@ -23,6 +22,13 @@ from changes.ui_pipeline import (
     song_to_syx_bytes_bundle,
     song_to_syx_bytes_linear_split,
 )
+
+# ── Icons ─────────────────────────────────────────────────────────────────────
+
+_ICON_IMPORT = ':material/convert_to_text:'
+_ICON_LAYER_OPTIONS = ':material/account_tree:'
+_ICON_SETTINGS = ':material/settings:'
+_ICON_ADVANCED = ':material/logo_dev:'
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -129,17 +135,7 @@ def _name_to_midi(name: str) -> int:
     pc = _NOTE_NAMES.index(note_part) if note_part in _NOTE_NAMES else 0
     return (int(oct_part) + 1) * 12 + pc
 
-# ── Icon ──────────────────────────────────────────────────────────────────────
-
-@functools.lru_cache(maxsize=1)
-def _header_icon_bytes() -> bytes | None:
-    if _ICON_PATH.exists():
-        return _ICON_PATH.read_bytes()
-    return None
-
-
-def _render_header_field(label: str, value: str | None = None, *, render_controls=None, render_title=False, has_song=True) -> None:
-    icon = _header_icon_bytes()
+def _render_header_field(label: str, icon: str, value: str | None = None, *, render_controls=None, render_title=False, has_song=True) -> None:
     if render_controls is not None:
         render_controls()
     elif render_title:
@@ -150,12 +146,7 @@ def _render_header_field(label: str, value: str | None = None, *, render_control
     else:
         st.write(f"**{value or ''}**")
     
-    bottom_icon_col, bottom_label_col = st.columns([0.18, 3 if render_title else 1], gap="small", vertical_alignment="center")
-    with bottom_icon_col:
-        if icon is not None:
-            st.image(icon, width=18)
-    with bottom_label_col:
-        st.caption(label)
+    st.caption(f"{icon} {label}", unsafe_allow_html=True)
 
 # ── Session state ─────────────────────────────────────────────────────────────
 
@@ -354,15 +345,15 @@ def _render_header() -> None:
         with song_col:
             _composer = getattr(song, "composer", None) if song else None
             _song_label = f"Song by {_composer}" if _composer else "Song"
-            _render_header_field(_song_label, title, render_title=True, has_song=bool(song))
+            _render_header_field(_song_label, ":material/library_music:", title, render_title=True, has_song=bool(song))
         with key_col:
-            _render_header_field("Key", key)
+            _render_header_field("Key", ":material/key:", key)
         with tempo_col:
-            _render_header_field("Tempo", tempo)
+            _render_header_field("Tempo", ":material/pace:", tempo)
         with meter_col:
-            _render_header_field("Meter", meter)
+            _render_header_field("Meter", ":material/pie_chart:", meter)
         with transpose_col:
-            _render_header_field("Transpose", render_controls=_render_transpose_controls)
+            _render_header_field("Transpose", ":material/piano:", render_controls=_render_transpose_controls)
 
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
@@ -966,7 +957,7 @@ def _render_songlist(show_import: bool = True) -> None:
 
 def _render_import_section(disabled: bool = False) -> None:
     # ── Import ────────────────────────────────────────────────────────────────
-    st.subheader("Import")
+    st.subheader(f"{_ICON_IMPORT} Import")
     uploaded = st.file_uploader(
         "Accepts: .zip (iReal-musicxml), .musicxml, .xml / .mid, .midi is for tempo metadata only",
         type=["zip", "musicxml", "xml", "mid", "midi"],
@@ -1646,15 +1637,28 @@ def _build_dry_run_result(song: SongModel, effective_dry: SongModel, settings: A
 
 
 def _render_settings() -> None:
-    st.subheader("Changes")
+    st.subheader(
+        f"{_ICON_LAYER_OPTIONS} Layer Options",
+        help=(
+            "Choose how the song is rendered into Digitone layers. "
+            "Cloud spreads harmony across up to six voices, Bass creates a low single-note layer, "
+            "and Chord sends the full chord to one track. "
+            "Use these options to set retrigger behavior, pitch ranges, and which Digitone tracks receive each layer."
+        ),
+    )
     settings: AppSettings = st.session_state._settings
     changed = False
 
-    def _toggle(label: str, key: str, value: bool, on_label="ON", off_label="OFF") -> bool:
-        opts = [on_label, off_label]
-        idx = 0 if value else 1
-        result = st.selectbox(label, opts, index=idx, key=key)
-        return result == on_label
+    def _toggle(label: str, key: str, value: bool, help: str | None = None) -> bool:
+        value = bool(value)
+        synced_key = f"{key}__settings_value"
+        previous_value = st.session_state.get(synced_key)
+        if key not in st.session_state:
+            st.session_state[key] = value
+        elif previous_value is not None and previous_value != value and st.session_state[key] == previous_value:
+            st.session_state[key] = value
+        st.session_state[synced_key] = value
+        return st.toggle(label, value=value, key=key, help=help)
 
     # ── Cloud ─────────────────────────────────────────────────────────────────
     c0, c1, c2 = st.columns([1, 3, 3], vertical_alignment="bottom")
@@ -1793,54 +1797,54 @@ def _render_settings() -> None:
 
     st.divider()
 
-    # ── Display ───────────────────────────────────────────────────────────────
-    st.subheader("Digitone Pattern")
-    pattern_policy_options = ["Auto for Song Mode", "OFF"]
+    # ── Settings ───────────────────────────────────────────────────────────────
+    st.subheader(f"{_ICON_SETTINGS} Settings")
     current_pattern_policy = getattr(settings, "pattern_change_policy", "auto_song_mode")
-    pattern_policy_index = 1 if current_pattern_policy == "off" else 0
-    new_pattern_policy_label = st.selectbox(
-        "Pattern Change",
-        pattern_policy_options,
-        index=pattern_policy_index,
-        key="_s_pattern_change_policy",
-        help=(
-            "Auto for Song Mode sets PATTERN CHANGE from the generated Track 1-8 length/speed "
-            "so queued Song mode patterns advance at the end of each generated section. "
-            "OFF keeps the previous behavior."
-        ),
-    )
-    new_pattern_policy = "off" if new_pattern_policy_label == "OFF" else "auto_song_mode"
-    if new_pattern_policy != current_pattern_policy:
-        settings.pattern_change_policy = new_pattern_policy
-        changed = True
-
-    st.divider()
-
-    st.subheader("Display")
-    new_accidental = "flat" if _toggle(
-        "Accidentals", "_s_accidental",
-        getattr(settings, "note_accidental", "flat") == "flat",
-        on_label="Flat (Bb, Eb…)",
-        off_label="Sharp (A#, D#…)",
-    ) else "sharp"
-    if new_accidental != getattr(settings, "note_accidental", "flat"):
-        settings.note_accidental = new_accidental; changed = True
-
-    st.divider()
-
-    # ── Safety ────────────────────────────────────────────────────────────────
-    st.subheader("Safety")
-    new_confirm = _toggle("Confirm before hardware write", "_s_confirm_hw",
-                           settings.confirm_before_hardware_write)
-    if new_confirm != settings.confirm_before_hardware_write:
-        settings.confirm_before_hardware_write = new_confirm; changed = True
+    pattern_policy_bool = False if current_pattern_policy == "off" else True
+    _CHANGE_SETTING_IMAGE = Path("docs/assets/CHANGE_setting.png")
+    change_img_col, change_toggle_col, accidentals_toggle_col, hardware_write_confirm_toggle_col = st.columns(4, vertical_alignment="center")
+    with change_img_col:
+        if _CHANGE_SETTING_IMAGE.exists():
+            st.image(
+                _CHANGE_SETTING_IMAGE,
+                use_container_width=True,
+            )
+        else:
+            st.caption("CHANGE setting image not found.")
+    with change_toggle_col:
+        new_pattern_policy_enabled = _toggle(
+            "Auto Change",
+            "_s_pattern_change_enabled",
+            pattern_policy_bool,
+            help=(
+                "Auto for Song Mode sets PATTERN CHANGE from the generated Track 1-8 length/speed "
+                "so queued Song mode patterns advance at the end of each generated section. "
+                "OFF keeps the previous behavior."
+            ),
+        )
+        new_pattern_policy = "auto_song_mode" if new_pattern_policy_enabled else "off"
+        if new_pattern_policy != current_pattern_policy:
+            settings.pattern_change_policy = new_pattern_policy
+            changed = True
+    with accidentals_toggle_col:
+        current_accidental = getattr(settings, "note_accidental", "flat")
+        new_accidental = "flat" if _toggle(
+            "Flat Accidentals",
+            "_s_flat_accidentals",
+            current_accidental == "flat",
+        ) else "sharp"
+        if new_accidental != current_accidental:
+            settings.note_accidental = new_accidental; changed = True
+    with hardware_write_confirm_toggle_col:
+        new_confirm = _toggle("Confirm before hardware write", "_s_confirm_hw_enabled",
+                            settings.confirm_before_hardware_write)
+        if new_confirm != settings.confirm_before_hardware_write:
+            settings.confirm_before_hardware_write = new_confirm; changed = True
 
     # ── Library path ──────────────────────────────────────────────────────────
-    st.divider()
-    st.subheader("Library")
-    lib_col, browse_col = st.columns([5, 1])
+    lib_col, browse_col = st.columns([4, 1], vertical_alignment="bottom")
     with lib_col:
-        new_lib_path = st.text_input("Library folder", value=settings.library_path, key="_s_lib_path")
+        new_lib_path = st.text_input("Library folder", value=settings.library_path, key="_s_lib_path", icon=":material/folder:")
         if new_lib_path != settings.library_path:
             settings.library_path = new_lib_path; changed = True
             _refresh_library()
@@ -1872,7 +1876,7 @@ def _render_settings() -> None:
 
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
-    st.subheader("Advanced")
+    st.subheader(f"{_ICON_ADVANCED} Advanced")
     song = _current_song()
 
     # Compute disabled state for Advanced actions using the same conditions as
@@ -2576,7 +2580,7 @@ def main() -> None:
     _render_header()
     _render_main()
     _render_preview_send()
-    with st.expander("Import / Settings", expanded=False):
+    with st.expander(f"{_ICON_IMPORT} Import / {_ICON_LAYER_OPTIONS} Layer Options / {_ICON_SETTINGS} Settings / {_ICON_ADVANCED} Advanced", expanded=False):
         _render_import_section()
         st.divider()
         _render_settings()

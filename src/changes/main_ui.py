@@ -2090,8 +2090,6 @@ def _action_disabled_reason(
 
 def _render_status_slot(statuses: list[tuple[str, str | None]]) -> None:
     visible_statuses = [(kind, message) for kind, message in statuses if message]
-    if not visible_statuses:
-        return
 
     items: list[str] = []
     for kind, message in visible_statuses:
@@ -2100,7 +2098,7 @@ def _render_status_slot(statuses: list[tuple[str, str | None]]) -> None:
         items.append(
             f'<div class="eub-status-line eub-status-line-{normalized_kind}">{safe_message}</div>'
         )
-    st.markdown(
+    st.markdown("Status: none" if not items else
         f'<div class="eub-status-slot">{"".join(items)}</div>',
         unsafe_allow_html=True,
     )
@@ -2242,7 +2240,7 @@ def _render_preview_send() -> None:
             pass
 
     # Destination
-    ports = ["(Select MIDI Port Destination)"]
+    ports = ["(Select MIDI Port Destination)", "DEBUG"]
     ps0, ps1, ps2 = st.columns(3)
 
     # Preview (Realtime MIDI)

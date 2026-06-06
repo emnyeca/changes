@@ -144,6 +144,71 @@ def test_send_mode_label_keeps_plain_internal_value() -> None:
     assert main_ui._normalize_send_mode(f"{main_ui._ICON_BUNDLE} Bundle by Section") == main_ui._SEND_MODE_BUNDLE
 
 
+def test_request_rerun_can_reset_song_table_without_clearing_search(monkeypatch) -> None:
+    state = _SessionState({"_sl_search": "bilbao", "_songlist_table_reset_token": 4})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "rerun", lambda: (_ for _ in ()).throw(RuntimeError("rerun")))
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._request_rerun(reset_song_table=True, clear_song_search=False)
+
+    assert state["_sl_search"] == "bilbao"
+    assert state["_songlist_table_reset_token"] == 5
+    assert state["_last_rerun_request"]["reset_song_table"] is True
+
+
+def test_request_rerun_can_clear_song_search(monkeypatch) -> None:
+    state = _SessionState({"_sl_search": "bilbao", "_songlist_table_reset_token": 4})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "rerun", lambda: (_ for _ in ()).throw(RuntimeError("rerun")))
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._request_rerun(reset_song_table=True, clear_song_search=True)
+
+    assert state["_sl_search"] == ""
+    assert state["_songlist_table_reset_token"] == 5
+
+
+def test_request_rerun_stores_visible_settings_reason_only_when_passed(monkeypatch) -> None:
+    state = _SessionState({"_songlist_table_reset_token": 0})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "rerun", lambda: (_ for _ in ()).throw(RuntimeError("rerun")))
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._request_rerun()
+    assert "_last_rerun_reason" not in state
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._request_rerun(reason="visible_settings_changed")
+    assert state["_last_rerun_reason"] == "visible_settings_changed"
+
+
+def test_request_rerun_carries_success_message_until_rendered(monkeypatch) -> None:
+    state = _SessionState({"_songlist_table_reset_token": 0})
+    messages: list[str] = []
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "rerun", lambda: (_ for _ in ()).throw(RuntimeError("rerun")))
+    monkeypatch.setattr(main_ui.st, "success", lambda msg: messages.append(str(msg)))
+    monkeypatch.setattr(main_ui.st, "error", lambda msg: None)
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._request_rerun(success_message="Saved.")
+
+    assert state["_ui_success_message"] == "Saved."
+    main_ui._render_pending_ui_messages()
+    assert messages == ["Saved."]
+    assert "_ui_success_message" not in state
+
+
+def test_no_explicit_rerun_marker(monkeypatch) -> None:
+    state = _SessionState({})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+
+    main_ui._no_explicit_rerun("preview_result_rendered_in_current_run")
+
+    assert state["_last_no_explicit_rerun_reason"] == "preview_result_rendered_in_current_run"
+
+
 def test_header_meter_summary_keeps_first_seen_order_without_duplicates() -> None:
     song = _song(
         _measure(1, "Cmaj7", meter=(4, 4)),

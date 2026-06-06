@@ -25,10 +25,16 @@ from changes.ui_pipeline import (
 
 # ── Icons ─────────────────────────────────────────────────────────────────────
 
+_ICON_LINEAR = ':material/arrow_forward:'
+_ICON_BUNDLE = ':material/arrow_split:'
 _ICON_IMPORT = ':material/convert_to_text:'
 _ICON_LAYER_OPTIONS = ':material/account_tree:'
 _ICON_SETTINGS = ':material/settings:'
 _ICON_ADVANCED = ':material/logo_dev:'
+
+_SEND_MODE_LINEAR = "Linear"
+_SEND_MODE_BUNDLE = "Bundle by Section"
+_SEND_MODE_OPTIONS = [_SEND_MODE_LINEAR, _SEND_MODE_BUNDLE]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -2042,13 +2048,19 @@ def _render_preview_send() -> None:
     mode, section = st.columns([1,2], border=False, gap="medium", vertical_alignment="bottom")
     # ── Send mode ──────────────────────────────────────────────────────────────
     with mode:
-        st.caption("Preview / Send Mode")
+        st.session_state["_send_mode"] = _normalize_send_mode(st.session_state.get("_send_mode"))
         send_mode = st.radio(
             "Send mode",
-            ["Linear", "Bundle by Section"],
+            _SEND_MODE_OPTIONS,
             key="_send_mode",
+            format_func=_send_mode_label,
+            help=(
+                "Linear treats the song as one continuous performance and auto-splits only when needed. "
+                "Best for quick live use with fewer pattern changes.\n\n"
+                "Bundle by Section exports each song section as a separate pattern. "
+                "Useful for structured Song Mode setup, but it may create more patterns."
+            ),
             horizontal=True,
-            label_visibility="collapsed",
         )
 
     # ── Section filter ─────────────────────────────────────────────────────────
@@ -2078,7 +2090,7 @@ def _render_preview_send() -> None:
     if song:
         effective_song = _filtered_song_for_send(song)
         try:
-            if send_mode == "Linear":
+            if not _is_bundle_send_mode(send_mode):
                 n_pat = count_linear_patterns(effective_song, settings)
                 if n_pat > 1:
                     st.markdown(
@@ -2154,10 +2166,7 @@ def _render_preview_send() -> None:
                 st.rerun()
             else:
                 effective = _filtered_song_for_send(song)
-                if send_mode == "Bundle by Section":
-                    _run_send_bundle_by_section(effective, settings, dest, send_mode)
-                else:
-                    _run_send_linear_split(effective, settings, dest, send_mode)
+                _run_send(effective, settings, dest, send_mode)
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -2245,24 +2254,35 @@ def _port_name(dest: str) -> str:
     return "DEBUG" if "DEBUG" in dest else dest
 
 
-def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Bundle by Section") -> None:
-    """Compile via bundle planner (preserves section-prefixed pattern names) and send."""
-    _clear_send_area_state()
+def _normalize_send_mode(send_mode: str | None) -> str:
+    if send_mode and send_mode.endswith(_SEND_MODE_BUNDLE):
+        return _SEND_MODE_BUNDLE
+    return _SEND_MODE_LINEAR
 
-    with st.spinner("Compiling bundle..."):
-        try:
-            segments = song_to_syx_bytes_bundle(song, settings)
-        except ModuleNotFoundError:
-            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
-            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
-            return
-        except Exception as exc:
-            _store_send_error(exc, action="bundle_compile", song=song, dest=dest, send_mode=send_mode, settings=settings)
-            return
 
+def _send_mode_label(send_mode: str) -> str:
+    if send_mode == _SEND_MODE_BUNDLE:
+        return f"{_ICON_BUNDLE} {_SEND_MODE_BUNDLE}"
+    return f"{_ICON_LINEAR} {_SEND_MODE_LINEAR}"
+
+
+def _is_bundle_send_mode(send_mode: str) -> bool:
+    return _normalize_send_mode(send_mode) == _SEND_MODE_BUNDLE
+
+
+def _finish_send_segments(
+    song: SongModel,
+    dest: str,
+    send_mode: str,
+    segments: list[tuple[str, bytes]],
+    *,
+    empty_summary: str,
+    filename_suffix: str,
+    send_description: str,
+) -> None:
     if not segments:
         st.session_state._send_area_error = {
-            "summary": "Bundle compile produced no segments.",
+            "summary": empty_summary,
             "context": {"song": song.title, "send_mode": send_mode},
             "traceback": "",
         }
@@ -2273,7 +2293,7 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
     port_name = _port_name(dest)
 
     if port_name != "DEBUG":
-        with st.spinner(f"Sending {len(segments)} pattern(s) to {port_name}..."):
+        with st.spinner(f"Sending {len(segments)} {send_description} to {port_name}..."):
             err = _send_syx_via_midi(combined_syx, port_name)
             if err:
                 st.session_state._send_area_error = {
@@ -2297,7 +2317,33 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
         "pattern_names": pat_names,
     }
     st.session_state._send_area_syx_bytes = combined_syx
-    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}_bundle.syx"
+    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}{filename_suffix}.syx"
+
+
+def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Bundle by Section") -> None:
+    """Compile via bundle planner (preserves section-prefixed pattern names) and send."""
+    _clear_send_area_state()
+
+    with st.spinner("Compiling bundle..."):
+        try:
+            segments = song_to_syx_bytes_bundle(song, settings)
+        except ModuleNotFoundError:
+            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
+            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
+            return
+        except Exception as exc:
+            _store_send_error(exc, action="bundle_compile", song=song, dest=dest, send_mode=send_mode, settings=settings)
+            return
+
+    _finish_send_segments(
+        song,
+        dest,
+        send_mode,
+        segments,
+        empty_summary="Bundle compile produced no segments.",
+        filename_suffix="_bundle",
+        send_description="pattern(s)",
+    )
 
 
 def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
@@ -2345,8 +2391,8 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
             st.error(str(exc))
 
 
-def _run_send_for_mode(song: SongModel, settings: AppSettings, dest: str, send_mode: str) -> None:
-    if send_mode == "Bundle by Section":
+def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str) -> None:
+    if _is_bundle_send_mode(send_mode):
         _run_send_bundle_by_section(song, settings, dest, send_mode)
     else:
         _run_send_linear_split(song, settings, dest, send_mode)
@@ -2374,7 +2420,7 @@ def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, des
         st.session_state._send_confirm = False
         st.session_state._send_confirm_mode = None
         if song:
-            _run_send_for_mode(song, settings, dest, send_mode)
+            _run_send(song, settings, dest, send_mode)
         st.rerun()
     if cc3.button("Always Send", key="_send_conf_no_confirm", disabled=not send_allowed, use_container_width=True):
         settings.confirm_before_hardware_write = False
@@ -2383,7 +2429,7 @@ def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, des
         st.session_state._send_confirm = False
         st.session_state._send_confirm_mode = None
         if song:
-            _run_send_for_mode(song, settings, dest, send_mode)
+            _run_send(song, settings, dest, send_mode)
         st.rerun()
 
 
@@ -2432,50 +2478,6 @@ def _send_pipeline_preview(
         return [f"MIDI error: {exc}"]
 
 
-def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Linear") -> None:
-    _clear_send_area_state()
-
-    with st.spinner("Generating SysEx..."):
-        try:
-            syx = song_to_syx_bytes(song, settings)
-        except ModuleNotFoundError:
-            exc_msg = "digitone-syx-toolkit is required: `pip install -e ../digitone-syx-toolkit`"
-            st.session_state._send_area_error = {"summary": exc_msg, "context": {}, "traceback": ""}
-            return
-        except Exception as exc:
-            _store_send_error(exc, action="export", song=song, dest=dest, send_mode=send_mode, settings=settings)
-            return
-
-    port_name = _port_name(dest)
-
-    if port_name != "DEBUG":
-        with st.spinner(f"Sending SysEx to {port_name}..."):
-            err = _send_syx_via_midi(syx, port_name)
-            if err:
-                st.session_state._send_area_error = {
-                    "summary": err,
-                    "context": {
-                        "action": "midi_send",
-                        "song": song.title,
-                        "send_mode": send_mode,
-                        "destination": port_name,
-                        "syx_size_bytes": len(syx),
-                    },
-                    "traceback": "",
-                }
-                return
-
-    st.session_state._send_area_ok = True
-    st.session_state._send_area_ok_detail = {
-        "dest": port_name,
-        "mode": send_mode,
-        "patterns": 1,
-        "pattern_names": [],
-    }
-    st.session_state._send_area_syx_bytes = syx
-    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}.syx"
-
-
 def _run_send_linear_split(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Linear") -> None:
     _clear_send_area_state()
 
@@ -2490,44 +2492,15 @@ def _run_send_linear_split(song: SongModel, settings: AppSettings, dest: str, se
             _store_send_error(exc, action="linear_split_export", song=song, dest=dest, send_mode=send_mode, settings=settings)
             return
 
-    if not segments:
-        st.session_state._send_area_error = {
-            "summary": "Linear Auto Split produced no patterns.",
-            "context": {"song": song.title, "send_mode": send_mode},
-            "traceback": "",
-        }
-        return
-
-    combined_syx = b"".join(syx for _, syx in segments)
-    pat_names = [name for name, _ in segments]
-    port_name = _port_name(dest)
-
-    if port_name != "DEBUG":
-        with st.spinner(f"Sending {len(segments)} Linear pattern(s) to {port_name}..."):
-            err = _send_syx_via_midi(combined_syx, port_name)
-            if err:
-                st.session_state._send_area_error = {
-                    "summary": err,
-                    "context": {
-                        "action": "midi_send",
-                        "song": song.title,
-                        "send_mode": send_mode,
-                        "destination": port_name,
-                        "pattern_names": pat_names,
-                    },
-                    "traceback": "",
-                }
-                return
-
-    st.session_state._send_area_ok = True
-    st.session_state._send_area_ok_detail = {
-        "dest": port_name,
-        "mode": send_mode,
-        "patterns": len(segments),
-        "pattern_names": pat_names,
-    }
-    st.session_state._send_area_syx_bytes = combined_syx
-    st.session_state._send_area_syx_fname = f"{song.title or 'changes'}_linear.syx"
+    _finish_send_segments(
+        song,
+        dest,
+        send_mode,
+        segments,
+        empty_summary="Linear Auto Split produced no patterns.",
+        filename_suffix="_linear",
+        send_description="Linear pattern(s)",
+    )
 
 
 def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
@@ -2580,7 +2553,7 @@ def main() -> None:
     _render_header()
     _render_main()
     _render_preview_send()
-    with st.expander(f"{_ICON_IMPORT} Import / {_ICON_LAYER_OPTIONS} Layer Options / {_ICON_SETTINGS} Settings / {_ICON_ADVANCED} Advanced", expanded=False):
+    with st.expander("Import / Layer Options / Settings / Advanced", expanded=False, icon=_ICON_IMPORT):
         _render_import_section()
         st.divider()
         _render_settings()

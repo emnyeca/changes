@@ -392,6 +392,33 @@ def _transpose_root(root: str, semitones: int) -> str:
     return _active_accidental_scale()[new_pc]
 
 
+def _normalize_chord_accidental(symbol: str) -> str:
+    """Rewrite chord root (and slash bass) to match the active accidental setting."""
+    if symbol in ("|", "||", "%"):
+        return symbol
+    scale = _active_accidental_scale()
+    slash: str | None = None
+    main = symbol
+    if "/" in symbol:
+        main, slash = symbol.split("/", 1)
+    m = _ROOT_RE.match(main)
+    if not m:
+        return symbol
+    pc = _ROOT_PC.get(m.group(1))
+    if pc is None:
+        return symbol
+    new_main = scale[pc] + m.group(2)
+    if slash:
+        sm = _ROOT_RE.match(slash)
+        if sm:
+            slash_pc = _ROOT_PC.get(sm.group(1))
+            new_slash = (scale[slash_pc] + sm.group(2)) if slash_pc is not None else slash
+        else:
+            new_slash = slash
+        return f"{new_main}/{new_slash}"
+    return new_main
+
+
 def _transpose_chord(symbol: str, semitones: int) -> str:
     if symbol in ("|", "||", "%"):
         return symbol
@@ -485,7 +512,7 @@ def _chord_display_html(state: EditorState, song: SongModel | None = None) -> st
             meter = meter_labels.get(i, "")
             parts.append(_badge_html("meter-lbl", str(meter)) + "|" if meter else "|")
         else:
-            parts.append(cell)
+            parts.append(_normalize_chord_accidental(cell))
 
     if state.cursor == len(state.cells):
         parts.append("▸")

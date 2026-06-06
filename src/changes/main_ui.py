@@ -191,6 +191,7 @@ def _ss_init() -> None:
         ("_table_save_mode", None), ("_table_save_pending", None),
         ("_table_save_suppressed_signature", None),
         ("_songlist_table_reset_token", 0),
+        ("_songlist_search_value", ""),
         ("_songlist_error_message", None),
         ("_pending_deselect", False),
         ("_midi_update_candidates", None), ("_midi_update_kept", None), ("_midi_update_unmatched", None),
@@ -223,6 +224,19 @@ def _reset_song_table_view(*, clear_search: bool = False) -> None:
     st.session_state._songlist_table_reset_token += 1
     if clear_search:
         st.session_state["_sl_search"] = ""
+        st.session_state["_songlist_search_value"] = ""
+
+
+def _sync_song_search_value(value: str | None = None) -> None:
+    if value is None:
+        value = st.session_state.get("_sl_search", "")
+    st.session_state["_songlist_search_value"] = str(value or "")
+
+
+def _restore_song_search_widget_value() -> None:
+    mirrored = st.session_state.get("_songlist_search_value")
+    if mirrored and not st.session_state.get("_sl_search"):
+        st.session_state["_sl_search"] = str(mirrored)
 
 
 def _song_table_search_signature(search: str) -> str:
@@ -913,14 +927,17 @@ def _render_songlist(show_import: bool = True) -> None:
         st.error(str(st.session_state._songlist_error_message))
         st.session_state._songlist_error_message = None
 
+    _restore_song_search_widget_value()
     search = st.text_input(
         "Search songs",
         placeholder="Search With Title…",
         label_visibility="collapsed",
         key="_sl_search",
         disabled=ui_locked,
-        icon=":material/search:"
+        icon=":material/search:",
+        on_change=_sync_song_search_value,
     )
+    _sync_song_search_value(search)
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
     # ── Song table ────────────────────────────────────────────────────────────

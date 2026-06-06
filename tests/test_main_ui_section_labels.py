@@ -166,6 +166,7 @@ def test_request_rerun_can_clear_song_search(monkeypatch) -> None:
         main_ui._request_rerun(reset_song_table=True, clear_song_search=True)
 
     assert state["_sl_search"] == ""
+    assert state["_songlist_search_value"] == ""
     assert state["_songlist_table_reset_token"] == 5
 
 
@@ -374,6 +375,46 @@ def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> Non
 
     assert captured["disabled"] == ["Meter"]
     assert list(captured["df"]["Meter"]) == ["4/4, 3/4"]
+
+
+def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None:
+    bilbao = _song(_measure(1, "Cmaj7"))
+    autumn = _song(_measure(1, "Dm7"))
+    state = _SessionState(
+        {
+            "_library": [
+                SongEntry(path=Path("bilbao.song.json"), title="Bilbao Song", song=bilbao),
+                SongEntry(path=Path("autumn.song.json"), title="Autumn Leaves", song=autumn),
+            ],
+            "_selected_path": None,
+            "_songlist_table_reset_token": 0,
+            "_songlist_search_value": "bilbao",
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: state["_sl_search"])
+    captured: dict[str, object] = {}
+
+    def _data_editor(df, *args, **kwargs):
+        captured["df"] = df.copy()
+        return df
+
+    monkeypatch.setattr(main_ui.st, "data_editor", _data_editor)
+    monkeypatch.setattr(
+        main_ui.st,
+        "column_config",
+        SimpleNamespace(
+            CheckboxColumn=lambda *args, **kwargs: object(),
+            TextColumn=lambda *args, **kwargs: object(),
+            NumberColumn=lambda *args, **kwargs: object(),
+        ),
+    )
+
+    main_ui._render_songlist(show_import=False)
+
+    assert state["_sl_search"] == "bilbao"
+    assert state["_songlist_search_value"] == "bilbao"
+    assert list(captured["df"]["Title"]) == ["Bilbao Song"]
 
 
 # ---------------------------------------------------------------------------

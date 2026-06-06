@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import html
+import queue
 import re
+import threading
+import time
+import traceback as tb_module
+from dataclasses import dataclass
 from dataclasses import replace as _replace
 from fractions import Fraction as _Frac
 from pathlib import Path
+from typing import Literal
 
 import streamlit as st
 
@@ -197,6 +203,10 @@ def _ss_init() -> None:
         ("_adv_syx_ok", False), ("_adv_syx_bytes", None), ("_adv_syx_fname", None), ("_adv_syx_error", None),
         ("_dry_run_result", None), ("_dry_run_error", None),
     ]:
+        if key not in st.session_state:
+            st.session_state[key] = default
+    # Preview dialog state
+    for key, default in _PREVIEW_STATE_KEYS:
         if key not in st.session_state:
             st.session_state[key] = default
 
@@ -2151,6 +2161,7 @@ def _render_section_filter(song: SongModel) -> None:
 
 
 def _render_preview_send() -> None:
+    _sync_preview_state()
     song = _current_song()
     has_selected_song = st.session_state.get("_selected_path") is not None
     settings: AppSettings = st.session_state._settings
@@ -2243,6 +2254,8 @@ def _render_preview_send() -> None:
     ports = ["(Select MIDI Port Destination)", "DEBUG"]
     ps0, ps1, ps2 = st.columns(3)
 
+    preview_running = _preview_is_running()
+
     # Preview (Realtime MIDI)
     with ps0:
         try:
@@ -2252,16 +2265,18 @@ def _render_preview_send() -> None:
             pass
         dest = st.selectbox("Destination", ports, key="_dest_sel", label_visibility="collapsed")
     with ps1:
-        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=actions_disabled):
+        preview_btn_disabled = actions_disabled or preview_running
+        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=preview_btn_disabled):
             if not song:
                 st.warning("No song loaded")
             else:
-                _run_preview(_filtered_song_for_send(song), settings, dest)
-                _no_explicit_rerun("preview_result_rendered_in_current_run")
+                _start_preview(_filtered_song_for_send(song), settings, dest)
+                st.rerun()
 
     # Send SysEx
     with ps2:
-        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=actions_disabled):
+        send_btn_disabled = actions_disabled or preview_running
+        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=send_btn_disabled):
             if not song:
                 st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:
@@ -2272,6 +2287,10 @@ def _render_preview_send() -> None:
                 effective = _filtered_song_for_send(song)
                 _run_send(effective, settings, dest, send_mode)
                 _no_explicit_rerun("send_result_rendered_in_current_run")
+
+    # Preview dialog — shown whenever preview state is not idle
+    if st.session_state.get("_preview_state", "idle") != "idle":
+        _dialog_preview()
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -2446,22 +2465,152 @@ def _run_send_bundle_by_section(song: SongModel, settings: AppSettings, dest: st
     )
 
 
-def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
+# ── Realtime preview state keys ──────────────────────────────────────────────
+# "_preview_state": "idle" | "running" | "stopping" | "finished" | "stopped" | "error" | "debug_log"
+# "_preview_stop_event": threading.Event | None
+# "_preview_thread": threading.Thread | None
+# "_preview_result_queue": queue.Queue | None
+# "_preview_error": str | None
+# "_preview_traceback": str | None
+# "_preview_logs": list[str] | None
+# "_preview_result_message": str | None
+# "_preview_started_at": float | None
+# "_preview_port_name": str | None
+
+_PREVIEW_STATE_KEYS = [
+    ("_preview_state", "idle"),
+    ("_preview_stop_event", None),
+    ("_preview_thread", None),
+    ("_preview_result_queue", None),
+    ("_preview_error", None),
+    ("_preview_traceback", None),
+    ("_preview_logs", None),
+    ("_preview_result_message", None),
+    ("_preview_started_at", None),
+    ("_preview_port_name", None),
+]
+
+
+@dataclass
+class PreviewWorkerResult:
+    status: Literal["finished", "stopped", "error"]
+    message: str
+    error: str | None = None
+    traceback: str | None = None
+
+
+def _preview_worker(
+    play_notes: list[tuple[float, float, int, int, str]],
+    port_name: str,
+    stop_event: threading.Event,
+    result_queue: "queue.Queue[PreviewWorkerResult]",
+) -> None:
+    """Worker thread: sends MIDI note events, respects stop_event, sends note_off on exit."""
+    import mido
+
+    active: list[tuple[float, int, int]] = []
+    channels_used: set[int] = set()
+    try:
+        with mido.open_output(port_name) as out:
+            try:
+                idx = 0
+                start = time.perf_counter()
+                while (idx < len(play_notes) or active) and not stop_event.is_set():
+                    now = time.perf_counter() - start
+                    # 1. note_off for expired notes (before note_on for same tick)
+                    still_active = []
+                    for off_sec, note, ch in active:
+                        if now >= off_sec:
+                            out.send(mido.Message("note_off", note=note, velocity=0, channel=ch))
+                        else:
+                            still_active.append((off_sec, note, ch))
+                    active = still_active
+                    # 2. note_on for notes due now
+                    while idx < len(play_notes) and play_notes[idx][0] <= now:
+                        _, off_sec, note, ch, _ = play_notes[idx]
+                        out.send(mido.Message("note_on", note=note, velocity=80, channel=ch))
+                        active.append((off_sec, note, ch))
+                        channels_used.add(ch)
+                        idx += 1
+                    # 3. sleep until next event, capped at 5ms so Stop responds quickly
+                    next_on = play_notes[idx][0] if idx < len(play_notes) else None
+                    next_off = min(t for t, _, _ in active) if active else None
+                    candidates = [x for x in (next_on, next_off) if x is not None]
+                    if candidates:
+                        now = time.perf_counter() - start
+                        timeout = max(0.0, min(min(candidates) - now, 0.005))
+                        stop_event.wait(timeout)
+            finally:
+                # note_off while port is still open — guaranteed cleanup path
+                for _, note, ch in active:
+                    try:
+                        out.send(mido.Message("note_off", note=note, velocity=0, channel=ch))
+                    except Exception:
+                        pass
+                # All Notes Off CC as safety net for each channel used
+                for ch in channels_used:
+                    try:
+                        out.send(mido.Message("control_change", control=123, value=0, channel=ch))
+                    except Exception:
+                        pass
+    except Exception as exc:
+        result_queue.put(PreviewWorkerResult(
+            status="error",
+            message=f"MIDI error: {exc}",
+            error=str(exc),
+            traceback=tb_module.format_exc(),
+        ))
+        return
+
+    if stop_event.is_set():
+        result_queue.put(PreviewWorkerResult(status="stopped", message="Preview stopped."))
+    else:
+        result_queue.put(PreviewWorkerResult(status="finished", message="Preview complete."))
+
+
+def _sync_preview_state() -> None:
+    """Poll worker thread completion and update session_state accordingly."""
+    state = st.session_state.get("_preview_state", "idle")
+    if state not in ("running", "stopping"):
+        return
+    thread: threading.Thread | None = st.session_state.get("_preview_thread")
+    if thread is None or thread.is_alive():
+        return
+    result_queue: "queue.Queue[PreviewWorkerResult] | None" = st.session_state.get("_preview_result_queue")
+    result: PreviewWorkerResult | None = None
+    if result_queue is not None:
+        try:
+            result = result_queue.get_nowait()
+        except queue.Empty:
+            pass
+    if result is None:
+        result = PreviewWorkerResult(status="finished", message="Preview complete.")
+    st.session_state["_preview_state"] = result.status
+    st.session_state["_preview_result_message"] = result.message
+    st.session_state["_preview_error"] = result.error
+    st.session_state["_preview_traceback"] = result.traceback
+    st.session_state["_preview_thread"] = None
+
+
+def _build_play_notes(
+    song: "SongModel",
+    settings: "AppSettings",
+) -> "list[tuple[float, float, int, int, str]] | None":
+    """Compile song and return play_notes list, or None on error (sets st.error)."""
     from changes.ui_pipeline import compile_song_for_ui
 
     try:
         compiled = compile_song_for_ui(song, settings)
     except Exception as exc:
         st.error(f"Pipeline error: {exc}")
-        return
+        return None
 
     voice_to_track = compiled.target_profile.voice_to_track
     tempo_bpm = float(compiled.timeline.performance_tempo)
 
-    def _q_to_sec(q):
+    def _q_to_sec(q: float) -> float:
         return float(q) * 60.0 / tempo_bpm
 
-    # Build note schedule: (onset_sec, offset_sec, note_midi, midi_ch_0based, voice_id)
     play_notes = []
     for ev in compiled.timeline.events:
         track = voice_to_track.get(ev.voice_id)
@@ -2474,21 +2623,127 @@ def _run_preview(song: SongModel, settings: AppSettings, dest: str) -> None:
             track - 1,
             ev.voice_id,
         ))
+    play_notes.sort(key=lambda n: n[0])
+    return play_notes
 
+
+def _start_preview(song: "SongModel", settings: "AppSettings", dest: str) -> None:
+    """Initiate a preview: DEBUG mode sets debug_log state, real port starts worker thread."""
+    if _preview_is_running():
+        return
+    play_notes = _build_play_notes(song, settings)
+    if play_notes is None:
+        return
     if not play_notes:
         st.warning("No routed notes found (are all voices set to None?)")
         return
 
-    play_notes.sort(key=lambda n: n[0])
     port_name = _port_name(dest)
+    st.session_state["_preview_port_name"] = port_name
+    st.session_state["_preview_started_at"] = time.time()
 
-    with st.spinner("Running preview..."):
-        try:
-            logs = _send_pipeline_preview(play_notes, port_name)
-            if port_name == "DEBUG" or logs:
-                st.code("\n".join(logs[:60]), language="text")
-        except Exception as exc:
-            st.error(str(exc))
+    if port_name == "DEBUG":
+        logs = ["Transport:start"]
+        for onset, offset, note, ch, voice_id in play_notes:
+            dur = offset - onset
+            logs.append(
+                f"t+{onset:.2f}s  ch{ch+1}:{_midi_name(note)}  ({voice_id})  dur:{dur:.2f}s"
+            )
+        logs.append("Transport:stop")
+        st.session_state["_preview_state"] = "debug_log"
+        st.session_state["_preview_logs"] = logs
+        st.session_state["_preview_thread"] = None
+        return
+
+    stop_event = threading.Event()
+    result_queue: "queue.Queue[PreviewWorkerResult]" = queue.Queue()
+    t = threading.Thread(
+        target=_preview_worker,
+        args=(play_notes, port_name, stop_event, result_queue),
+        daemon=True,
+    )
+    st.session_state["_preview_stop_event"] = stop_event
+    st.session_state["_preview_result_queue"] = result_queue
+    st.session_state["_preview_thread"] = t
+    st.session_state["_preview_state"] = "running"
+    t.start()
+
+
+def _stop_preview() -> None:
+    """Signal the worker thread to stop."""
+    stop_event: threading.Event | None = st.session_state.get("_preview_stop_event")
+    if stop_event is not None:
+        stop_event.set()
+    st.session_state["_preview_state"] = "stopping"
+
+
+def _clear_preview_dialog_state() -> None:
+    """Reset all preview state keys to their idle defaults."""
+    for key, default in _PREVIEW_STATE_KEYS:
+        st.session_state[key] = default
+
+
+def _preview_is_running() -> bool:
+    return st.session_state.get("_preview_state", "idle") in ("running", "stopping")
+
+
+@st.dialog("Preview", dismissible=False)
+def _dialog_preview() -> None:
+    _sync_preview_state()
+    state = st.session_state.get("_preview_state", "idle")
+    port_name = st.session_state.get("_preview_port_name", "")
+
+    if state in ("running", "stopping"):
+        label = "Stopping..." if state == "stopping" else f"Playing on {port_name}..."
+        with st.spinner(label):
+            pass
+        if state == "running":
+            if st.button("Stop Preview", key="_preview_stop_btn", use_container_width=True):
+                _stop_preview()
+                st.rerun()
+        else:
+            st.button("Stopping...", key="_preview_stopping_btn", disabled=True, use_container_width=True)
+        # Poll until the worker finishes; 0.5s keeps MIDI timing priority over UI refresh
+        time.sleep(0.5)
+        st.rerun()
+
+    elif state == "debug_log":
+        logs = st.session_state.get("_preview_logs") or []
+        st.code("\n".join(logs[:60]), language="text")
+        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+            _clear_preview_dialog_state()
+            st.rerun()
+
+    elif state == "finished":
+        msg = st.session_state.get("_preview_result_message") or "Preview complete."
+        st.success(msg)
+        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+            _clear_preview_dialog_state()
+            st.rerun()
+
+    elif state == "stopped":
+        msg = st.session_state.get("_preview_result_message") or "Preview stopped."
+        st.info(msg)
+        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+            _clear_preview_dialog_state()
+            st.rerun()
+
+    elif state == "error":
+        err = st.session_state.get("_preview_error") or "Unknown error"
+        st.error(f"Preview error: {err}")
+        tb = st.session_state.get("_preview_traceback")
+        if tb:
+            with st.expander("Details"):
+                st.code(tb, language="text")
+        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+            _clear_preview_dialog_state()
+            st.rerun()
+
+    else:
+        # Fallback / idle — should not normally appear, but close gracefully
+        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+            _clear_preview_dialog_state()
+            st.rerun()
 
 
 def _run_send(song: SongModel, settings: AppSettings, dest: str, send_mode: str) -> None:
@@ -2525,51 +2780,6 @@ def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, des
         if song:
             _run_send(song, settings, dest, send_mode)
         _request_rerun(close_send_confirm=True, reason="visible_settings_changed")
-
-
-def _send_pipeline_preview(
-    play_notes: list[tuple[float, float, int, int, str]],
-    port_name: str,
-) -> list[str]:
-    """Send note events from the compiled timeline, or log them in DEBUG mode."""
-    if port_name == "DEBUG":
-        logs = ["Transport:start"]
-        for onset, offset, note, ch, voice_id in play_notes:
-            dur = offset - onset
-            logs.append(
-                f"t+{onset:.2f}s  ch{ch+1}:{_midi_name(note)}  ({voice_id})  dur:{dur:.2f}s"
-            )
-        logs.append("Transport:stop")
-        return logs
-
-    import time
-    import mido
-
-    try:
-        with mido.open_output(port_name) as out:
-            active: list[tuple[float, int, int]] = []
-            start = time.time()
-            idx = 0
-            while idx < len(play_notes) or active:
-                now = time.time() - start
-                # note_off for expired notes
-                still_active = []
-                for (off_sec, note, ch) in active:
-                    if now >= off_sec:
-                        out.send(mido.Message("note_off", note=note, velocity=0, channel=ch))
-                    else:
-                        still_active.append((off_sec, note, ch))
-                active = still_active
-                # note_on for notes due now
-                while idx < len(play_notes) and play_notes[idx][0] <= now:
-                    _, off_sec, note, ch, _ = play_notes[idx]
-                    out.send(mido.Message("note_on", note=note, velocity=80, channel=ch))
-                    active.append((off_sec, note, ch))
-                    idx += 1
-                time.sleep(0.02)
-        return ["Preview complete."]
-    except Exception as exc:
-        return [f"MIDI error: {exc}"]
 
 
 def _run_send_linear_split(song: SongModel, settings: AppSettings, dest: str, send_mode: str = "Linear") -> None:

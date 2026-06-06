@@ -199,11 +199,68 @@ def _refresh_library() -> None:
     st.session_state._library = list_songs(Path(s.library_path))
 
 
-def _reset_song_table_view() -> None:
-    saved_search = st.session_state.get("_sl_search")
+def _reset_song_table_view(*, clear_search: bool = False) -> None:
     st.session_state._songlist_table_reset_token += 1
-    if saved_search is not None:
-        st.session_state["_sl_search"] = saved_search
+    if clear_search:
+        st.session_state["_sl_search"] = ""
+
+
+def _request_rerun(
+    *,
+    reason: str | None = None,
+    reset_song_table: bool = False,
+    clear_song_search: bool = False,
+    refresh_library: bool = False,
+    close_send_confirm: bool = False,
+    clear_import_state: bool = False,
+    success_message: str | None = None,
+    error_message: str | None = None,
+) -> None:
+    request = {
+        "reason": reason,
+        "reset_song_table": reset_song_table,
+        "clear_song_search": clear_song_search,
+        "refresh_library": refresh_library,
+        "close_send_confirm": close_send_confirm,
+        "clear_import_state": clear_import_state,
+        "success_message": success_message,
+        "error_message": error_message,
+    }
+    st.session_state["_last_rerun_request"] = request
+    if reason:
+        st.session_state["_last_rerun_reason"] = reason
+    if refresh_library:
+        _refresh_library()
+    if reset_song_table:
+        _reset_song_table_view(clear_search=clear_song_search)
+    if close_send_confirm:
+        st.session_state._send_confirm = False
+        st.session_state._send_confirm_mode = None
+    if clear_import_state:
+        st.session_state._import_progress_request = None
+        st.session_state._import_progress_status = None
+        st.session_state._import_pending = []
+        st.session_state._import_pending_failed = []
+        st.session_state._import_conflict_mode = None
+        st.session_state._import_conflict_titles = []
+    if success_message:
+        st.session_state["_ui_success_message"] = success_message
+    if error_message:
+        st.session_state["_ui_error_message"] = error_message
+    st.rerun()
+
+
+def _no_explicit_rerun(reason: str) -> None:
+    st.session_state["_last_no_explicit_rerun_reason"] = reason
+
+
+def _render_pending_ui_messages() -> None:
+    msg = st.session_state.pop("_ui_success_message", None)
+    if msg:
+        st.success(str(msg))
+    err = st.session_state.pop("_ui_error_message", None)
+    if err:
+        st.error(str(err))
 
 
 # ── Header data sources ───────────────────────────────────────────────────────
@@ -339,12 +396,12 @@ def _render_header() -> None:
             if st.button("▽", key="key_down", help="Transpose down by one semitone", disabled=not has_selected_song, width="stretch"):
                 _transpose_state(st.session_state.editor, -1)
                 st.session_state._editor_dirty = True
-                st.rerun()
+                _request_rerun()
         with up_col:
             if st.button("△", key="key_up", help="Transpose up by one semitone", disabled=not has_selected_song, width="stretch"):
                 _transpose_state(st.session_state.editor, +1)
                 st.session_state._editor_dirty = True
-                st.rerun()
+                _request_rerun()
 
     with st.container(border=True):
         song_col, key_col, tempo_col, meter_col, transpose_col = st.columns([3.2, 1.2, 1.2, 1.2, 1.2], vertical_alignment="bottom", gap="small")
@@ -536,16 +593,15 @@ def _dialog_table_save() -> None:
     c1, c2, c3 = st.columns(3, width = "stretch", gap="small")
     if c1.button("Update", type="primary", key="tsd_update", use_container_width=True):
         st.session_state._table_save_mode = "update"
-        st.rerun()
+        _request_rerun()
     if c2.button("Keep both", key="tsd_keep", use_container_width=True):
         st.session_state._table_save_mode = "keep_both"
-        st.rerun()
+        _request_rerun()
     if c3.button("Cancel", key="tsd_cancel", use_container_width=True):
         st.session_state._table_save_suppressed_signature = pending.get("signature")
         st.session_state._table_save_mode = None
         st.session_state._table_save_pending = None
-        _reset_song_table_view()
-        st.rerun()
+        _request_rerun(reset_song_table=True)
 
 
 @st.dialog("Discard Unsaved Changes?", dismissible=False)
@@ -558,10 +614,10 @@ def _dialog_pending_switch() -> None:
     col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
     if col_cancel.button("Cancel", key="sw_cancel", use_container_width=True):
         st.session_state._pending_switch = None
-        _reset_song_table_view()
-        st.rerun()
+        _request_rerun(reset_song_table=True)
     if col_discard.button("Discard and switch", type="primary", key="sw_discard", use_container_width=True):
         _do_switch_song(pending_switch)
+        _request_rerun(reset_song_table=True)
 
 
 def _do_deselect_song() -> None:
@@ -574,8 +630,8 @@ def _do_deselect_song() -> None:
 
 def _try_deselect_song() -> None:
     if st.session_state._editor_dirty:
-        _reset_song_table_view()
         st.session_state._pending_deselect = True
+        _reset_song_table_view()
     else:
         _do_deselect_song()
 
@@ -588,11 +644,10 @@ def _dialog_pending_deselect() -> None:
     col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
     if col_cancel.button("Cancel", key="desel_cancel", use_container_width=True):
         st.session_state._pending_deselect = False
-        st.rerun()
+        _request_rerun(reset_song_table=True)
     if col_discard.button("Discard", type="primary", key="desel_discard", use_container_width=True):
         _do_deselect_song()
-        st.rerun()
-        st.rerun()
+        _request_rerun(reset_song_table=True)
 
 
 @st.dialog("Delete Song", dismissible=False)
@@ -608,14 +663,17 @@ def _dialog_delete_confirm() -> None:
     c1, c2 = st.columns([1, 1], width="stretch", gap="small")
     if c1.button("Cancel", key="del_cancel", use_container_width=True):
         st.session_state._delete_confirm = None
-        st.rerun()
+        _request_rerun(reset_song_table=True)
     if c2.button("Delete", type="primary", key="del_confirm", use_container_width=True):
         delete_song(del_path)
         if st.session_state._selected_path == del_path:
             st.session_state._selected_path = None
         st.session_state._delete_confirm = None
-        _refresh_library()
-        st.rerun()
+        _request_rerun(
+            refresh_library=True,
+            reset_song_table=True,
+            success_message=f"Deleted: {name}",
+        )
 
 
 @st.dialog("Import Conflicts", dismissible=False)
@@ -629,16 +687,13 @@ def _dialog_import_conflict() -> None:
     if c1.button("Overwrite all", type="primary", key="ic_over", use_container_width=True):
         st.session_state._import_conflict_mode = None
         st.session_state._import_progress_request = {"kind": "save", "mode": "overwrite"}
-        st.rerun()
+        _request_rerun()
     if c2.button("Keep both", key="ic_keep", use_container_width=True):
         st.session_state._import_conflict_mode = None
         st.session_state._import_progress_request = {"kind": "save", "mode": "keep_both"}
-        st.rerun()
+        _request_rerun()
     if c3.button("Cancel import", key="ic_cancel", use_container_width=True):
-        st.session_state._import_conflict_mode = None
-        st.session_state._import_pending = []
-        st.session_state._import_pending_failed = []
-        st.rerun()
+        _request_rerun(clear_import_state=True)
 
 
 @st.dialog("Import Progress", dismissible=False)
@@ -664,10 +719,15 @@ def _dialog_import_progress() -> None:
         else:
             st.error(status.get("message", "Import failed."))
         if st.button("Close", type="primary", key="_import_progress_close", use_container_width=True):
+            status_message = status.get("message", "Import completed.")
             st.session_state._import_progress_request = None
             st.session_state._import_progress_status = None
             st.session_state._import_uploader_reset_token += 1
-            st.rerun()
+            _request_rerun(
+                reset_song_table=True,
+                success_message=status_message if status.get("ok") else None,
+                error_message=status_message if not status.get("ok") else None,
+            )
 
 
 def _run_import_progress_request(request: dict, progress, message) -> None:
@@ -768,10 +828,15 @@ def _render_songlist(show_import: bool = True) -> None:
 
     if st.session_state.get("_table_save_mode") in ("update", "keep_both"):
         _execute_table_save(st.session_state._table_save_mode)
+        saved_name = st.session_state.get("_table_save_last_saved_name")
         st.session_state._table_save_mode = None
         st.session_state._table_save_pending = None
         st.session_state._table_save_suppressed_signature = None
-        st.rerun()
+        _request_rerun(
+            reset_song_table=True,
+            refresh_library=True,
+            success_message=f"Saved: {saved_name}" if saved_name else "Saved.",
+        )
 
     # Process resolved imports
     if st.session_state.get("_import_conflict_mode") in ("overwrite", "keep_both"):
@@ -780,7 +845,7 @@ def _render_songlist(show_import: bool = True) -> None:
             "mode": st.session_state._import_conflict_mode,
         }
         st.session_state._import_conflict_mode = None
-        st.rerun()
+        _request_rerun()
 
     # ── Search ────────────────────────────────────────────────────────────────
     if st.session_state.get("_songlist_error_message"):
@@ -846,7 +911,7 @@ def _render_songlist(show_import: bool = True) -> None:
             target_entry = filtered[target_idx]
             if st.session_state._selected_path != target_entry.path:
                 _try_select_song(target_entry)
-                st.rerun()
+                _request_rerun(reset_song_table=True)
     elif not selected_rows and not ui_locked and st.session_state._selected_path is not None:
         # Deselect: user unchecked the currently selected row
         deselected = [
@@ -855,7 +920,7 @@ def _render_songlist(show_import: bool = True) -> None:
         ]
         if deselected:
             _try_deselect_song()
-            st.rerun()
+            _request_rerun(reset_song_table=True)
 
     # Table-integrated delete action (rightmost column)
     delete_rows = [
@@ -866,7 +931,7 @@ def _render_songlist(show_import: bool = True) -> None:
         delete_idx = delete_rows[-1]
         if 0 <= delete_idx < len(filtered):
             st.session_state._delete_confirm = filtered[delete_idx].path
-            st.rerun()
+            _request_rerun(reset_song_table=True)
 
     # Persist inline edits (Title / Key / Tempo)
     if not table_save_pending and not ui_locked:
@@ -892,20 +957,17 @@ def _render_songlist(show_import: bool = True) -> None:
             ):
                 if not title_val:
                     st.session_state._songlist_error_message = "Title cannot be empty"
-                    _reset_song_table_view()
-                    st.rerun()
+                    _request_rerun(reset_song_table=True)
                 if tempo_val < 30 or tempo_val > 300:
                     st.session_state._songlist_error_message = "Tempo must be between 30 and 300"
-                    _reset_song_table_view()
-                    st.rerun()
+                    _request_rerun(reset_song_table=True)
 
                 parsed_key, parsed_mode = parse_working_key_display(key_val)
                 if parsed_key is None and key_val not in ("", "-", "?"):
                     st.session_state._songlist_error_message = (
                         "Invalid key format. Examples: C, Em, F#m, Bb, C?, -"
                     )
-                    _reset_song_table_view()
-                    st.rerun()
+                    _request_rerun(reset_song_table=True)
 
                 changed_fields: list[tuple[str, str, str]] = []
                 if title_val != old_title:
@@ -939,7 +1001,7 @@ def _render_songlist(show_import: bool = True) -> None:
                     "signature": signature,
                     "changes": changed_fields,
                 }
-                st.rerun()
+                _request_rerun(reset_song_table=True)
 
     # ── Confirmation / warning dialogs ──────────────────────────────────────
     if table_save_pending:
@@ -980,7 +1042,7 @@ def _render_import_section(disabled: bool = False) -> None:
                 for f in uploaded
             ],
         }
-        st.rerun()
+        _request_rerun()
 
     # Show last import result
     bundle_result = st.session_state.get("_import_bundle_result")
@@ -1109,16 +1171,22 @@ def _render_midi_update_confirm() -> None:
     mu1, mu2 = st.columns(2, width="stretch", gap="small")
     if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates, use_container_width=True):
         _apply_midi_updates(candidates)
+        updated = st.session_state.get("_midi_update_last_updated", 0)
+        failed = st.session_state.get("_midi_update_last_failed", [])
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
-        _refresh_library()
-        st.rerun()
+        message = f"Updated {updated}, failed {len(failed)}." if failed else f"{updated} song(s) updated."
+        _request_rerun(
+            refresh_library=True,
+            reset_song_table=True,
+            success_message=message,
+        )
     if mu2.button("Cancel", key="_midi_upd_cancel", use_container_width=True):
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
-        st.rerun()
+        _request_rerun(reset_song_table=True)
 
 
 def _apply_midi_updates(candidates: list) -> None:
@@ -1140,10 +1208,10 @@ def _apply_midi_updates(candidates: list) -> None:
             failed.append((c.matched_title, str(exc)))
 
     if failed:
-        st.warning(f"Updated {updated}, failed {len(failed)}: " +
-                   ", ".join(t for t, _ in failed))
+        st.session_state._midi_update_last_failed = failed
     else:
-        st.success(f"{updated} song(s) updated.")
+        st.session_state._midi_update_last_failed = []
+    st.session_state._midi_update_last_updated = updated
 
 
 def _supports_progress_callback(func) -> bool:
@@ -1311,7 +1379,7 @@ def _execute_compose_save(mode: str) -> None:
     st.session_state._selected_path = path
     st.session_state._editor_dirty = False
     _refresh_library()
-    st.success(f"Saved: {path.name}")
+    st.session_state._compose_save_last_saved_name = path.name
 
 
 def _execute_table_save(mode: str) -> None:
@@ -1334,7 +1402,7 @@ def _execute_table_save(mode: str) -> None:
     st.session_state._selected_path = saved_path
     _refresh_library()
     _load_song_into_editor(song)
-    st.success(f"Saved: {saved_path.name}")
+    st.session_state._table_save_last_saved_name = saved_path.name
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1654,6 +1722,7 @@ def _render_settings() -> None:
     )
     settings: AppSettings = st.session_state._settings
     changed = False
+    library_path_changed = False
 
     def _toggle(label: str, key: str, value: bool, help: str | None = None) -> bool:
         value = bool(value)
@@ -1853,7 +1922,7 @@ def _render_settings() -> None:
         new_lib_path = st.text_input("Library folder", value=settings.library_path, key="_s_lib_path", icon=":material/folder:")
         if new_lib_path != settings.library_path:
             settings.library_path = new_lib_path; changed = True
-            _refresh_library()
+            library_path_changed = True
     with browse_col:
         st.write("")
         if st.button("Browse…", key="_s_lib_browse", use_container_width=True):
@@ -1871,14 +1940,24 @@ def _render_settings() -> None:
                 if folder:
                     settings.library_path = folder
                     changed = True
-                    _refresh_library()
-                    st.rerun()
+                    save_settings(settings)
+                    st.session_state._settings = settings
+                    _request_rerun(
+                        reason="visible_settings_changed",
+                        refresh_library=True,
+                        reset_song_table=True,
+                    )
             except Exception:
                 st.info("Please enter the folder path manually")
 
     if changed:
         save_settings(settings)
         st.session_state._settings = settings
+        _request_rerun(
+            reason="visible_settings_changed",
+            refresh_library=library_path_changed,
+            reset_song_table=library_path_changed,
+        )
 
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
@@ -1924,6 +2003,7 @@ def _render_settings() -> None:
                     except Exception as exc:
                         import traceback as _tb_exp
                         st.session_state._adv_syx_error = f"{type(exc).__name__}: {exc}\n\n{_tb_exp.format_exc()}"
+                _no_explicit_rerun("advanced_export_result_rendered_in_current_run")
             if st.session_state.get("_adv_syx_ok") and st.session_state.get("_adv_syx_bytes"):
                 syx_b = st.session_state._adv_syx_bytes
                 st.success(f"Export done — {len(syx_b):,} bytes")
@@ -1955,6 +2035,7 @@ def _render_settings() -> None:
                             "type": type(exc).__name__,
                             "traceback": _tb.format_exc(),
                         }
+                _no_explicit_rerun("advanced_dry_run_result_rendered_in_current_run")
         if st.session_state.get("_dry_run_result"):
             st.json(st.session_state._dry_run_result)
         elif st.session_state.get("_dry_run_error"):
@@ -2154,6 +2235,7 @@ def _render_preview_send() -> None:
                 st.warning("No song loaded")
             else:
                 _run_preview(_filtered_song_for_send(song), settings, dest)
+                _no_explicit_rerun("preview_result_rendered_in_current_run")
 
     # Send SysEx
     with ps2:
@@ -2163,10 +2245,11 @@ def _render_preview_send() -> None:
             elif settings.confirm_before_hardware_write:
                 st.session_state._send_confirm = True
                 st.session_state._send_confirm_mode = send_mode
-                st.rerun()
+                _request_rerun()
             else:
                 effective = _filtered_song_for_send(song)
                 _run_send(effective, settings, dest, send_mode)
+                _no_explicit_rerun("send_result_rendered_in_current_run")
 
     # Hardware write confirmation
     if st.session_state.get("_send_confirm"):
@@ -2413,24 +2496,18 @@ def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, des
     send_allowed = port_name is not None
     cc1, cc2, cc3 = st.columns(3, width="stretch", gap="small")
     if cc1.button("Cancel", key="_send_conf_cancel", use_container_width=True):
-        st.session_state._send_confirm = False
-        st.session_state._send_confirm_mode = None
-        st.rerun()
+        _request_rerun(close_send_confirm=True)
     if cc2.button("Send", type="primary", key="_send_conf_ok", disabled=not send_allowed, use_container_width=True):
-        st.session_state._send_confirm = False
-        st.session_state._send_confirm_mode = None
         if song:
             _run_send(song, settings, dest, send_mode)
-        st.rerun()
+        _request_rerun(close_send_confirm=True)
     if cc3.button("Always Send", key="_send_conf_no_confirm", disabled=not send_allowed, use_container_width=True):
         settings.confirm_before_hardware_write = False
         save_settings(settings)
         st.session_state._settings = settings
-        st.session_state._send_confirm = False
-        st.session_state._send_confirm_mode = None
         if song:
             _run_send(song, settings, dest, send_mode)
-        st.rerun()
+        _request_rerun(close_send_confirm=True, reason="visible_settings_changed")
 
 
 def _send_pipeline_preview(
@@ -2550,6 +2627,7 @@ def main() -> None:
     )
     st.markdown(_CSS, unsafe_allow_html=True)
     _ss_init()
+    _render_pending_ui_messages()
     _render_header()
     _render_main()
     _render_preview_send()

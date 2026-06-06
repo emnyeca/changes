@@ -148,8 +148,8 @@ def test_worker_sends_note_off_for_active_notes_on_stop() -> None:
             daemon=True,
         )
         t.start()
-        # Wait for at least one loop tick (0.02s) so note_on is dispatched
-        time.sleep(0.12)
+        # Scheduler ticks at most 5ms; 50ms is >> enough for note_on at t=0
+        time.sleep(0.05)
         stop_event.set()
         t.join(timeout=5.0)
     finally:
@@ -185,7 +185,7 @@ def test_worker_sends_all_notes_off_cc_for_used_channels() -> None:
             daemon=True,
         )
         t.start()
-        time.sleep(0.12)
+        time.sleep(0.05)
         stop_event.set()
         t.join(timeout=5.0)
     finally:
@@ -386,3 +386,86 @@ def test_sync_preview_state_captures_error_result(
     assert ss["_preview_state"] == "error"
     assert ss["_preview_error"] == "port unavailable"
     assert ss["_preview_traceback"] is not None
+
+
+# ── Scheduler / timing behaviour tests ───────────────────────────────────────
+
+
+def test_worker_stop_responds_within_50ms_during_active_playback() -> None:
+    """stop_event.wait(timeout) lets Stop react in < 50ms, not 20ms-fixed sleep."""
+    play_notes = [(0.0, 60.0, 60, 0, "v1")]  # 60-second note
+    stop_event = threading.Event()
+    port = _RecordingPort()
+
+    fake_mido = _FakeMido(port)
+    result_queue: queue.Queue[PreviewWorkerResult] = queue.Queue()
+
+    original = sys.modules.get("mido", None)
+    sys.modules["mido"] = fake_mido  # type: ignore[assignment]
+    try:
+        t = threading.Thread(
+            target=_preview_worker,
+            args=(play_notes, "FakePort", stop_event, result_queue),
+            daemon=True,
+        )
+        t.start()
+        time.sleep(0.05)  # let note_on fire
+
+        t0 = time.perf_counter()
+        stop_event.set()
+        t.join(timeout=2.0)
+        elapsed = time.perf_counter() - t0
+    finally:
+        if original is None:
+            sys.modules.pop("mido", None)
+        else:
+            sys.modules["mido"] = original
+
+    assert not t.is_alive()
+    # 5ms max scheduler tick + generous CI headroom
+    assert elapsed < 0.10, f"Stop took {elapsed*1000:.1f}ms — expected < 100ms"
+
+
+def test_worker_sends_note_off_before_note_on_at_same_tick() -> None:
+    """At a tick where note A expires and note B starts, note_off(A) precedes note_on(B)."""
+    # A expires at t=0.020; B begins at t=0.020
+    play_notes = [
+        (0.000, 0.020, 60, 0, "vA"),
+        (0.020, 0.100, 62, 0, "vB"),
+    ]
+    stop_event = threading.Event()
+    port = _RecordingPort()
+
+    fake_mido = _FakeMido(port)
+    result_queue: queue.Queue[PreviewWorkerResult] = queue.Queue()
+
+    original = sys.modules.get("mido", None)
+    sys.modules["mido"] = fake_mido  # type: ignore[assignment]
+    try:
+        t = threading.Thread(
+            target=_preview_worker,
+            args=(play_notes, "FakePort", stop_event, result_queue),
+            daemon=True,
+        )
+        t.start()
+        # 60ms >> 20ms handover point; both events will have fired
+        time.sleep(0.06)
+        stop_event.set()
+        t.join(timeout=2.0)
+    finally:
+        if original is None:
+            sys.modules.pop("mido", None)
+        else:
+            sys.modules["mido"] = original
+
+    assert not t.is_alive()
+    types_and_notes = [(m.type, m.note) for m in port.sent]
+
+    # note_on(60) must appear
+    assert ("note_on", 60) in types_and_notes
+    # note_off(60) must appear before note_on(62) in the sent sequence
+    idx_off_60 = next(i for i, x in enumerate(types_and_notes) if x == ("note_off", 60))
+    idx_on_62 = next(i for i, x in enumerate(types_and_notes) if x == ("note_on", 62))
+    assert idx_off_60 < idx_on_62, (
+        f"note_off(60) at index {idx_off_60} should precede note_on(62) at {idx_on_62}"
+    )

@@ -2514,9 +2514,10 @@ def _preview_worker(
         with mido.open_output(port_name) as out:
             try:
                 idx = 0
-                start = time.time()
+                start = time.perf_counter()
                 while (idx < len(play_notes) or active) and not stop_event.is_set():
-                    now = time.time() - start
+                    now = time.perf_counter() - start
+                    # 1. note_off for expired notes (before note_on for same tick)
                     still_active = []
                     for off_sec, note, ch in active:
                         if now >= off_sec:
@@ -2524,13 +2525,21 @@ def _preview_worker(
                         else:
                             still_active.append((off_sec, note, ch))
                     active = still_active
+                    # 2. note_on for notes due now
                     while idx < len(play_notes) and play_notes[idx][0] <= now:
                         _, off_sec, note, ch, _ = play_notes[idx]
                         out.send(mido.Message("note_on", note=note, velocity=80, channel=ch))
                         active.append((off_sec, note, ch))
                         channels_used.add(ch)
                         idx += 1
-                    time.sleep(0.02)
+                    # 3. sleep until next event, capped at 5ms so Stop responds quickly
+                    next_on = play_notes[idx][0] if idx < len(play_notes) else None
+                    next_off = min(t for t, _, _ in active) if active else None
+                    candidates = [x for x in (next_on, next_off) if x is not None]
+                    if candidates:
+                        now = time.perf_counter() - start
+                        timeout = max(0.0, min(min(candidates) - now, 0.005))
+                        stop_event.wait(timeout)
             finally:
                 # note_off while port is still open — guaranteed cleanup path
                 for _, note, ch in active:
@@ -2694,8 +2703,8 @@ def _dialog_preview() -> None:
                 st.rerun()
         else:
             st.button("Stopping...", key="_preview_stopping_btn", disabled=True, use_container_width=True)
-        # Poll until the worker finishes
-        time.sleep(0.25)
+        # Poll until the worker finishes; 0.5s keeps MIDI timing priority over UI refresh
+        time.sleep(0.5)
         st.rerun()
 
     elif state == "debug_log":

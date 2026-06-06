@@ -209,6 +209,47 @@ def test_no_explicit_rerun_marker(monkeypatch) -> None:
     assert state["_last_no_explicit_rerun_reason"] == "preview_result_rendered_in_current_run"
 
 
+def test_fixed_status_slot_renders_even_when_empty(monkeypatch) -> None:
+    rendered: list[tuple[str, bool]] = []
+    monkeypatch.setattr(
+        main_ui.st,
+        "markdown",
+        lambda body, unsafe_allow_html=False: rendered.append((str(body), bool(unsafe_allow_html))),
+    )
+
+    main_ui._render_fixed_status_slot(None, kind="warning")
+
+    assert len(rendered) == 1
+    assert "eub-fixed-status-warning" in rendered[0][0]
+    assert "eub-fixed-status-hidden" in rendered[0][0]
+    assert rendered[0][1] is True
+
+
+def test_fixed_status_slot_escapes_html(monkeypatch) -> None:
+    rendered: list[str] = []
+    monkeypatch.setattr(
+        main_ui.st,
+        "markdown",
+        lambda body, unsafe_allow_html=False: rendered.append(str(body)),
+    )
+
+    main_ui._render_fixed_status_slot("<b>danger</b>", kind="error")
+
+    assert "&lt;b&gt;danger&lt;/b&gt;" in rendered[0]
+    assert "<b>danger</b>" not in rendered[0]
+    assert "eub-fixed-status-error" in rendered[0]
+
+
+def test_hardware_write_warning_message_tracks_confirm_setting() -> None:
+    settings = AppSettings(confirm_before_hardware_write=True)
+    assert main_ui._hardware_write_warning(settings) is None
+
+    settings.confirm_before_hardware_write = False
+    assert main_ui._hardware_write_warning(settings) == (
+        "Hardware write confirmation is disabled. SysEx will be sent immediately."
+    )
+
+
 def test_header_meter_summary_keeps_first_seen_order_without_duplicates() -> None:
     song = _song(
         _measure(1, "Cmaj7", meter=(4, 4)),

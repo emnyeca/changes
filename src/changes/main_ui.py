@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import re
 from dataclasses import replace as _replace
 from fractions import Fraction as _Frac
@@ -95,6 +96,12 @@ _CSS = """
 .chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .chord-cell-display .meter-lbl { background:#E9EEF6; color:#53627A; border:1px solid #D5DEEA; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
+.eub-fixed-status { min-height:28px; margin:4px 0; padding:7px 10px; border-radius:7px; font-size:13px; line-height:1.35; white-space:pre-line; }
+.eub-fixed-status-hidden { visibility:hidden; }
+.eub-fixed-status-info { background:#EEF3FA; border:1px solid #C9D6E6; color:#31445F; }
+.eub-fixed-status-warning { background:#FFF4DF; border:1px solid #F2C572; color:#6F4A00; }
+.eub-fixed-status-error { background:#FFF0F0; border:1px solid #E4A2A2; color:#842029; }
+.eub-fixed-status-success { background:#EEF8EF; border:1px solid #B8D9BD; color:#24572F; }
 .autosplit-warn { color:#E07000; font-size:13px; }
 button[kind="primary"] { background:#7C5CBF !important; border-color:#7C5CBF !important; color:white !important; border-radius:10px !important; font-weight:600 !important; }
 button[kind="primary"]:hover { background:#6B4FA0 !important; border-color:#6B4FA0 !important; }
@@ -2081,6 +2088,27 @@ def _action_disabled_reason(
     return None
 
 
+def _render_fixed_status_slot(
+    message: str | None,
+    *,
+    kind: str = "info",
+    visible: bool | None = None,
+) -> None:
+    is_visible = bool(message) if visible is None else bool(visible)
+    normalized_kind = kind if kind in {"info", "warning", "error", "success"} else "info"
+    css_class = f"eub-fixed-status eub-fixed-status-{normalized_kind}"
+    if not is_visible:
+        css_class += " eub-fixed-status-hidden"
+    safe_message = html.escape(message or "\u00a0")
+    st.markdown(f'<div class="{css_class}">{safe_message}</div>', unsafe_allow_html=True)
+
+
+def _hardware_write_warning(settings: AppSettings) -> str | None:
+    if settings.confirm_before_hardware_write:
+        return None
+    return "Hardware write confirmation is disabled. SysEx will be sent immediately."
+
+
 def _get_or_init_section_filter(song: SongModel, song_path) -> set[str]:
     """Return current section selection, resetting when the song changes."""
     cache_key = st.session_state.get("_section_filter_song_path")
@@ -2166,22 +2194,22 @@ def _render_preview_send() -> None:
         song_has_sections=song_has_real_sections,
     )
     actions_disabled = not has_selected_song or disable_reason is not None
+    action_status_message: str | None = None
+    action_status_kind = "info"
 
-    # ── Auto split info / warnings ─────────────────────────────────────────────
+    # Auto split info / warnings
     if song:
         effective_song = _filtered_song_for_send(song)
         try:
             if not _is_bundle_send_mode(send_mode):
                 n_pat = count_linear_patterns(effective_song, settings)
                 if n_pat > 1:
-                    st.markdown(
-                        f'<span class="autosplit-warn">⚠ Auto Split → {n_pat} patterns</span>',
-                        unsafe_allow_html=True,
-                    )
+                    action_status_message = f"Auto Split -> {n_pat} patterns"
+                    action_status_kind = "warning"
                 else:
                     sections = extract_section_ids(effective_song)
                     n_sec = len(sections) if sections != ["ALL"] else 0
-                    st.caption(f"Linear: {len(effective_song.measures)} measures" + (f" / {n_sec} section(s)" if n_sec else ""))
+                    action_status_message = f"Linear: {len(effective_song.measures)} measures" + (f" / {n_sec} section(s)" if n_sec else "")
             else:
                 sections = extract_section_ids(effective_song)
                 autosplit_warnings = []
@@ -2192,7 +2220,7 @@ def _render_preview_send() -> None:
                         n = count_auto_split_patterns(sec_song, settings)
                         n_patterns_total += max(1, n)
                         if n > 1:
-                            autosplit_warnings.append(f"⚠ {_display_section_label(sec_id)} Auto Split → {n} patterns")
+                            autosplit_warnings.append(f"{_display_section_label(sec_id)} Auto Split -> {n} patterns")
                     except Exception:
                         n_patterns_total += 1
                 if not n_patterns_total:
@@ -2203,19 +2231,16 @@ def _render_preview_send() -> None:
                     else f"{len(sections)} section(s) / {n_patterns_total} pattern(s)"
                 )
                 if autosplit_warnings:
-                    st.markdown(
-                        f'<span class="autosplit-warn">{", ".join(autosplit_warnings)}</span>',
-                        unsafe_allow_html=True,
-                    )
+                    action_status_message = ", ".join(autosplit_warnings)
+                    action_status_kind = "warning"
                 else:
-                    st.caption(f"Bundle by Section: {label}")
+                    action_status_message = f"Bundle by Section: {label}"
         except Exception:
             pass
 
-    if disable_reason:
-        st.caption(f"⚠ {disable_reason}")
-    if not settings.confirm_before_hardware_write:
-        st.caption("⚠ Hardware write confirmation is OFF (see Settings)")
+    _render_fixed_status_slot(action_status_message, kind=action_status_kind)
+    _render_fixed_status_slot(disable_reason, kind="warning")
+    _render_fixed_status_slot(_hardware_write_warning(settings), kind="warning")
 
     # ── Destination ────────────────────────────────────────────────────────────
     ports = ["(Select MIDI Port Destination)"]
@@ -2258,6 +2283,8 @@ def _render_preview_send() -> None:
         _show_send_confirm_dialog(effective, settings, dest, confirm_mode)
 
     # ── Persistent send results ────────────────────────────────────────────────
+    send_success_slot_rendered = False
+    send_error_slot_rendered = False
     if st.session_state.get("_send_area_ok"):
         detail = st.session_state.get("_send_area_ok_detail") or {}
         dest_label = detail.get("dest", "?")
@@ -2268,7 +2295,8 @@ def _render_preview_send() -> None:
             (" (" + ", ".join(pat_names[:6]) + ("…" if len(pat_names) > 6 else "") + ")")
             if pat_names else ""
         )
-        st.success(f"Send completed.  \nDestination: {dest_label}  \nMode: {mode_label}{pat_info}")
+        _render_fixed_status_slot(f"Send completed.\nDestination: {dest_label}\nMode: {mode_label}{pat_info}", kind="success")
+        send_success_slot_rendered = True
         syx_b = st.session_state.get("_send_area_syx_bytes")
         if syx_b:
             st.download_button(
@@ -2281,7 +2309,8 @@ def _render_preview_send() -> None:
             )
     elif st.session_state.get("_send_area_error"):
         err = st.session_state._send_area_error
-        st.error(err.get("summary", "Send failed"))
+        _render_fixed_status_slot(err.get("summary", "Send failed"), kind="error")
+        send_error_slot_rendered = True
         with st.expander("Error details"):
             ctx = err.get("context", {})
             if ctx:
@@ -2289,6 +2318,11 @@ def _render_preview_send() -> None:
             tb = err.get("traceback")
             if tb:
                 st.code(tb, language="text")
+
+    if not send_success_slot_rendered:
+        _render_fixed_status_slot(None, kind="success")
+    if not send_error_slot_rendered:
+        _render_fixed_status_slot(None, kind="error")
 
     st.markdown("</div>", unsafe_allow_html=True)
 

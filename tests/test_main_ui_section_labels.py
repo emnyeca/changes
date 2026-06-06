@@ -124,17 +124,24 @@ def test_playback_song_uses_selected_song_before_dirty_editor_regenerates_sectio
     assert main_ui._playback_song() is selected_song
 
 
-def test_run_send_for_mode_respects_bundle_by_section(monkeypatch) -> None:
+def test_run_send_respects_bundle_by_section(monkeypatch) -> None:
     calls: list[str] = []
     song = SongModel(title="Song", working_key="C", performance_tempo=120, measures=())
 
     monkeypatch.setattr(main_ui, "_run_send_bundle_by_section", lambda *_args: calls.append("bundle"))
     monkeypatch.setattr(main_ui, "_run_send_linear_split", lambda *_args: calls.append("linear"))
 
-    main_ui._run_send_for_mode(song, object(), "DEBUG", "Bundle by Section")
-    main_ui._run_send_for_mode(song, object(), "DEBUG", "Linear")
+    main_ui._run_send(song, object(), "DEBUG", main_ui._SEND_MODE_BUNDLE)
+    main_ui._run_send(song, object(), "DEBUG", main_ui._SEND_MODE_LINEAR)
+    main_ui._run_send(song, object(), "DEBUG", f"{main_ui._ICON_BUNDLE} Bundle by Section")
 
-    assert calls == ["bundle", "linear"]
+    assert calls == ["bundle", "linear", "bundle"]
+
+
+def test_send_mode_label_keeps_plain_internal_value() -> None:
+    assert main_ui._send_mode_label(main_ui._SEND_MODE_LINEAR).endswith(main_ui._SEND_MODE_LINEAR)
+    assert main_ui._send_mode_label(main_ui._SEND_MODE_BUNDLE).endswith(main_ui._SEND_MODE_BUNDLE)
+    assert main_ui._normalize_send_mode(f"{main_ui._ICON_BUNDLE} Bundle by Section") == main_ui._SEND_MODE_BUNDLE
 
 
 def test_header_meter_summary_keeps_first_seen_order_without_duplicates() -> None:

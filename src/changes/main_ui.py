@@ -23,6 +23,7 @@ from changes.key_signature import format_working_key, parse_working_key_display
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections, transpose_song_model_preserving_structure
+from changes.path_utils import existing_resource_path
 from changes.ui_pipeline import (
     count_auto_split_patterns,
     count_linear_patterns,
@@ -46,12 +47,11 @@ _SEND_MODE_OPTIONS = [_SEND_MODE_LINEAR, _SEND_MODE_BUNDLE]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-_ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
-_LOGO_PATH_HEADER = _ASSETS / "eub_changes_logo_header.png"
-_LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
-_ICON_PATH = _ASSETS / "icon_cloud.png"
-_ICON_PATH_BASS = _ASSETS / "icon_bass.png"
-_ICON_PATH_CHORD = _ASSETS / "icon_chord.png"
+_LOGO_PATH_HEADER = existing_resource_path("docs/assets/1x/eub_changes_logo_header.png")
+_LOGO_PATH = existing_resource_path("docs/assets/1x/eub_changes_logo_square_transparent.png")
+_ICON_PATH = existing_resource_path("docs/assets/1x/icon_cloud.png")
+_ICON_PATH_BASS = existing_resource_path("docs/assets/1x/icon_bass.png")
+_ICON_PATH_CHORD = existing_resource_path("docs/assets/1x/icon_chord.png")
 _APP_VERSION = "v0.1.0"
 
 # ── Music constants ───────────────────────────────────────────────────────────
@@ -427,11 +427,12 @@ def _meter_labels_by_barline_index(
     return labels
 
 # ── Logo ─────────────────────────────────────────────────────────────
-st.logo(
-    _LOGO_PATH_HEADER, 
-    link="https://github.com/emnyeca/changes/", 
-    size="large", 
-    icon_image=_LOGO_PATH_HEADER
+if _LOGO_PATH_HEADER is not None:
+    st.logo(
+        str(_LOGO_PATH_HEADER),
+        link="https://github.com/emnyeca/changes/",
+        size="large",
+        icon_image=str(_LOGO_PATH_HEADER),
     )
 
 # ── Common header ─────────────────────────────────────────────────────────────
@@ -1819,7 +1820,8 @@ def _render_settings() -> None:
     # ── Cloud ─────────────────────────────────────────────────────────────────
     c0, c1, c2 = st.columns([1, 3, 3], vertical_alignment="bottom")
     with c0:
-        st.image(_ICON_PATH, width=60)
+        if _ICON_PATH is not None:
+            st.image(str(_ICON_PATH), width=60)
     with c1:
         new_cloud_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_cloud_trig",
@@ -1869,7 +1871,8 @@ def _render_settings() -> None:
     
     b0, b1, b2, b3 = st.columns([1, 2, 2, 2], vertical_alignment="bottom")
     with b0:
-        st.image(_ICON_PATH_BASS, width=60)
+        if _ICON_PATH_BASS is not None:
+            st.image(str(_ICON_PATH_BASS), width=60)
     with b1:
         new_bass_trigger = "retrigger" if _toggle(
             "Retrigger", "_s_bass_trig",
@@ -1910,7 +1913,8 @@ def _render_settings() -> None:
     ch0, ch1, ch2, ch3 = st.columns([1, 2, 2, 2], vertical_alignment="bottom")
 
     with ch0:
-        st.image(_ICON_PATH_CHORD, width=60)
+        if _ICON_PATH_CHORD is not None:
+            st.image(str(_ICON_PATH_CHORD), width=60)
 
     with ch1:
         new_chord_trigger = "retrigger" if _toggle(
@@ -1957,16 +1961,14 @@ def _render_settings() -> None:
     st.subheader(f"{_ICON_SETTINGS} Settings")
     current_pattern_policy = getattr(settings, "pattern_change_policy", "auto_song_mode")
     pattern_policy_bool = False if current_pattern_policy == "off" else True
-    _CHANGE_SETTING_IMAGE = Path("docs/assets/CHANGE_setting.png")
+    _CHANGE_SETTING_IMAGE = existing_resource_path("docs/assets/CHANGE_setting.png")
     change_img_col, change_toggle_col, accidentals_toggle_col, hardware_write_confirm_toggle_col = st.columns(4, vertical_alignment="center")
     with change_img_col:
-        if _CHANGE_SETTING_IMAGE.exists():
+        if _CHANGE_SETTING_IMAGE is not None:
             st.image(
-                _CHANGE_SETTING_IMAGE,
+                str(_CHANGE_SETTING_IMAGE),
                 use_container_width=True,
             )
-        else:
-            st.caption("CHANGE setting image not found.")
     with change_toggle_col:
         new_pattern_policy_enabled = _toggle(
             "Auto Change",

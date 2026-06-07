@@ -4,7 +4,6 @@
 import base64
 import functools
 import re
-from pathlib import Path
 
 import streamlit as st
 
@@ -12,13 +11,13 @@ from changes.app_settings import AppSettings, load_settings, save_settings
 from changes.editor import EditorState, editor_to_song_model
 from changes.library import SongEntry, delete_song, list_songs, overwrite_song, save_song
 from changes.models.song_model import SongModel, song_model_to_dict
+from changes.path_utils import existing_resource_path
 from changes.ui_pipeline import CLOUD_RANGE_SEMITONES, count_auto_split_patterns, song_to_syx_bytes
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
-_ASSETS = Path(__file__).parent.parent.parent / "docs" / "assets" / "1x"
-_LOGO_PATH = _ASSETS / "eub_changes_logo_square_transparent.png"
-_ICON_PATH = _ASSETS / "icon_cloud.png"
+_LOGO_PATH = existing_resource_path("docs/assets/1x/eub_changes_logo_square_transparent.png")
+_ICON_PATH = existing_resource_path("docs/assets/1x/icon_cloud.png")
 _APP_VERSION = "v0.1.0"
 
 # ── Music constants ───────────────────────────────────────────────────────────
@@ -115,7 +114,7 @@ def _name_to_midi(name: str) -> int:
 
 @functools.lru_cache(maxsize=1)
 def _icon_b64() -> str:
-    if _ICON_PATH.exists():
+    if _ICON_PATH is not None:
         return base64.b64encode(_ICON_PATH.read_bytes()).decode()
     return ""
 
@@ -220,7 +219,7 @@ def _render_header() -> None:
 def _render_sidebar() -> None:
     with st.sidebar:
         st.markdown("<div style='padding:20px 16px 8px;text-align:center'>", unsafe_allow_html=True)
-        if _LOGO_PATH.exists():
+        if _LOGO_PATH is not None:
             st.image(str(_LOGO_PATH), width=110)
         else:
             st.markdown("### EUB Changes")

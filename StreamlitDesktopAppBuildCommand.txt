@@ -1,0 +1,24 @@
+  Set-Location d:\emnye\Documents\GitHub\changes
+
+& .\.venv\Scripts\streamlit-desktop-app.exe build src\changes\main_ui.py `
+  --name "EUB Changes" `
+  --icon docs\assets\adobe\1x\eub_changes_icon.ico `
+  --streamlit-options `
+    --theme.base=light `
+    --theme.primaryColor="#7E5CC6" `
+    --theme.backgroundColor="#FBF7FC" `
+    --theme.secondaryBackgroundColor="#F4EEF8" `
+    --theme.textColor="#191326" `
+    --client.toolbarMode=viewer `
+  --pyinstaller-options `
+    --onefile `
+    --collect-all changes `
+    --collect-all mido `
+    --collect-all rtmidi `
+    --hidden-import mido.backends.rtmidi `
+    --hidden-import rtmidi `
+    --add-data "docs\assets\1x;docs\assets\1x" `
+    --splash docs\assets\1x\eub_changes_splash_960x540.png `
+    --noconsole `
+    --noconfirm `
+  2>&1

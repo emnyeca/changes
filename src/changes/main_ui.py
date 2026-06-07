@@ -1961,7 +1961,7 @@ def _render_settings() -> None:
     st.subheader(f"{_ICON_SETTINGS} Settings")
     current_pattern_policy = getattr(settings, "pattern_change_policy", "auto_song_mode")
     pattern_policy_bool = False if current_pattern_policy == "off" else True
-    _CHANGE_SETTING_IMAGE = existing_resource_path("docs/assets/CHANGE_setting.png")
+    _CHANGE_SETTING_IMAGE = existing_resource_path("docs/assets/1x/CHANGE_setting.png")
     change_img_col, change_toggle_col, accidentals_toggle_col, hardware_write_confirm_toggle_col = st.columns(4, vertical_alignment="center")
     with change_img_col:
         if _CHANGE_SETTING_IMAGE is not None:
@@ -2983,7 +2983,7 @@ def main() -> None:
     st.set_page_config(
         page_title="EUB Changes",
         layout="wide",
-        page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else "🎵",
+        page_icon=str(_LOGO_PATH) if _LOGO_PATH is not None else "🎵",
     )
     st.markdown(_CSS, unsafe_allow_html=True)
     _ss_init()

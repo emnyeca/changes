@@ -1389,7 +1389,7 @@ def main() -> None:
     st.set_page_config(
         page_title="EUB Changes",
         layout="wide",
-        page_icon=str(_LOGO_PATH) if _LOGO_PATH.exists() else "🎵",
+        page_icon=str(_LOGO_PATH) if _LOGO_PATH is not None else "🎵",
     )
     st.markdown(_CSS, unsafe_allow_html=True)
     _ss_init()

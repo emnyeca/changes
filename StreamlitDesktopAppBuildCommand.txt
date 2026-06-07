@@ -13,6 +13,8 @@
   --pyinstaller-options `
     --onefile `
     --collect-all changes `
+    --collect-all digitone_syx_toolkit `
+    --copy-metadata digitone-syx-toolkit `
     --collect-all mido `
     --collect-all rtmidi `
     --hidden-import mido.backends.rtmidi `

@@ -11,9 +11,15 @@ def _load_toolkit_builder() -> Callable[..., Any]:
     try:
         mod = importlib.import_module("digitone_syx_toolkit.events_to_syx")
     except ModuleNotFoundError as exc:
+        import logging
+        logging.getLogger(__name__).debug(
+            "digitone_syx_toolkit import failed. "
+            "For local development, install digitone-syx-toolkit in the build environment."
+        )
         raise ModuleNotFoundError(
-            "digitone-syx-toolkit is required for Digitone Native SysEx backend. "
-            "Install with: pip install -e ../digitone-syx-toolkit"
+            "Digitone SysEx Toolkit could not be loaded.\n"
+            "This desktop app may be incomplete or corrupted.\n"
+            "Please reinstall EUB Changes or download the latest release."
         ) from exc
 
     builder = getattr(mod, "build_syx_from_events", None)

@@ -27,6 +27,9 @@ realtime = [
 ui = [
     "streamlit>=1.58",
 ]
+sysex = [
+    "digitone-syx-toolkit @ git+https://github.com/emnyeca/digitone-syx-toolkit.git@v0.1.0",
+]
 
 [project.scripts]
 changes = "changes.cli:main"

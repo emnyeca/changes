@@ -44,28 +44,16 @@ jobs:
     steps:
       - name: Checkout changes
         uses: actions/checkout@v4
-        with:
-          path: changes
-
-      - name: Checkout digitone-syx-toolkit
-        uses: actions/checkout@v4
-        with:
-          repository: emnyeca/digitone-syx-toolkit
-          path: digitone-syx-toolkit
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install digitone-syx-toolkit
-        run: python -m pip install -e ./digitone-syx-toolkit
-
-      - name: Install changes
-        run: python -m pip install -e './changes[test]'
+      - name: Install changes with sysex dependency
+        run: python -m pip install -e '.[test,sysex]'
 
       - name: Run Track 8 toolkit integration tests
-        working-directory: changes
         run: |
           python -m pytest -q \
             tests/test_track8_toolkit_loader_validation.py \

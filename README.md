@@ -163,3 +163,8 @@ See docs/known-limitations.md.
 ## Documentation index
 
 See docs/index.md for product architecture, current state, workflow docs, and safety references.
+
+## License
+
+EUB Changes is released under the MIT License.
+See [LICENSE](./LICENSE) for details.

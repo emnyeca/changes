@@ -40,6 +40,13 @@ _ICON_IMPORT = ':material/convert_to_text:'
 _ICON_LAYER_OPTIONS = ':material/account_tree:'
 _ICON_SETTINGS = ':material/settings:'
 _ICON_ADVANCED = ':material/logo_dev:'
+_ICON_DEVELOPER = ':material/contacts_product:'
+_ICON_LINKS = ':material/link:'
+_ICON_HOME = ':material/home:'
+_ICON_CODE = ':material/code:'
+_ICON_GUIDE = ':material/menu_book:'
+_ICON_LICENSE = ':material/balance:'
+_ICON_REPO = ':material/database:'
 
 _SEND_MODE_LINEAR = "Linear"
 _SEND_MODE_BUNDLE = "Bundle by Section"
@@ -52,7 +59,10 @@ _LOGO_PATH = existing_resource_path("docs/assets/1x/eub_changes_logo_square_tran
 _ICON_PATH = existing_resource_path("docs/assets/1x/icon_cloud.png")
 _ICON_PATH_BASS = existing_resource_path("docs/assets/1x/icon_bass.png")
 _ICON_PATH_CHORD = existing_resource_path("docs/assets/1x/icon_chord.png")
+_ICON_PATH_EMNYECA = existing_resource_path("docs/assets/1x/eub_changes_emnyeca_icon_300x300.png")
+_LICENSE_PATH = existing_resource_path("LICENSE")
 _APP_VERSION = "v0.1.0"
+_APP_BUILD_METADATA = "Initial Preview"
 
 # ── Music constants ───────────────────────────────────────────────────────────
 
@@ -2042,6 +2052,77 @@ def _render_settings() -> None:
             reset_song_table=library_path_changed,
         )
 
+    # ── About & Links ──────────────────────────────────────────────────────────────
+
+    st.divider()
+    st.subheader(f"{_ICON_DEVELOPER} About Developer")
+    icon_col, about_col = st.columns([1, 6], vertical_alignment="center")
+    with icon_col:
+        if _ICON_PATH_EMNYECA is not None:
+            icon_col.image(str(_ICON_PATH_EMNYECA), width=120)
+    with about_col:
+        st.markdown(
+            """
+            ## Emnyeca
+            **Jazz guitarist / music producer / metaverse musician**
+
+            EUB Changes is developed by Emnyeca as part of her machine-live and metaverse music practice.
+            """
+        )
+
+    links_title_col, official_col, github_col = st.columns(
+        [1, 3, 3],
+        vertical_alignment="bottom",
+    )
+
+    with links_title_col:
+        st.subheader(f"{_ICON_LINKS} Links")
+
+    with official_col:
+        st.link_button(
+            f"{_ICON_HOME} Emnyeca's Official Website",
+            "https://emnyeca.com",
+            use_container_width=True,
+        )
+
+    with github_col:
+        st.link_button(
+            f"{_ICON_CODE} Emnyeca's GitHub",
+            "https://github.com/emnyeca",
+            use_container_width=True,
+        )
+
+
+    empty_col, user_guide_col, license_col, repository_col = st.columns(
+        [1, 2, 2, 2],
+        vertical_alignment="bottom",
+    )
+
+    with empty_col:
+        st.write("")
+
+    with user_guide_col:
+        st.link_button(
+            f"{_ICON_GUIDE} User Guide",
+            "https://emnyeca.com/eub-changes",
+            use_container_width=True,
+        )
+
+    with license_col:
+        if st.button(
+            f"{_ICON_LICENSE} License",
+            use_container_width=True,
+            key="_license_btn",
+        ):
+            _show_license_dialog()
+
+    with repository_col:
+        st.link_button(
+            f"{_ICON_REPO} EUB-Changes Repository",
+            "https://github.com/emnyeca/changes",
+            use_container_width=True,
+        )
+
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
     st.subheader(f"{_ICON_ADVANCED} Advanced")
@@ -2132,6 +2213,8 @@ def _render_settings() -> None:
                 st.code(err["traceback"], language="text")
     else:
         st.caption("No song loaded. Select or compose a song first.")
+    st.space("medium")
+    st.caption(f"Version: {_APP_VERSION} - {_APP_BUILD_METADATA}")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2973,6 +3056,20 @@ def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
         return None
     except Exception as exc:
         return f"MIDI send error: {exc}"
+    
+@st.dialog("License")
+def _show_license_dialog() -> None:
+    if _LICENSE_PATH is None:
+        st.warning("LICENSE.md was not found in this build.")
+        return
+
+    try:
+        license_text = _LICENSE_PATH.read_text(encoding="utf-8")
+    except Exception as exc:
+        st.warning(f"Failed to read LICENSE.md: {type(exc).__name__}: {exc}")
+        return
+
+    st.markdown(license_text)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2991,7 +3088,7 @@ def main() -> None:
     _render_header()
     _render_main()
     _render_preview_send()
-    with st.expander("Import / Layer Options / Settings / Advanced", expanded=False, icon=_ICON_IMPORT):
+    with st.expander("Import / Layer Options / Settings / About & Links / Advanced", expanded=False, icon=_ICON_IMPORT):
         _render_import_section()
         st.divider()
         _render_settings()

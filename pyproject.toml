@@ -6,6 +6,8 @@ authors = [
     { name = "Emnyeca" },
 ]
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.9"
 dependencies = [
     "PyYAML>=5.3.1",
@@ -30,7 +32,7 @@ ui = [
 changes = "changes.cli:main"
 
 [build-system]
-requires = ["setuptools>=64", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]

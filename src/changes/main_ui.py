@@ -2066,7 +2066,7 @@ def _render_settings() -> None:
             ## Emnyeca
             **Jazz guitarist / music producer / metaverse musician**
 
-            EUB Changes is developed by Emnyeca as part of her machine-live and metaverse music practice.
+            EUB Changes is developed by Emnyeca as part of the EUB project, supporting machine-live workflows, jazz-informed harmony generation, and metaverse music practice.
             """
         )
 
@@ -2118,7 +2118,7 @@ def _render_settings() -> None:
 
     with repository_col:
         st.link_button(
-            f"{_ICON_REPO} EUB-Changes Repository",
+            f"{_ICON_REPO} EUB Changes Repository",
             "https://github.com/emnyeca/changes",
             use_container_width=True,
         )
@@ -3060,13 +3060,13 @@ def _send_syx_via_midi(syx_bytes: bytes, port_name: str) -> str | None:
 @st.dialog("License")
 def _show_license_dialog() -> None:
     if _LICENSE_PATH is None:
-        st.warning("LICENSE.md was not found in this build.")
+        st.warning("LICENSE was not found in this build.")
         return
 
     try:
         license_text = _LICENSE_PATH.read_text(encoding="utf-8")
     except Exception as exc:
-        st.warning(f"Failed to read LICENSE.md: {type(exc).__name__}: {exc}")
+        st.warning(f"Failed to read LICENSE: {type(exc).__name__}: {exc}")
         return
 
     st.markdown(license_text)

@@ -18,6 +18,7 @@
     --hidden-import mido.backends.rtmidi `
     --hidden-import rtmidi `
     --add-data "docs\assets\1x;docs\assets\1x" `
+    --add-data "LICENSE;." `
     --splash docs\assets\1x\eub_changes_splash_960x540.png `
     --noconsole `
     --noconfirm `

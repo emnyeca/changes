@@ -13,7 +13,7 @@ def test_wrapper_reports_dependency_error_when_toolkit_missing(monkeypatch):
         lambda _name: (_ for _ in ()).throw(ModuleNotFoundError("digitone_syx_toolkit")),
     )
 
-    with pytest.raises(ModuleNotFoundError, match="digitone-syx-toolkit"):
+    with pytest.raises(ModuleNotFoundError, match="Digitone SysEx Toolkit could not be loaded"):
         digitone_backend._load_toolkit_builder()
 
 

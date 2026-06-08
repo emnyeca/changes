@@ -3088,7 +3088,7 @@ def main() -> None:
     _render_header()
     _render_main()
     _render_preview_send()
-    with st.expander("Import / Layer Options / Settings / About & Links / Advanced", expanded=False, icon=_ICON_IMPORT):
+    with st.expander("Import / Layer Options / Settings / About & Links / Advanced", expanded=False):
         _render_import_section()
         st.divider()
         _render_settings()

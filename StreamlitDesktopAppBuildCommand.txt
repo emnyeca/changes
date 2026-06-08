@@ -1,4 +1,8 @@
-  Set-Location d:\emnye\Documents\GitHub\changes
+Run scripts\BuildDesktop.ps1 to create the desktop build.
+  
+or use the command below
+  
+Set-Location d:\emnye\Documents\GitHub\changes
 
 & .\.venv\Scripts\streamlit-desktop-app.exe build src\changes\main_ui.py `
   --name "EUB Changes" `

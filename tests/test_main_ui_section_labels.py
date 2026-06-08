@@ -501,7 +501,10 @@ def test_cloud_graph_uses_effective_filtered_song(monkeypatch) -> None:
 def test_cloud_section_boundary_badges_use_digitone_step_numbers() -> None:
     song = _song_with_sections("A", "B")
 
-    assert main_ui._cloud_section_boundary_badges(song) == ["A @ 1", "B @ 2"]
+    assert main_ui._cloud_section_boundary_axis_rows(song, 0, 1) == [
+        {"step": 0, "section": "A", "step_label": "1"},
+        {"step": 1, "section": "B", "step_label": "2"},
+    ]
 
 
 def test_cloud_voice_leading_chart_uses_step_labels_and_hides_y_labels(monkeypatch) -> None:
@@ -536,12 +539,13 @@ def test_cloud_voice_leading_chart_uses_step_labels_and_hides_y_labels(monkeypat
     assert main_spec["encoding"]["y"]["axis"]["labels"] is False
     assert main_spec["encoding"]["y"]["axis"]["ticks"] is False
     assert main_spec["encoding"]["color"]["legend"] is None
+    assert main_spec["encoding"]["color"]["scale"]["range"] == main_ui._CLOUD_VOICE_COLOR_RANGE
     assert main_spec["encoding"]["y"]["scale"]["domain"] == [52, 67]
-    assert boundary_spec["layer"][0]["encoding"]["text"]["field"] == "step_label"
-    assert boundary_spec["layer"][1]["mark"]["shape"] == "square"
-    assert boundary_spec["layer"][2]["encoding"]["text"]["field"] == "section"
-    assert boundary_spec["layer"][3]["encoding"]["text"]["field"] == "step_label"
+    assert boundary_spec["layer"][0]["mark"]["shape"] == "square"
+    assert boundary_spec["layer"][1]["encoding"]["text"]["field"] == "section"
+    assert main_spec["height"] + boundary_spec["height"] == main_ui._CLOUD_GRAPH_HEIGHT
     assert captured["kwargs"]["width"] == "stretch"
+    assert captured["kwargs"]["height"] == main_ui._CLOUD_GRAPH_HEIGHT
 
 
 def test_cloud_graph_does_not_render_caption(monkeypatch) -> None:

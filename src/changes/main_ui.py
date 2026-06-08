@@ -48,6 +48,8 @@ _ICON_CODE = ':material/code:'
 _ICON_GUIDE = ':material/menu_book:'
 _ICON_LICENSE = ':material/balance:'
 _ICON_REPO = ':material/database:'
+_ICON_CLOUD = ':material/cloud:'
+_ICON_CHORD = ':material/queue_music:'
 
 _SEND_MODE_LINEAR = "Linear"
 _SEND_MODE_BUNDLE = "Bundle by Section"
@@ -55,6 +57,9 @@ _SEND_MODE_OPTIONS = [_SEND_MODE_LINEAR, _SEND_MODE_BUNDLE]
 _SONG_DISPLAY_CHORD_CELLS = "chord_cells"
 _SONG_DISPLAY_CLOUD_GRAPH = "cloud_graph"
 _SONG_DISPLAY_MODE_OPTIONS = [_SONG_DISPLAY_CHORD_CELLS, _SONG_DISPLAY_CLOUD_GRAPH]
+_CLOUD_GRAPH_HEIGHT = 150
+_CLOUD_GRAPH_AXIS_ROW_HEIGHT = 26
+_CLOUD_VOICE_COLOR_RANGE = ["#999fbe", "#c2aaa5", "#eaacac", "#e195bb", "#a681b5", "#a993c9"]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -392,8 +397,8 @@ def _normalize_song_display_mode(value: object) -> str:
 
 def _song_display_mode_label(value: str) -> str:
     if value == _SONG_DISPLAY_CLOUD_GRAPH:
-        return "Cloud Graph"
-    return "Chord Cells"
+        return f"{_ICON_CLOUD} Cloud"
+    return f"{_ICON_CHORD} Chord"
 
 
 def _section_filter_label(section_id: str | None) -> str:
@@ -956,7 +961,7 @@ def _render_songlist(show_import: bool = True) -> None:
         st.error(str(st.session_state._songlist_error_message))
         st.session_state._songlist_error_message = None
 
-    search_col, display_mode_col = st.columns([0.72, 0.28], vertical_alignment="bottom")
+    search_col, display_mode_title_col, display_mode_col = st.columns([6, 2, 4], vertical_alignment="center")
     with search_col:
         _restore_song_search_widget_value()
         search = st.text_input(
@@ -968,16 +973,18 @@ def _render_songlist(show_import: bool = True) -> None:
             icon=":material/search:",
             on_change=_sync_song_search_value,
         )
+    with display_mode_title_col:
+        st.caption("Disp. Mode:", text_alignment="right")
     with display_mode_col:
         st.session_state["_song_display_mode"] = _normalize_song_display_mode(
             st.session_state.get("_song_display_mode")
         )
-        st.radio(
+        st.segmented_control(
             "Display",
             _SONG_DISPLAY_MODE_OPTIONS,
             key="_song_display_mode",
             format_func=_song_display_mode_label,
-            horizontal=True,
+            label_visibility="collapsed",
         )
     _sync_song_search_value(search)
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
@@ -1536,32 +1543,6 @@ def _cloud_layer_enabled(settings: AppSettings) -> bool:
     return any(track is not None for track in settings.cloud_tracks[:6])
 
 
-def _cloud_section_boundary_badges(song: SongModel) -> list[str]:
-    badges: list[str] = []
-    previous_section: str | None = None
-    step = 0
-    for measure in song.measures:
-        section_id = measure.section_id
-        if section_id is not None and section_id != previous_section:
-            label = _display_section_label(section_id)
-            if label:
-                badges.append(f"{html.escape(label)} @ {step + 1}")
-        previous_section = section_id
-        step += len(measure.harmony)
-    return badges
-
-
-def _render_cloud_section_boundary_summary(song: SongModel) -> None:
-    badges = _cloud_section_boundary_badges(song)
-    if not badges:
-        return
-    badge_html = "".join(
-        f'<span class="eub-section-badge">{badge}</span>'
-        for badge in badges
-    )
-    st.markdown(f"Sections: {badge_html}", unsafe_allow_html=True)
-
-
 def _cloud_section_boundary_steps(song: SongModel) -> dict[int, str]:
     labels: dict[int, str] = {}
     previous_section: str | None = None
@@ -1660,23 +1641,31 @@ def _render_cloud_voice_leading_chart(df, song: SongModel) -> None:
                 scale=alt.Scale(domain=pitch_domain),
                 axis=alt.Axis(labels=False, ticks=False, title=None),
             ),
-            color=alt.Color("voice:N", legend=None),
+            color=alt.Color(
+                "voice:N",
+                scale=alt.Scale(
+                    domain=[f"Voice {i}" for i in range(1, 7)],
+                    range=_CLOUD_VOICE_COLOR_RANGE,
+                ),
+                legend=None,
+            ),
         )
-        .properties(height=280)
+        .properties(height=_CLOUD_GRAPH_HEIGHT - _CLOUD_GRAPH_AXIS_ROW_HEIGHT)
     )
 
     chart = main_chart
     if step_rows or boundary_rows:
         boundary_x = alt.X("step:Q", scale=alt.Scale(domain=step_domain), axis=None)
         layers = []
-        if step_rows:
-            step_df = pd.DataFrame(step_rows)
-            layers.append(
-                alt.Chart(step_df).mark_text(
-                    color="#6B5F80",
-                    fontSize=11,
-                ).encode(x=boundary_x, y=alt.value(14), text="step_label:N")
-            )
+        # Step numberが実態と違うのでいったんコメントアウト
+        # if step_rows:
+        #     step_df = pd.DataFrame(step_rows)
+        #     layers.append(
+        #         alt.Chart(step_df).mark_text(
+        #             color="#6B5F80",
+        #             fontSize=11,
+        #         ).encode(x=boundary_x, y=alt.value(14), text="step_label:N")
+        #     )
         if boundary_rows:
             boundary_df = pd.DataFrame(boundary_rows)
             layers.extend([
@@ -1692,16 +1681,17 @@ def _render_cloud_voice_leading_chart(df, song: SongModel) -> None:
                     fontSize=11,
                     fontWeight=700,
                 ).encode(x=boundary_x, y=alt.value(14), text="section:N"),
-                alt.Chart(boundary_df).mark_text(
-                    color="#6B5F80",
-                    fontSize=11,
-                    dx=20,
-                ).encode(x=boundary_x, y=alt.value(14), text="step_label:N"),
+                # Step numberが実態と違うのでいったんコメントアウト
+                # alt.Chart(boundary_df).mark_text(
+                #     color="#6B5F80",
+                #     fontSize=11,
+                #     dx=20,
+                # ).encode(x=boundary_x, y=alt.value(14), text="step_label:N"),
             ])
-        boundary_chart = alt.layer(*layers).properties(height=26)
+        boundary_chart = alt.layer(*layers).properties(height=_CLOUD_GRAPH_AXIS_ROW_HEIGHT)
         chart = alt.vconcat(main_chart, boundary_chart, spacing=0).resolve_scale(x="shared")
 
-    st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch", height=_CLOUD_GRAPH_HEIGHT)
 
 
 def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSettings) -> None:
@@ -1722,7 +1712,6 @@ def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSetti
         if df.empty:
             st.info("No Cloud voice data is available for the current song/settings.")
             return
-        _render_cloud_section_boundary_summary(effective_song)
         _render_cloud_voice_leading_chart(df, effective_song)
     except Exception as exc:
         st.error("Could not render Cloud voice-leading graph.")

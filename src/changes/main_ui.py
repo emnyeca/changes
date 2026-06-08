@@ -674,13 +674,13 @@ def _dialog_table_save() -> None:
         st.write("- No field-level diff available")
 
     c1, c2, c3 = st.columns(3, width = "stretch", gap="small")
-    if c1.button("Update", type="primary", key="tsd_update", use_container_width=True):
+    if c1.button("Update", type="primary", key="tsd_update", width="stretch"):
         st.session_state._table_save_mode = "update"
         _request_rerun()
-    if c2.button("Keep both", key="tsd_keep", use_container_width=True):
+    if c2.button("Keep both", key="tsd_keep", width="stretch"):
         st.session_state._table_save_mode = "keep_both"
         _request_rerun()
-    if c3.button("Cancel", key="tsd_cancel", use_container_width=True):
+    if c3.button("Cancel", key="tsd_cancel", width="stretch"):
         st.session_state._table_save_suppressed_signature = pending.get("signature")
         st.session_state._table_save_mode = None
         st.session_state._table_save_pending = None
@@ -695,10 +695,10 @@ def _dialog_pending_switch() -> None:
 
     st.warning(f'Unsaved changes will be discarded. Switch to "{pending_switch.title}"?')
     col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
-    if col_cancel.button("Cancel", key="sw_cancel", use_container_width=True):
+    if col_cancel.button("Cancel", key="sw_cancel", width="stretch"):
         st.session_state._pending_switch = None
         _request_rerun(reset_song_table=True)
-    if col_discard.button("Discard and switch", type="primary", key="sw_discard", use_container_width=True):
+    if col_discard.button("Discard and switch", type="primary", key="sw_discard", width="stretch"):
         _do_switch_song(pending_switch)
         _request_rerun(reset_song_table=True)
 
@@ -728,10 +728,10 @@ def _dialog_pending_deselect() -> None:
         return
     st.warning("Unsaved changes will be discarded.")
     col_cancel, col_discard = st.columns([1, 1], width="stretch", gap="small")
-    if col_cancel.button("Cancel", key="desel_cancel", use_container_width=True):
+    if col_cancel.button("Cancel", key="desel_cancel", width="stretch"):
         st.session_state._pending_deselect = False
         _request_rerun(reset_song_table=True)
-    if col_discard.button("Discard", type="primary", key="desel_discard", use_container_width=True):
+    if col_discard.button("Discard", type="primary", key="desel_discard", width="stretch"):
         _do_deselect_song()
         _request_rerun(reset_song_table=True)
 
@@ -747,10 +747,10 @@ def _dialog_delete_confirm() -> None:
     name = entry.title if entry else del_path.name
     st.warning(f'Delete "{name}"? This removes the SongModel file.')
     c1, c2 = st.columns([1, 1], width="stretch", gap="small")
-    if c1.button("Cancel", key="del_cancel", use_container_width=True):
+    if c1.button("Cancel", key="del_cancel", width="stretch"):
         st.session_state._delete_confirm = None
         _request_rerun(reset_song_table=True)
-    if c2.button("Delete", type="primary", key="del_confirm", use_container_width=True):
+    if c2.button("Delete", type="primary", key="del_confirm", width="stretch"):
         delete_song(del_path)
         if st.session_state._selected_path == del_path:
             st.session_state._selected_path = None
@@ -770,15 +770,15 @@ def _dialog_import_conflict() -> None:
         "How should duplicates be handled?"
     )
     c1, c2, c3 = st.columns(3, width="stretch", gap="small")
-    if c1.button("Overwrite all", type="primary", key="ic_over", use_container_width=True):
+    if c1.button("Overwrite all", type="primary", key="ic_over", width="stretch"):
         st.session_state._import_conflict_mode = None
         st.session_state._import_progress_request = {"kind": "save", "mode": "overwrite"}
         _request_rerun()
-    if c2.button("Keep both", key="ic_keep", use_container_width=True):
+    if c2.button("Keep both", key="ic_keep", width="stretch"):
         st.session_state._import_conflict_mode = None
         st.session_state._import_progress_request = {"kind": "save", "mode": "keep_both"}
         _request_rerun()
-    if c3.button("Cancel import", key="ic_cancel", use_container_width=True):
+    if c3.button("Cancel import", key="ic_cancel", width="stretch"):
         _request_rerun(clear_import_state=True)
 
 
@@ -804,7 +804,7 @@ def _dialog_import_progress() -> None:
             st.success(status.get("message", "Import completed."))
         else:
             st.error(status.get("message", "Import failed."))
-        if st.button("Close", type="primary", key="_import_progress_close", use_container_width=True):
+        if st.button("Close", type="primary", key="_import_progress_close", width="stretch"):
             status_message = status.get("message", "Import completed.")
             st.session_state._import_progress_request = None
             st.session_state._import_progress_status = None
@@ -971,9 +971,9 @@ def _render_songlist(show_import: bool = True) -> None:
     table_key = f"_sl_table_{int(st.session_state._songlist_table_reset_token)}_{_song_table_search_signature(search)}"
     edited_df = st.data_editor(
         orig_df,
+        width="stretch",
         height=260,
         hide_index=True,
-        use_container_width=True,
         num_rows="fixed",
         disabled=True if ui_locked else ["Meter"],
         key=table_key,
@@ -1261,7 +1261,7 @@ def _render_midi_update_confirm() -> None:
                 st.write(f"- `{fname}`: {reason}")
 
     mu1, mu2 = st.columns(2, width="stretch", gap="small")
-    if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates, use_container_width=True):
+    if mu1.button("Apply all", type="primary", key="_midi_upd_ok", disabled=not candidates, width="stretch"):
         _apply_midi_updates(candidates)
         updated = st.session_state.get("_midi_update_last_updated", 0)
         failed = st.session_state.get("_midi_update_last_failed", [])
@@ -1274,7 +1274,7 @@ def _render_midi_update_confirm() -> None:
             reset_song_table=True,
             success_message=message,
         )
-    if mu2.button("Cancel", key="_midi_upd_cancel", use_container_width=True):
+    if mu2.button("Cancel", key="_midi_upd_cancel", width="stretch"):
         st.session_state._midi_update_candidates = None
         st.session_state._midi_update_kept = None
         st.session_state._midi_update_unmatched = None
@@ -1977,7 +1977,7 @@ def _render_settings() -> None:
         if _CHANGE_SETTING_IMAGE is not None:
             st.image(
                 str(_CHANGE_SETTING_IMAGE),
-                use_container_width=True,
+                width="stretch",
             )
     with change_toggle_col:
         new_pattern_policy_enabled = _toggle(
@@ -2018,7 +2018,7 @@ def _render_settings() -> None:
             library_path_changed = True
     with browse_col:
         st.write("")
-        if st.button("Browse…", key="_s_lib_browse", use_container_width=True):
+        if st.button("Browse…", key="_s_lib_browse", width="stretch"):
             try:
                 import tkinter as tk
                 from tkinter import filedialog
@@ -2082,14 +2082,14 @@ def _render_settings() -> None:
         st.link_button(
             f"{_ICON_HOME} Emnyeca's Official Website",
             "https://emnyeca.com",
-            use_container_width=True,
+            width="stretch",
         )
 
     with github_col:
         st.link_button(
             f"{_ICON_CODE} Emnyeca's GitHub",
             "https://github.com/emnyeca",
-            use_container_width=True,
+            width="stretch",
         )
 
 
@@ -2105,13 +2105,13 @@ def _render_settings() -> None:
         st.link_button(
             f"{_ICON_GUIDE} User Guide",
             "https://emnyeca.com/eub-changes",
-            use_container_width=True,
+            width="stretch",
         )
 
     with license_col:
         if st.button(
             f"{_ICON_LICENSE} License",
-            use_container_width=True,
+            width="stretch",
             key="_license_btn",
         ):
             _show_license_dialog()
@@ -2120,7 +2120,7 @@ def _render_settings() -> None:
         st.link_button(
             f"{_ICON_REPO} EUB Changes Repository",
             "https://github.com/emnyeca/changes",
-            use_container_width=True,
+            width="stretch",
         )
 
     # ── Advanced ──────────────────────────────────────────────────────────────
@@ -2148,7 +2148,7 @@ def _render_settings() -> None:
     if song:
         adv1, adv2 = st.columns(2)
         with adv1:
-            if st.button("Export SYX", type="primary", use_container_width=True,
+            if st.button("Export SYX", type="primary", width="stretch",
                          key="_adv_syx_btn", disabled=adv_actions_disabled):
                 # Clear previous state before new action
                 st.session_state._adv_syx_ok = False
@@ -2178,7 +2178,7 @@ def _render_settings() -> None:
                     data=syx_b,
                     file_name=st.session_state.get("_adv_syx_fname", "changes.syx"),
                     mime="application/octet-stream",
-                    use_container_width=True,
+                    width="stretch",
                     key="_adv_syx_dl",
                 )
             elif st.session_state.get("_adv_syx_error"):
@@ -2186,7 +2186,7 @@ def _render_settings() -> None:
             if _adv_disable_reason and song:
                 st.caption(f"⚠ {_adv_disable_reason}")
         with adv2:
-            if st.button("Dry-run", use_container_width=True, key="_adv_dry",
+            if st.button("Dry-run", width="stretch", key="_adv_dry",
                          disabled=adv_actions_disabled):
                 st.session_state._dry_run_result = None
                 st.session_state._dry_run_error = None
@@ -2483,7 +2483,7 @@ def _render_preview_send() -> None:
         dest = st.selectbox("Destination", ports, key="_dest_sel", label_visibility="collapsed")
     with ps1:
         preview_btn_disabled = actions_disabled or preview_running
-        if st.button("▶  Preview (Realtime MIDI)", use_container_width=True, key="_ps_preview", disabled=preview_btn_disabled):
+        if st.button("▶  Preview (Realtime MIDI)", width="stretch", key="_ps_preview", disabled=preview_btn_disabled):
             if not song:
                 st.warning("No song loaded")
             else:
@@ -2493,7 +2493,7 @@ def _render_preview_send() -> None:
     # Send SysEx
     with ps2:
         send_btn_disabled = actions_disabled or preview_running
-        if st.button("⬆  Send SysEx (Digitone)", type="primary", use_container_width=True, key="_ps_send", disabled=send_btn_disabled):
+        if st.button("⬆  Send SysEx (Digitone)", type="primary", width="stretch", key="_ps_send", disabled=send_btn_disabled):
             if not song:
                 st.warning("No song loaded")
             elif settings.confirm_before_hardware_write:
@@ -2915,11 +2915,11 @@ def _dialog_preview() -> None:
         with st.spinner(label):
             pass
         if state == "running":
-            if st.button("Stop Preview", key="_preview_stop_btn", use_container_width=True):
+            if st.button("Stop Preview", key="_preview_stop_btn", width="stretch"):
                 _stop_preview()
                 st.rerun()
         else:
-            st.button("Stopping...", key="_preview_stopping_btn", disabled=True, use_container_width=True)
+            st.button("Stopping...", key="_preview_stopping_btn", disabled=True, width="stretch")
         # Poll until the worker finishes; 0.5s keeps MIDI timing priority over UI refresh
         time.sleep(0.5)
         st.rerun()
@@ -2927,21 +2927,21 @@ def _dialog_preview() -> None:
     elif state == "debug_log":
         logs = st.session_state.get("_preview_logs") or []
         st.code("\n".join(logs[:60]), language="text")
-        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+        if st.button("Close", key="_preview_close_btn", width="stretch"):
             _clear_preview_dialog_state()
             st.rerun()
 
     elif state == "finished":
         msg = st.session_state.get("_preview_result_message") or "Preview complete."
         st.success(msg)
-        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+        if st.button("Close", key="_preview_close_btn", width="stretch"):
             _clear_preview_dialog_state()
             st.rerun()
 
     elif state == "stopped":
         msg = st.session_state.get("_preview_result_message") or "Preview stopped."
         st.info(msg)
-        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+        if st.button("Close", key="_preview_close_btn", width="stretch"):
             _clear_preview_dialog_state()
             st.rerun()
 
@@ -2952,13 +2952,13 @@ def _dialog_preview() -> None:
         if tb:
             with st.expander("Details"):
                 st.code(tb, language="text")
-        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+        if st.button("Close", key="_preview_close_btn", width="stretch"):
             _clear_preview_dialog_state()
             st.rerun()
 
     else:
         # Fallback / idle — should not normally appear, but close gracefully
-        if st.button("Close", key="_preview_close_btn", use_container_width=True):
+        if st.button("Close", key="_preview_close_btn", width="stretch"):
             _clear_preview_dialog_state()
             st.rerun()
 
@@ -2984,13 +2984,13 @@ def _show_send_confirm_dialog(song: SongModel | None, settings: AppSettings, des
 
     send_allowed = port_name is not None
     cc1, cc2, cc3 = st.columns(3, width="stretch", gap="small")
-    if cc1.button("Cancel", key="_send_conf_cancel", use_container_width=True):
+    if cc1.button("Cancel", key="_send_conf_cancel", width="stretch"):
         _request_rerun(close_send_confirm=True)
-    if cc2.button("Send", type="primary", key="_send_conf_ok", disabled=not send_allowed, use_container_width=True):
+    if cc2.button("Send", type="primary", key="_send_conf_ok", disabled=not send_allowed, width="stretch"):
         if song:
             _run_send(song, settings, dest, send_mode)
         _request_rerun(close_send_confirm=True)
-    if cc3.button("Always Send", key="_send_conf_no_confirm", disabled=not send_allowed, use_container_width=True):
+    if cc3.button("Always Send", key="_send_conf_no_confirm", disabled=not send_allowed, width="stretch"):
         settings.confirm_before_hardware_write = False
         save_settings(settings)
         st.session_state._settings = settings

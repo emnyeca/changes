@@ -56,6 +56,17 @@ def test_save_load_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert loaded.cloud_tracks == [1, 1, None, None, None, None]
     assert loaded.bass_track is None
     assert loaded.chord_track == 8
+    assert loaded.song_display_mode == "chord_cells"
+
+
+def test_save_load_song_display_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr("changes.app_settings.SETTINGS_PATH", settings_path)
+
+    save_settings(AppSettings(song_display_mode="cloud_graph"))
+    loaded = load_settings()
+
+    assert loaded.song_display_mode == "cloud_graph"
 
 
 def test_load_legacy_cloud_track_base(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -86,3 +97,14 @@ def test_load_legacy_settings_gets_default_pattern_change_policy(tmp_path: Path,
     loaded = load_settings()
 
     assert loaded.pattern_change_policy == "auto_song_mode"
+    assert loaded.song_display_mode == "chord_cells"
+
+
+def test_load_invalid_song_display_mode_falls_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr("changes.app_settings.SETTINGS_PATH", settings_path)
+    settings_path.write_text(json.dumps({"song_display_mode": "bad"}), encoding="utf-8")
+
+    loaded = load_settings()
+
+    assert loaded.song_display_mode == "chord_cells"

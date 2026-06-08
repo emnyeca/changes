@@ -349,11 +349,12 @@ def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> Non
                 "_library": [SongEntry(path=Path("song.song.json"), title="Song", song=song)],
                 "_selected_path": None,
                 "_songlist_table_reset_token": 0,
+                "_settings": AppSettings(),
             }
         ),
     )
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
-    monkeypatch.setattr(main_ui.st, "radio", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -390,11 +391,12 @@ def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None
             "_selected_path": None,
             "_songlist_table_reset_token": 0,
             "_songlist_search_value": "bilbao",
+            "_settings": AppSettings(),
         }
     )
     monkeypatch.setattr(main_ui.st, "session_state", state)
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: state["_sl_search"])
-    monkeypatch.setattr(main_ui.st, "radio", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -423,6 +425,51 @@ def test_song_display_mode_defaults_to_chord_cells() -> None:
     assert main_ui._normalize_song_display_mode(None) == main_ui._SONG_DISPLAY_CHORD_CELLS
     assert main_ui._normalize_song_display_mode("bad") == main_ui._SONG_DISPLAY_CHORD_CELLS
     assert main_ui._normalize_song_display_mode(main_ui._SONG_DISPLAY_CLOUD_GRAPH) == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+
+
+def test_session_init_restores_song_display_mode_from_settings(monkeypatch) -> None:
+    state = _SessionState({"_settings": AppSettings(song_display_mode=main_ui._SONG_DISPLAY_CLOUD_GRAPH)})
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui, "_refresh_library", lambda: state.__setitem__("_library", []))
+
+    main_ui._ss_init()
+
+    assert state["_song_display_mode"] == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+
+
+def test_songlist_display_mode_persists_to_settings(monkeypatch) -> None:
+    song = _song(_measure(1, "Cmaj7"))
+    settings = AppSettings(song_display_mode=main_ui._SONG_DISPLAY_CHORD_CELLS)
+    state = _SessionState(
+        {
+            "_library": [SongEntry(path=Path("song.song.json"), title="Song", song=song)],
+            "_selected_path": None,
+            "_songlist_table_reset_token": 0,
+            "_settings": settings,
+        }
+    )
+    saved: list[str] = []
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CLOUD_GRAPH)
+    monkeypatch.setattr(main_ui, "save_settings", lambda settings_arg: saved.append(settings_arg.song_display_mode))
+    monkeypatch.setattr(main_ui.st, "data_editor", lambda df, *args, **kwargs: df)
+    monkeypatch.setattr(
+        main_ui.st,
+        "column_config",
+        SimpleNamespace(
+            CheckboxColumn=lambda *args, **kwargs: object(),
+            TextColumn=lambda *args, **kwargs: object(),
+            NumberColumn=lambda *args, **kwargs: object(),
+        ),
+    )
+
+    main_ui._render_songlist(show_import=False)
+
+    assert state["_settings"].song_display_mode == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+    assert saved == [main_ui._SONG_DISPLAY_CLOUD_GRAPH]
 
 
 def test_cloud_graph_shows_disabled_message_without_compiling(monkeypatch) -> None:

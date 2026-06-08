@@ -193,6 +193,11 @@ def _render_header_field(label: str, icon: str, value: str | None = None, *, ren
 def _ss_init() -> None:
     if "_settings" not in st.session_state:
         st.session_state._settings = load_settings()
+    settings: AppSettings = st.session_state._settings
+    display_mode_default = _normalize_song_display_mode(
+        getattr(settings, "song_display_mode", _SONG_DISPLAY_CHORD_CELLS)
+    )
+    settings.song_display_mode = display_mode_default
     if "_library" not in st.session_state:
         _refresh_library()
     if "_selected_path" not in st.session_state:
@@ -207,7 +212,7 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("_editor_working_key_mode", None),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
-        ("_song_display_mode", _SONG_DISPLAY_CHORD_CELLS),
+        ("_song_display_mode", display_mode_default),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
         ("_table_save_mode", None), ("_table_save_pending", None),
         ("_table_save_suppressed_signature", None),
@@ -979,13 +984,19 @@ def _render_songlist(show_import: bool = True) -> None:
         st.session_state["_song_display_mode"] = _normalize_song_display_mode(
             st.session_state.get("_song_display_mode")
         )
-        st.segmented_control(
+        selected_display_mode = st.segmented_control(
             "Display",
             _SONG_DISPLAY_MODE_OPTIONS,
             key="_song_display_mode",
             format_func=_song_display_mode_label,
             label_visibility="collapsed",
         )
+        selected_display_mode = _normalize_song_display_mode(selected_display_mode)
+        settings: AppSettings = st.session_state._settings
+        if _normalize_song_display_mode(getattr(settings, "song_display_mode", None)) != selected_display_mode:
+            settings.song_display_mode = selected_display_mode
+            st.session_state._settings = settings
+            save_settings(settings)
     _sync_song_search_value(search)
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 

@@ -353,6 +353,7 @@ def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> Non
         ),
     )
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
+    monkeypatch.setattr(main_ui.st, "radio", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -393,6 +394,7 @@ def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None
     )
     monkeypatch.setattr(main_ui.st, "session_state", state)
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: state["_sl_search"])
+    monkeypatch.setattr(main_ui.st, "radio", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -415,6 +417,86 @@ def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None
     assert state["_sl_search"] == "bilbao"
     assert state["_songlist_search_value"] == "bilbao"
     assert list(captured["df"]["Title"]) == ["Bilbao Song"]
+
+
+def test_song_display_mode_defaults_to_chord_cells() -> None:
+    assert main_ui._normalize_song_display_mode(None) == main_ui._SONG_DISPLAY_CHORD_CELLS
+    assert main_ui._normalize_song_display_mode("bad") == main_ui._SONG_DISPLAY_CHORD_CELLS
+    assert main_ui._normalize_song_display_mode(main_ui._SONG_DISPLAY_CLOUD_GRAPH) == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+
+
+def test_cloud_graph_shows_disabled_message_without_compiling(monkeypatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(main_ui.st, "info", lambda message: messages.append(str(message)))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not compile")),
+    )
+
+    main_ui._render_cloud_voice_leading_graph(
+        _song(_measure(1, "Cmaj7")),
+        AppSettings(cloud_tracks=[None, None, None, None, None, None]),
+    )
+
+    assert messages == [
+        "Cloud layer is disabled.\nEnable Cloud in Layer Options to view the voice-leading graph."
+    ]
+
+
+def test_cloud_graph_empty_section_selection_skips_compile(monkeypatch) -> None:
+    song = _song_with_sections("A", "B")
+    path = Path("song.song.json")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": set(),
+        }
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "info", lambda message: messages.append(str(message)))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not compile")),
+    )
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
+
+    assert messages == ["No sections selected. Select at least one section to view Cloud graph."]
+
+
+def test_cloud_graph_uses_effective_filtered_song(monkeypatch) -> None:
+    import pandas as pd
+
+    song = _song_with_sections("A", "B")
+    path = Path("song.song.json")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"B"},
+        }
+    )
+    captured: dict[str, SongModel] = {}
+
+    def _build(song_arg, _settings):
+        captured["song"] = song_arg
+        return pd.DataFrame({"Voice 1": [60], "Voice 2": [64]}, index=[0])
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui, "build_cloud_voice_leading_dataframe", _build)
+    monkeypatch.setattr(main_ui.st, "caption", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "markdown", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "line_chart", lambda *_args, **_kwargs: None)
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
+
+    assert tuple(m.section_id for m in captured["song"].measures) == ("B",)
 
 
 # ---------------------------------------------------------------------------

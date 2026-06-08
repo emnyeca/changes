@@ -25,6 +25,7 @@ from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections, transpose_song_model_preserving_structure
 from changes.path_utils import existing_resource_path
 from changes.ui_pipeline import (
+    build_cloud_voice_leading_dataframe,
     count_auto_split_patterns,
     count_linear_patterns,
     song_to_syx_bytes,
@@ -51,6 +52,9 @@ _ICON_REPO = ':material/database:'
 _SEND_MODE_LINEAR = "Linear"
 _SEND_MODE_BUNDLE = "Bundle by Section"
 _SEND_MODE_OPTIONS = [_SEND_MODE_LINEAR, _SEND_MODE_BUNDLE]
+_SONG_DISPLAY_CHORD_CELLS = "chord_cells"
+_SONG_DISPLAY_CLOUD_GRAPH = "cloud_graph"
+_SONG_DISPLAY_MODE_OPTIONS = [_SONG_DISPLAY_CHORD_CELLS, _SONG_DISPLAY_CLOUD_GRAPH]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -112,6 +116,7 @@ _CSS = """
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
 .chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .chord-cell-display .meter-lbl { background:#E9EEF6; color:#53627A; border:1px solid #D5DEEA; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
+.eub-section-badge { display:inline-block; background:#E8E0F4; color:#7C5CBF; border:1px solid #D9CDED; border-radius:5px; padding:2px 7px; margin:0 4px 5px 0; font-size:12px; font-weight:700; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
 .eub-status-slot { margin:4px 0; display:flex; flex-direction:column; gap:4px; }
 .eub-status-line { padding:7px 10px; border-radius:7px; font-size:13px; line-height:1.35; white-space:pre-line; }
@@ -197,6 +202,7 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("_editor_working_key_mode", None),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
+        ("_song_display_mode", _SONG_DISPLAY_CHORD_CELLS),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
         ("_table_save_mode", None), ("_table_save_pending", None),
         ("_table_save_suppressed_signature", None),
@@ -376,6 +382,18 @@ def _current_song() -> SongModel | None:
     if selected is not None and not st.session_state.get("_editor_dirty"):
         return selected
     return _dirty_song() or selected
+
+
+def _normalize_song_display_mode(value: object) -> str:
+    if value == _SONG_DISPLAY_CLOUD_GRAPH:
+        return _SONG_DISPLAY_CLOUD_GRAPH
+    return _SONG_DISPLAY_CHORD_CELLS
+
+
+def _song_display_mode_label(value: str) -> str:
+    if value == _SONG_DISPLAY_CLOUD_GRAPH:
+        return "Cloud Graph"
+    return "Chord Cells"
 
 
 def _section_filter_label(section_id: str | None) -> str:
@@ -938,16 +956,29 @@ def _render_songlist(show_import: bool = True) -> None:
         st.error(str(st.session_state._songlist_error_message))
         st.session_state._songlist_error_message = None
 
-    _restore_song_search_widget_value()
-    search = st.text_input(
-        "Search songs",
-        placeholder="Search With Title…",
-        label_visibility="collapsed",
-        key="_sl_search",
-        disabled=ui_locked,
-        icon=":material/search:",
-        on_change=_sync_song_search_value,
-    )
+    search_col, display_mode_col = st.columns([0.72, 0.28], vertical_alignment="bottom")
+    with search_col:
+        _restore_song_search_widget_value()
+        search = st.text_input(
+            "Search songs",
+            placeholder="Search With Title…",
+            label_visibility="collapsed",
+            key="_sl_search",
+            disabled=ui_locked,
+            icon=":material/search:",
+            on_change=_sync_song_search_value,
+        )
+    with display_mode_col:
+        st.session_state["_song_display_mode"] = _normalize_song_display_mode(
+            st.session_state.get("_song_display_mode")
+        )
+        st.radio(
+            "Display",
+            _SONG_DISPLAY_MODE_OPTIONS,
+            key="_song_display_mode",
+            format_func=_song_display_mode_label,
+            horizontal=True,
+        )
     _sync_song_search_value(search)
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
@@ -1501,16 +1532,78 @@ def _execute_table_save(mode: str) -> None:
 # Page: Compose
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _cloud_layer_enabled(settings: AppSettings) -> bool:
+    return any(track is not None for track in settings.cloud_tracks[:6])
+
+
+def _cloud_section_boundary_badges(song: SongModel) -> list[str]:
+    badges: list[str] = []
+    previous_section: str | None = None
+    step = 0
+    for measure in song.measures:
+        section_id = measure.section_id
+        if section_id is not None and section_id != previous_section:
+            label = _display_section_label(section_id)
+            if label:
+                badges.append(f"{html.escape(label)} @ {step}")
+        previous_section = section_id
+        step += len(measure.harmony)
+    return badges
+
+
+def _render_cloud_section_boundary_summary(song: SongModel) -> None:
+    badges = _cloud_section_boundary_badges(song)
+    if not badges:
+        return
+    badge_html = "".join(
+        f'<span class="eub-section-badge">{badge}</span>'
+        for badge in badges
+    )
+    st.markdown(f"Sections: {badge_html}", unsafe_allow_html=True)
+
+
+def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSettings) -> None:
+    if song is None:
+        st.info("Select or compose a song to view the Cloud graph.")
+        return
+    if not _cloud_layer_enabled(settings):
+        st.info("Cloud layer is disabled.\nEnable Cloud in Layer Options to view the voice-leading graph.")
+        return
+
+    effective_song = _filtered_song_for_send(song)
+    if not effective_song.measures:
+        st.info("No sections selected. Select at least one section to view Cloud graph.")
+        return
+
+    try:
+        df = build_cloud_voice_leading_dataframe(effective_song, settings)
+        if df.empty:
+            st.info("No Cloud voice data is available for the current song/settings.")
+            return
+        st.caption("Cloud Voice Leading shows the generated Cloud voice pitches over steps.")
+        _render_cloud_section_boundary_summary(effective_song)
+        st.line_chart(df)
+    except Exception as exc:
+        st.error("Could not render Cloud voice-leading graph.")
+        with st.expander("Developer detail"):
+            st.exception(exc)
+
+
 def _render_compose() -> None:
     state: EditorState = st.session_state.editor
-    s = st.session_state._settings
-    lib_path = Path(s.library_path)
+    settings: AppSettings = st.session_state._settings
 
     # ── Cell display ───────────────────────────────────────────────────────────
-    st.markdown(
-        f"<div class='chord-cell-display'>{_chord_display_html(state, _current_song())}</div>",
-        unsafe_allow_html=True,
-    )
+    display_mode = _normalize_song_display_mode(st.session_state.get("_song_display_mode"))
+    st.session_state["_song_display_mode"] = display_mode
+
+    if display_mode == _SONG_DISPLAY_CLOUD_GRAPH:
+        _render_cloud_voice_leading_graph(_current_song(), settings)
+    else:
+        st.markdown(
+            f"<div class='chord-cell-display'>{_chord_display_html(state, _current_song())}</div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2261,7 +2354,9 @@ def _render_status_slot(statuses: list[tuple[str, str | None]]) -> None:
         items.append(
             f'<div class="eub-status-line eub-status-line-{normalized_kind}">{safe_message}</div>'
         )
-    st.markdown("Status: none" if not items else
+    if not items:
+        return
+    st.markdown(
         f'<div class="eub-status-slot">{"".join(items)}</div>',
         unsafe_allow_html=True,
     )

@@ -28,6 +28,7 @@ from changes.models.song_model import SongModel
 CLOUD_RANGE_SEMITONES = 18
 CHANGES_LAYER_MIN_TRACK = 1
 CHANGES_LAYER_MAX_TRACK = 8
+CLOUD_VOICE_COLUMNS = tuple(f"Voice {i}" for i in range(1, 7))
 
 
 @dataclass
@@ -164,6 +165,42 @@ def compile_song_for_ui(song: SongModel, settings: AppSettings) -> UiCompiledSon
         arrangement=arrangement,
         timeline=timeline,
     )
+
+
+def build_cloud_voice_leading_dataframe(song: SongModel, settings: AppSettings):
+    """Return Cloud voice pitches by generated harmonic step for UI graphing.
+
+    The data comes from the same render pipeline used by Preview/Send, but reads
+    the pre-flattened arrangement so hold/merge policies do not hide sustained
+    voice-leading steps.
+    """
+    import pandas as pd
+
+    compiled = compile_song_for_ui(song, settings)
+    rows: list[dict[str, int | None]] = []
+    indexes: list[int] = []
+    has_cloud_value = False
+
+    for step, occurrence in enumerate(compiled.arrangement.occurrences):
+        row: dict[str, int | None] = {column: None for column in CLOUD_VOICE_COLUMNS}
+        if occurrence.cloud is not None:
+            for note in occurrence.cloud.notes:
+                lane_id = str(note.lane_id or "")
+                if not lane_id.startswith("cloud_voice_"):
+                    continue
+                try:
+                    voice_index = int(lane_id.rsplit("_", 1)[1])
+                except ValueError:
+                    continue
+                if 1 <= voice_index <= len(CLOUD_VOICE_COLUMNS):
+                    row[f"Voice {voice_index}"] = int(note.note_midi)
+                    has_cloud_value = True
+        rows.append(row)
+        indexes.append(step)
+
+    if not has_cloud_value:
+        return pd.DataFrame(columns=list(CLOUD_VOICE_COLUMNS))
+    return pd.DataFrame(rows, index=indexes, columns=list(CLOUD_VOICE_COLUMNS))
 
 
 def count_auto_split_patterns(song: SongModel, settings: AppSettings) -> int:

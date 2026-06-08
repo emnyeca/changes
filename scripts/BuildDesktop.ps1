@@ -1,5 +1,14 @@
-  Set-Location d:\emnye\Documents\GitHub\changes
+Set-Location "$PSScriptRoot\.."
 
+Write-Host "Installing dependencies..."
+python -m pip install -e ".[ui,midi,realtime,sysex]"
+if (-not $?) { Write-Error "pip install failed"; exit 1 }
+
+Write-Host "Verifying build environment..."
+python scripts\verify_desktop_build.py
+if (-not $?) { Write-Error "Build verification failed"; exit 1 }
+
+Write-Host "Building desktop app..."
 & .\.venv\Scripts\streamlit-desktop-app.exe build src\changes\main_ui.py `
   --name "EUB Changes" `
   --icon docs\assets\adobe\1x\eub_changes_icon.ico `

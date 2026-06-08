@@ -48,7 +48,13 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 - **Linear send** — minimal patterns, continuous arrangement
 - **Bundle by Section** — one pattern per section, Song Mode–ready
 - **Pattern Change** — automatic Song Mode pattern transition settings
+- **Automatic Track Length** - Speed setup based on source tempo and chord timing
 
+### Note on tempo and speed
+
+EUB Changes may set Digitone II BPM / Track Speed / Track Length differently from the source chart tempo. This is expected.
+
+The app uses the source tempo and chord timing to keep the musical timing while reducing unnecessary steps in the generated pattern.
 
 ## Safety
 

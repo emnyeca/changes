@@ -490,13 +490,75 @@ def test_cloud_graph_uses_effective_filtered_song(monkeypatch) -> None:
 
     monkeypatch.setattr(main_ui.st, "session_state", state)
     monkeypatch.setattr(main_ui, "build_cloud_voice_leading_dataframe", _build)
-    monkeypatch.setattr(main_ui.st, "caption", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(main_ui.st, "markdown", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(main_ui.st, "line_chart", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "altair_chart", lambda *_args, **_kwargs: None)
 
     main_ui._render_cloud_voice_leading_graph(song, AppSettings())
 
     assert tuple(m.section_id for m in captured["song"].measures) == ("B",)
+
+
+def test_cloud_section_boundary_badges_use_digitone_step_numbers() -> None:
+    song = _song_with_sections("A", "B")
+
+    assert main_ui._cloud_section_boundary_badges(song) == ["A @ 1", "B @ 2"]
+
+
+def test_cloud_voice_leading_chart_uses_step_labels_and_hides_y_labels(monkeypatch) -> None:
+    import pandas as pd
+
+    captured: dict[str, object] = {}
+    df = pd.DataFrame(
+        {
+            "Voice 1": [52, 55, 56],
+            "Voice 2": [64, 67, 65],
+        },
+        index=[0, 8, 16],
+    )
+    song = _song(_measure(1, "Cmaj7", section_id="A"))
+
+    monkeypatch.setattr(
+        main_ui.st,
+        "altair_chart",
+        lambda chart, **kwargs: captured.update({"chart": chart, "kwargs": kwargs}),
+    )
+
+    main_ui._render_cloud_voice_leading_chart(df, song)
+
+    spec = captured["chart"].to_dict()
+    main_spec = spec["vconcat"][0]
+    boundary_spec = spec["vconcat"][1]
+
+    assert main_spec["encoding"]["x"]["axis"]["values"] == [0, 8, 16]
+    assert main_spec["encoding"]["x"]["axis"]["labels"] is False
+    assert main_spec["encoding"]["x"]["axis"]["ticks"] is False
+    assert main_spec["mark"]["interpolate"] == "catmull-rom"
+    assert main_spec["encoding"]["y"]["axis"]["labels"] is False
+    assert main_spec["encoding"]["y"]["axis"]["ticks"] is False
+    assert main_spec["encoding"]["color"]["legend"] is None
+    assert main_spec["encoding"]["y"]["scale"]["domain"] == [52, 67]
+    assert boundary_spec["layer"][0]["encoding"]["text"]["field"] == "step_label"
+    assert boundary_spec["layer"][1]["mark"]["shape"] == "square"
+    assert boundary_spec["layer"][2]["encoding"]["text"]["field"] == "section"
+    assert boundary_spec["layer"][3]["encoding"]["text"]["field"] == "step_label"
+    assert captured["kwargs"]["width"] == "stretch"
+
+
+def test_cloud_graph_does_not_render_caption(monkeypatch) -> None:
+    import pandas as pd
+
+    song = _song(_measure(1, "Cmaj7"))
+    monkeypatch.setattr(main_ui.st, "session_state", _SessionState({}))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: pd.DataFrame({"Voice 1": [60]}, index=[0]),
+    )
+    monkeypatch.setattr(main_ui.st, "caption", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("caption should not render")))
+    monkeypatch.setattr(main_ui.st, "markdown", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "altair_chart", lambda *_args, **_kwargs: None)
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
 
 
 # ---------------------------------------------------------------------------

@@ -1545,7 +1545,7 @@ def _cloud_section_boundary_badges(song: SongModel) -> list[str]:
         if section_id is not None and section_id != previous_section:
             label = _display_section_label(section_id)
             if label:
-                badges.append(f"{html.escape(label)} @ {step}")
+                badges.append(f"{html.escape(label)} @ {step + 1}")
         previous_section = section_id
         step += len(measure.harmony)
     return badges
@@ -1560,6 +1560,148 @@ def _render_cloud_section_boundary_summary(song: SongModel) -> None:
         for badge in badges
     )
     st.markdown(f"Sections: {badge_html}", unsafe_allow_html=True)
+
+
+def _cloud_section_boundary_steps(song: SongModel) -> dict[int, str]:
+    labels: dict[int, str] = {}
+    previous_section: str | None = None
+    step = 0
+    for measure in song.measures:
+        section_id = measure.section_id
+        if section_id is not None and section_id != previous_section:
+            label = _display_section_label(section_id)
+            if label:
+                labels[step] = label
+        previous_section = section_id
+        step += len(measure.harmony)
+    return labels
+
+
+def _axis_domain(min_value: int, max_value: int) -> list[int]:
+    if min_value == max_value:
+        return [min_value - 1, max_value + 1]
+    return [min_value, max_value]
+
+
+def _cloud_step_axis_labels(step_min: int, step_max: int) -> dict[int, str]:
+    return {
+        step: str(step + 1)
+        for step in range(step_min, step_max + 1)
+        if step % 8 == 0
+    }
+
+
+def _cloud_section_boundary_axis_rows(
+    song: SongModel,
+    step_min: int,
+    step_max: int,
+) -> list[dict[str, int | str]]:
+    return [
+        {"step": step, "section": label, "step_label": str(step + 1)}
+        for step, label in _cloud_section_boundary_steps(song).items()
+        if step_min <= step <= step_max
+    ]
+
+
+def _cloud_axis_step_rows(
+    song: SongModel,
+    step_min: int,
+    step_max: int,
+) -> list[dict[str, int | str]]:
+    boundary_steps = set(_cloud_section_boundary_steps(song))
+    return [
+        {"step": step, "step_label": str(step + 1)}
+        for step in range(step_min, step_max + 1)
+        if step % 8 == 0 and step not in boundary_steps
+    ]
+
+
+def _render_cloud_voice_leading_chart(df, song: SongModel) -> None:
+    import altair as alt
+    import pandas as pd
+
+    plot_df = (
+        df.rename_axis("step")
+        .reset_index()
+        .melt(id_vars="step", var_name="voice", value_name="pitch")
+        .dropna(subset=["pitch"])
+    )
+    if plot_df.empty:
+        st.info("No Cloud voice data is available for the current song/settings.")
+        return
+
+    step_min = int(plot_df["step"].min())
+    step_max = int(plot_df["step"].max())
+    pitch_min = int(plot_df["pitch"].min())
+    pitch_max = int(plot_df["pitch"].max())
+    step_domain = _axis_domain(step_min, step_max)
+    pitch_domain = _axis_domain(pitch_min, pitch_max)
+    step_labels = _cloud_step_axis_labels(step_min, step_max)
+    step_rows = _cloud_axis_step_rows(song, step_min, step_max)
+    boundary_rows = _cloud_section_boundary_axis_rows(song, step_min, step_max)
+
+    main_chart = (
+        alt.Chart(plot_df)
+        .mark_line(interpolate="catmull-rom")
+        .encode(
+            x=alt.X(
+                "step:Q",
+                scale=alt.Scale(domain=step_domain),
+                axis=alt.Axis(
+                    values=sorted(step_labels.keys()),
+                    labels=False,
+                    ticks=False,
+                    title=None,
+                    grid=False,
+                ),
+            ),
+            y=alt.Y(
+                "pitch:Q",
+                scale=alt.Scale(domain=pitch_domain),
+                axis=alt.Axis(labels=False, ticks=False, title=None),
+            ),
+            color=alt.Color("voice:N", legend=None),
+        )
+        .properties(height=280)
+    )
+
+    chart = main_chart
+    if step_rows or boundary_rows:
+        boundary_x = alt.X("step:Q", scale=alt.Scale(domain=step_domain), axis=None)
+        layers = []
+        if step_rows:
+            step_df = pd.DataFrame(step_rows)
+            layers.append(
+                alt.Chart(step_df).mark_text(
+                    color="#6B5F80",
+                    fontSize=11,
+                ).encode(x=boundary_x, y=alt.value(14), text="step_label:N")
+            )
+        if boundary_rows:
+            boundary_df = pd.DataFrame(boundary_rows)
+            layers.extend([
+                alt.Chart(boundary_df).mark_point(
+                    filled=True,
+                    shape="square",
+                    size=520,
+                    color="#E8E0F4",
+                    opacity=1,
+                ).encode(x=boundary_x, y=alt.value(14)),
+                alt.Chart(boundary_df).mark_text(
+                    color="#7C5CBF",
+                    fontSize=11,
+                    fontWeight=700,
+                ).encode(x=boundary_x, y=alt.value(14), text="section:N"),
+                alt.Chart(boundary_df).mark_text(
+                    color="#6B5F80",
+                    fontSize=11,
+                    dx=20,
+                ).encode(x=boundary_x, y=alt.value(14), text="step_label:N"),
+            ])
+        boundary_chart = alt.layer(*layers).properties(height=26)
+        chart = alt.vconcat(main_chart, boundary_chart, spacing=0).resolve_scale(x="shared")
+
+    st.altair_chart(chart, width="stretch")
 
 
 def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSettings) -> None:
@@ -1580,9 +1722,8 @@ def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSetti
         if df.empty:
             st.info("No Cloud voice data is available for the current song/settings.")
             return
-        st.caption("Cloud Voice Leading shows the generated Cloud voice pitches over steps.")
         _render_cloud_section_boundary_summary(effective_song)
-        st.line_chart(df)
+        _render_cloud_voice_leading_chart(df, effective_song)
     except Exception as exc:
         st.error("Could not render Cloud voice-leading graph.")
         with st.expander("Developer detail"):

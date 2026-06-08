@@ -49,12 +49,21 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 - **Bundle by Section** — one pattern per section, Song Mode–ready
 - **Pattern Change** — automatic Song Mode pattern transition settings
 
+
 ## Safety
 
-- Preview does not write to hardware
-- Hardware write confirmation is enabled by default
-- No MIDI port is auto-selected
-- Send SysEx requires explicit port selection
+EUB Changes can send SysEx data to Digitone II and may overwrite pattern data on the selected device.
+
+Please test with an empty or backed-up Digitone II project first.
+
+Safety boundaries:
+
+- Export never sends MIDI.
+- Preview never writes hardware.
+- Dry-run never writes hardware.
+- Real-send requires explicit confirmation.
+- No MIDI port is auto-selected.
+- Always confirm the destination MIDI port before sending SysEx.
 
 **Recommended first use:** use an empty Digitone II Project or back up your patterns before sending.
 
@@ -75,7 +84,7 @@ scripts\BuildDesktop.ps1
 
 See [`docs/`](docs/) for architecture, implementation notes, and CLI reference.
 
-Sorry, developer docs are written in only Japanse.
+Sorry, developer docs are written in only Japanese.
 
 ## License
 

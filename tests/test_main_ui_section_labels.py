@@ -349,10 +349,12 @@ def test_songlist_meter_column_uses_summary_and_is_read_only(monkeypatch) -> Non
                 "_library": [SongEntry(path=Path("song.song.json"), title="Song", song=song)],
                 "_selected_path": None,
                 "_songlist_table_reset_token": 0,
+                "_settings": AppSettings(),
             }
         ),
     )
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -389,10 +391,12 @@ def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None
             "_selected_path": None,
             "_songlist_table_reset_token": 0,
             "_songlist_search_value": "bilbao",
+            "_settings": AppSettings(),
         }
     )
     monkeypatch.setattr(main_ui.st, "session_state", state)
     monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: state["_sl_search"])
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CHORD_CELLS)
     captured: dict[str, object] = {}
 
     def _data_editor(df, *args, **kwargs):
@@ -415,6 +419,197 @@ def test_songlist_restores_mirrored_search_before_filtering(monkeypatch) -> None
     assert state["_sl_search"] == "bilbao"
     assert state["_songlist_search_value"] == "bilbao"
     assert list(captured["df"]["Title"]) == ["Bilbao Song"]
+
+
+def test_song_display_mode_defaults_to_chord_cells() -> None:
+    assert main_ui._normalize_song_display_mode(None) == main_ui._SONG_DISPLAY_CHORD_CELLS
+    assert main_ui._normalize_song_display_mode("bad") == main_ui._SONG_DISPLAY_CHORD_CELLS
+    assert main_ui._normalize_song_display_mode(main_ui._SONG_DISPLAY_CLOUD_GRAPH) == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+
+
+def test_session_init_restores_song_display_mode_from_settings(monkeypatch) -> None:
+    state = _SessionState({"_settings": AppSettings(song_display_mode=main_ui._SONG_DISPLAY_CLOUD_GRAPH)})
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui, "_refresh_library", lambda: state.__setitem__("_library", []))
+
+    main_ui._ss_init()
+
+    assert state["_song_display_mode"] == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+
+
+def test_songlist_display_mode_persists_to_settings(monkeypatch) -> None:
+    song = _song(_measure(1, "Cmaj7"))
+    settings = AppSettings(song_display_mode=main_ui._SONG_DISPLAY_CHORD_CELLS)
+    state = _SessionState(
+        {
+            "_library": [SongEntry(path=Path("song.song.json"), title="Song", song=song)],
+            "_selected_path": None,
+            "_songlist_table_reset_token": 0,
+            "_settings": settings,
+        }
+    )
+    saved: list[str] = []
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "text_input", lambda *args, **kwargs: "")
+    monkeypatch.setattr(main_ui.st, "segmented_control", lambda *args, **kwargs: main_ui._SONG_DISPLAY_CLOUD_GRAPH)
+    monkeypatch.setattr(main_ui, "save_settings", lambda settings_arg: saved.append(settings_arg.song_display_mode))
+    monkeypatch.setattr(main_ui.st, "data_editor", lambda df, *args, **kwargs: df)
+    monkeypatch.setattr(
+        main_ui.st,
+        "column_config",
+        SimpleNamespace(
+            CheckboxColumn=lambda *args, **kwargs: object(),
+            TextColumn=lambda *args, **kwargs: object(),
+            NumberColumn=lambda *args, **kwargs: object(),
+        ),
+    )
+
+    main_ui._render_songlist(show_import=False)
+
+    assert state["_settings"].song_display_mode == main_ui._SONG_DISPLAY_CLOUD_GRAPH
+    assert saved == [main_ui._SONG_DISPLAY_CLOUD_GRAPH]
+
+
+def test_cloud_graph_shows_disabled_message_without_compiling(monkeypatch) -> None:
+    messages: list[str] = []
+    monkeypatch.setattr(main_ui.st, "info", lambda message: messages.append(str(message)))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not compile")),
+    )
+
+    main_ui._render_cloud_voice_leading_graph(
+        _song(_measure(1, "Cmaj7")),
+        AppSettings(cloud_tracks=[None, None, None, None, None, None]),
+    )
+
+    assert messages == [
+        "Cloud layer is disabled.\nEnable Cloud in Layer Options to view the voice-leading graph."
+    ]
+
+
+def test_cloud_graph_empty_section_selection_skips_compile(monkeypatch) -> None:
+    song = _song_with_sections("A", "B")
+    path = Path("song.song.json")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": set(),
+        }
+    )
+    messages: list[str] = []
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "info", lambda message: messages.append(str(message)))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("should not compile")),
+    )
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
+
+    assert messages == ["No sections selected. Select at least one section to view Cloud graph."]
+
+
+def test_cloud_graph_uses_effective_filtered_song(monkeypatch) -> None:
+    import pandas as pd
+
+    song = _song_with_sections("A", "B")
+    path = Path("song.song.json")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"B"},
+        }
+    )
+    captured: dict[str, SongModel] = {}
+
+    def _build(song_arg, _settings):
+        captured["song"] = song_arg
+        return pd.DataFrame({"Voice 1": [60], "Voice 2": [64]}, index=[0])
+
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui, "build_cloud_voice_leading_dataframe", _build)
+    monkeypatch.setattr(main_ui.st, "markdown", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "altair_chart", lambda *_args, **_kwargs: None)
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
+
+    assert tuple(m.section_id for m in captured["song"].measures) == ("B",)
+
+
+def test_cloud_section_boundary_badges_use_digitone_step_numbers() -> None:
+    song = _song_with_sections("A", "B")
+
+    assert main_ui._cloud_section_boundary_axis_rows(song, 0, 1) == [
+        {"step": 0, "section": "A", "step_label": "1"},
+        {"step": 1, "section": "B", "step_label": "2"},
+    ]
+
+
+def test_cloud_voice_leading_chart_uses_step_labels_and_hides_y_labels(monkeypatch) -> None:
+    import pandas as pd
+
+    captured: dict[str, object] = {}
+    df = pd.DataFrame(
+        {
+            "Voice 1": [52, 55, 56],
+            "Voice 2": [64, 67, 65],
+        },
+        index=[0, 8, 16],
+    )
+    song = _song(_measure(1, "Cmaj7", section_id="A"))
+
+    monkeypatch.setattr(
+        main_ui.st,
+        "altair_chart",
+        lambda chart, **kwargs: captured.update({"chart": chart, "kwargs": kwargs}),
+    )
+
+    main_ui._render_cloud_voice_leading_chart(df, song)
+
+    spec = captured["chart"].to_dict()
+    main_spec = spec["vconcat"][0]
+    boundary_spec = spec["vconcat"][1]
+
+    assert main_spec["encoding"]["x"]["axis"]["values"] == [0, 8, 16]
+    assert main_spec["encoding"]["x"]["axis"]["labels"] is False
+    assert main_spec["encoding"]["x"]["axis"]["ticks"] is False
+    assert main_spec["mark"]["interpolate"] == "catmull-rom"
+    assert main_spec["encoding"]["y"]["axis"]["labels"] is False
+    assert main_spec["encoding"]["y"]["axis"]["ticks"] is False
+    assert main_spec["encoding"]["color"]["legend"] is None
+    assert main_spec["encoding"]["color"]["scale"]["range"] == main_ui._CLOUD_VOICE_COLOR_RANGE
+    assert main_spec["encoding"]["y"]["scale"]["domain"] == [52, 67]
+    assert boundary_spec["layer"][0]["mark"]["shape"] == "square"
+    assert boundary_spec["layer"][1]["encoding"]["text"]["field"] == "section"
+    assert main_spec["height"] + boundary_spec["height"] == main_ui._CLOUD_GRAPH_HEIGHT
+    assert captured["kwargs"]["width"] == "stretch"
+    assert captured["kwargs"]["height"] == main_ui._CLOUD_GRAPH_HEIGHT
+
+
+def test_cloud_graph_does_not_render_caption(monkeypatch) -> None:
+    import pandas as pd
+
+    song = _song(_measure(1, "Cmaj7"))
+    monkeypatch.setattr(main_ui.st, "session_state", _SessionState({}))
+    monkeypatch.setattr(
+        main_ui,
+        "build_cloud_voice_leading_dataframe",
+        lambda *_args, **_kwargs: pd.DataFrame({"Voice 1": [60]}, index=[0]),
+    )
+    monkeypatch.setattr(main_ui.st, "caption", lambda *_args, **_kwargs: (_ for _ in ()).throw(AssertionError("caption should not render")))
+    monkeypatch.setattr(main_ui.st, "markdown", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(main_ui.st, "altair_chart", lambda *_args, **_kwargs: None)
+
+    main_ui._render_cloud_voice_leading_graph(song, AppSettings())
 
 
 # ---------------------------------------------------------------------------
@@ -467,6 +662,77 @@ def test_filtered_song_for_send_empty_selection_not_full_song(monkeypatch) -> No
     result = main_ui._filtered_song_for_send(song)
 
     assert len(result.measures) == 0
+
+
+def test_render_section_filter_requests_rerun_when_selection_changes(monkeypatch) -> None:
+    path = Path("song.json")
+    song = _song_with_sections("A1", "B1")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"A1", "B1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "caption", lambda *args, **kwargs: None)
+
+    checkbox_values = iter([True, False])
+
+    class _Column:
+        def checkbox(self, *args, **kwargs):
+            return next(checkbox_values)
+
+    monkeypatch.setattr(main_ui.st, "columns", lambda *args, **kwargs: [_Column(), _Column()])
+
+    reasons: list[str | None] = []
+
+    def _rerun(*, reason: str | None = None, **kwargs) -> None:
+        reasons.append(reason)
+        raise RuntimeError("rerun")
+
+    monkeypatch.setattr(main_ui, "_request_rerun", _rerun)
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._render_section_filter(song)
+
+    assert state["_section_filter_selected"] == {"A1"}
+    assert reasons == ["section_filter_changed"]
+
+
+def test_render_section_filter_does_not_request_rerun_when_selection_is_same(monkeypatch) -> None:
+    path = Path("song.json")
+    song = _song_with_sections("A1", "B1")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"A1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "caption", lambda *args, **kwargs: None)
+
+    checkbox_values = iter([True, False])
+
+    class _Column:
+        def checkbox(self, *args, **kwargs):
+            return next(checkbox_values)
+
+    monkeypatch.setattr(main_ui.st, "columns", lambda *args, **kwargs: [_Column(), _Column()])
+    monkeypatch.setattr(
+        main_ui,
+        "_request_rerun",
+        lambda **kwargs: pytest.fail("_request_rerun should not be called"),
+    )
+
+    main_ui._render_section_filter(song)
+
+    assert state["_section_filter_selected"] == {"A1"}
 
 
 # Test 5: stale non-empty section selection resets

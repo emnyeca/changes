@@ -25,6 +25,7 @@ from changes.models.song_model import SongModel, song_model_to_dict
 from changes.song_filter import extract_section_ids, filter_song_by_sections, transpose_song_model_preserving_structure
 from changes.path_utils import existing_resource_path
 from changes.ui_pipeline import (
+    build_cloud_voice_leading_dataframe,
     count_auto_split_patterns,
     count_linear_patterns,
     song_to_syx_bytes,
@@ -47,10 +48,18 @@ _ICON_CODE = ':material/code:'
 _ICON_GUIDE = ':material/menu_book:'
 _ICON_LICENSE = ':material/balance:'
 _ICON_REPO = ':material/database:'
+_ICON_CLOUD = ':material/cloud:'
+_ICON_CHORD = ':material/queue_music:'
 
 _SEND_MODE_LINEAR = "Linear"
 _SEND_MODE_BUNDLE = "Bundle by Section"
 _SEND_MODE_OPTIONS = [_SEND_MODE_LINEAR, _SEND_MODE_BUNDLE]
+_SONG_DISPLAY_CHORD_CELLS = "chord_cells"
+_SONG_DISPLAY_CLOUD_GRAPH = "cloud_graph"
+_SONG_DISPLAY_MODE_OPTIONS = [_SONG_DISPLAY_CHORD_CELLS, _SONG_DISPLAY_CLOUD_GRAPH]
+_CLOUD_GRAPH_HEIGHT = 150
+_CLOUD_GRAPH_AXIS_ROW_HEIGHT = 26
+_CLOUD_VOICE_COLOR_RANGE = ["#999fbe", "#c2aaa5", "#eaacac", "#e195bb", "#a681b5", "#a993c9"]
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
 
@@ -112,6 +121,7 @@ _CSS = """
 .chord-cell-display { font-family:'JetBrains Mono','Fira Code',monospace; white-space:pre-wrap; word-break:break-all; background:white; border:1px solid #E2DAE8; padding:12px 16px; border-radius:10px; font-size:14px; line-height:1.9; color:#2D2840; margin:6px 0 10px; }
 .chord-cell-display .section-lbl { background:#E8E0F4; color:#7C5CBF; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
 .chord-cell-display .meter-lbl { background:#E9EEF6; color:#53627A; border:1px solid #D5DEEA; border-radius:4px; padding:1px 5px; font-size:12px; font-weight:700; margin-right:2px; }
+.eub-section-badge { display:inline-block; background:#E8E0F4; color:#7C5CBF; border:1px solid #D9CDED; border-radius:5px; padding:2px 7px; margin:0 4px 5px 0; font-size:12px; font-weight:700; }
 .send-area { background:white; border:1px solid #E2DAE8; border-radius:12px; padding:16px; margin-top:16px; }
 .eub-status-slot { margin:4px 0; display:flex; flex-direction:column; gap:4px; }
 .eub-status-line { padding:7px 10px; border-radius:7px; font-size:13px; line-height:1.35; white-space:pre-line; }
@@ -183,6 +193,11 @@ def _render_header_field(label: str, icon: str, value: str | None = None, *, ren
 def _ss_init() -> None:
     if "_settings" not in st.session_state:
         st.session_state._settings = load_settings()
+    settings: AppSettings = st.session_state._settings
+    display_mode_default = _normalize_song_display_mode(
+        getattr(settings, "song_display_mode", _SONG_DISPLAY_CHORD_CELLS)
+    )
+    settings.song_display_mode = display_mode_default
     if "_library" not in st.session_state:
         _refresh_library()
     if "_selected_path" not in st.session_state:
@@ -197,6 +212,7 @@ def _ss_init() -> None:
         ("meter_den", 4), ("working_key_input", "C"), ("editor_mode", "button"),
         ("_editor_working_key_mode", None),
         ("pending_root", None), ("pending_acc", ""), ("ti", ""),
+        ("_song_display_mode", display_mode_default),
         ("_compose_save_mode", None), ("_compose_save_pending", None),
         ("_table_save_mode", None), ("_table_save_pending", None),
         ("_table_save_suppressed_signature", None),
@@ -376,6 +392,18 @@ def _current_song() -> SongModel | None:
     if selected is not None and not st.session_state.get("_editor_dirty"):
         return selected
     return _dirty_song() or selected
+
+
+def _normalize_song_display_mode(value: object) -> str:
+    if value == _SONG_DISPLAY_CLOUD_GRAPH:
+        return _SONG_DISPLAY_CLOUD_GRAPH
+    return _SONG_DISPLAY_CHORD_CELLS
+
+
+def _song_display_mode_label(value: str) -> str:
+    if value == _SONG_DISPLAY_CLOUD_GRAPH:
+        return f"{_ICON_CLOUD} Cloud"
+    return f"{_ICON_CHORD} Chord"
 
 
 def _section_filter_label(section_id: str | None) -> str:
@@ -938,16 +966,37 @@ def _render_songlist(show_import: bool = True) -> None:
         st.error(str(st.session_state._songlist_error_message))
         st.session_state._songlist_error_message = None
 
-    _restore_song_search_widget_value()
-    search = st.text_input(
-        "Search songs",
-        placeholder="Search With Title…",
-        label_visibility="collapsed",
-        key="_sl_search",
-        disabled=ui_locked,
-        icon=":material/search:",
-        on_change=_sync_song_search_value,
-    )
+    search_col, display_mode_title_col, display_mode_col = st.columns([6, 2, 4], vertical_alignment="center")
+    with search_col:
+        _restore_song_search_widget_value()
+        search = st.text_input(
+            "Search songs",
+            placeholder="Search With Title…",
+            label_visibility="collapsed",
+            key="_sl_search",
+            disabled=ui_locked,
+            icon=":material/search:",
+            on_change=_sync_song_search_value,
+        )
+    with display_mode_title_col:
+        st.caption("Disp. Mode:", text_alignment="right")
+    with display_mode_col:
+        st.session_state["_song_display_mode"] = _normalize_song_display_mode(
+            st.session_state.get("_song_display_mode")
+        )
+        selected_display_mode = st.segmented_control(
+            "Display",
+            _SONG_DISPLAY_MODE_OPTIONS,
+            key="_song_display_mode",
+            format_func=_song_display_mode_label,
+            label_visibility="collapsed",
+        )
+        selected_display_mode = _normalize_song_display_mode(selected_display_mode)
+        settings: AppSettings = st.session_state._settings
+        if _normalize_song_display_mode(getattr(settings, "song_display_mode", None)) != selected_display_mode:
+            settings.song_display_mode = selected_display_mode
+            st.session_state._settings = settings
+            save_settings(settings)
     _sync_song_search_value(search)
     filtered = [e for e in entries if search.lower() in e.title.lower()] if search else entries
 
@@ -1501,16 +1550,201 @@ def _execute_table_save(mode: str) -> None:
 # Page: Compose
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _cloud_layer_enabled(settings: AppSettings) -> bool:
+    return any(track is not None for track in settings.cloud_tracks[:6])
+
+
+def _cloud_section_boundary_steps(song: SongModel) -> dict[int, str]:
+    labels: dict[int, str] = {}
+    previous_section: str | None = None
+    step = 0
+    for measure in song.measures:
+        section_id = measure.section_id
+        if section_id is not None and section_id != previous_section:
+            label = _display_section_label(section_id)
+            if label:
+                labels[step] = label
+        previous_section = section_id
+        step += len(measure.harmony)
+    return labels
+
+
+def _axis_domain(min_value: int, max_value: int) -> list[int]:
+    if min_value == max_value:
+        return [min_value - 1, max_value + 1]
+    return [min_value, max_value]
+
+
+def _cloud_step_axis_labels(step_min: int, step_max: int) -> dict[int, str]:
+    return {
+        step: str(step + 1)
+        for step in range(step_min, step_max + 1)
+        if step % 8 == 0
+    }
+
+
+def _cloud_section_boundary_axis_rows(
+    song: SongModel,
+    step_min: int,
+    step_max: int,
+) -> list[dict[str, int | str]]:
+    return [
+        {"step": step, "section": label, "step_label": str(step + 1)}
+        for step, label in _cloud_section_boundary_steps(song).items()
+        if step_min <= step <= step_max
+    ]
+
+
+def _cloud_axis_step_rows(
+    song: SongModel,
+    step_min: int,
+    step_max: int,
+) -> list[dict[str, int | str]]:
+    boundary_steps = set(_cloud_section_boundary_steps(song))
+    return [
+        {"step": step, "step_label": str(step + 1)}
+        for step in range(step_min, step_max + 1)
+        if step % 8 == 0 and step not in boundary_steps
+    ]
+
+
+def _render_cloud_voice_leading_chart(df, song: SongModel) -> None:
+    import altair as alt
+    import pandas as pd
+
+    plot_df = (
+        df.rename_axis("step")
+        .reset_index()
+        .melt(id_vars="step", var_name="voice", value_name="pitch")
+        .dropna(subset=["pitch"])
+    )
+    if plot_df.empty:
+        st.info("No Cloud voice data is available for the current song/settings.")
+        return
+
+    step_min = int(plot_df["step"].min())
+    step_max = int(plot_df["step"].max())
+    pitch_min = int(plot_df["pitch"].min())
+    pitch_max = int(plot_df["pitch"].max())
+    step_domain = _axis_domain(step_min, step_max)
+    pitch_domain = _axis_domain(pitch_min, pitch_max)
+    step_labels = _cloud_step_axis_labels(step_min, step_max)
+    step_rows = _cloud_axis_step_rows(song, step_min, step_max)
+    boundary_rows = _cloud_section_boundary_axis_rows(song, step_min, step_max)
+
+    main_chart = (
+        alt.Chart(plot_df)
+        .mark_line(interpolate="catmull-rom")
+        .encode(
+            x=alt.X(
+                "step:Q",
+                scale=alt.Scale(domain=step_domain),
+                axis=alt.Axis(
+                    values=sorted(step_labels.keys()),
+                    labels=False,
+                    ticks=False,
+                    title=None,
+                    grid=False,
+                ),
+            ),
+            y=alt.Y(
+                "pitch:Q",
+                scale=alt.Scale(domain=pitch_domain),
+                axis=alt.Axis(labels=False, ticks=False, title=None),
+            ),
+            color=alt.Color(
+                "voice:N",
+                scale=alt.Scale(
+                    domain=[f"Voice {i}" for i in range(1, 7)],
+                    range=_CLOUD_VOICE_COLOR_RANGE,
+                ),
+                legend=None,
+            ),
+        )
+        .properties(height=_CLOUD_GRAPH_HEIGHT - _CLOUD_GRAPH_AXIS_ROW_HEIGHT)
+    )
+
+    chart = main_chart
+    if step_rows or boundary_rows:
+        boundary_x = alt.X("step:Q", scale=alt.Scale(domain=step_domain), axis=None)
+        layers = []
+        # Step numberが実態と違うのでいったんコメントアウト
+        # if step_rows:
+        #     step_df = pd.DataFrame(step_rows)
+        #     layers.append(
+        #         alt.Chart(step_df).mark_text(
+        #             color="#6B5F80",
+        #             fontSize=11,
+        #         ).encode(x=boundary_x, y=alt.value(14), text="step_label:N")
+        #     )
+        if boundary_rows:
+            boundary_df = pd.DataFrame(boundary_rows)
+            layers.extend([
+                alt.Chart(boundary_df).mark_point(
+                    filled=True,
+                    shape="square",
+                    size=520,
+                    color="#E8E0F4",
+                    opacity=1,
+                ).encode(x=boundary_x, y=alt.value(14)),
+                alt.Chart(boundary_df).mark_text(
+                    color="#7C5CBF",
+                    fontSize=11,
+                    fontWeight=700,
+                ).encode(x=boundary_x, y=alt.value(14), text="section:N"),
+                # Step numberが実態と違うのでいったんコメントアウト
+                # alt.Chart(boundary_df).mark_text(
+                #     color="#6B5F80",
+                #     fontSize=11,
+                #     dx=20,
+                # ).encode(x=boundary_x, y=alt.value(14), text="step_label:N"),
+            ])
+        boundary_chart = alt.layer(*layers).properties(height=_CLOUD_GRAPH_AXIS_ROW_HEIGHT)
+        chart = alt.vconcat(main_chart, boundary_chart, spacing=0).resolve_scale(x="shared")
+
+    st.altair_chart(chart, width="stretch", height=_CLOUD_GRAPH_HEIGHT)
+
+
+def _render_cloud_voice_leading_graph(song: SongModel | None, settings: AppSettings) -> None:
+    if song is None:
+        st.info("Select or compose a song to view the Cloud graph.")
+        return
+    if not _cloud_layer_enabled(settings):
+        st.info("Cloud layer is disabled.\nEnable Cloud in Layer Options to view the voice-leading graph.")
+        return
+
+    effective_song = _filtered_song_for_send(song)
+    if not effective_song.measures:
+        st.info("No sections selected. Select at least one section to view Cloud graph.")
+        return
+
+    try:
+        df = build_cloud_voice_leading_dataframe(effective_song, settings)
+        if df.empty:
+            st.info("No Cloud voice data is available for the current song/settings.")
+            return
+        _render_cloud_voice_leading_chart(df, effective_song)
+    except Exception as exc:
+        st.error("Could not render Cloud voice-leading graph.")
+        with st.expander("Developer detail"):
+            st.exception(exc)
+
+
 def _render_compose() -> None:
     state: EditorState = st.session_state.editor
-    s = st.session_state._settings
-    lib_path = Path(s.library_path)
+    settings: AppSettings = st.session_state._settings
 
     # ── Cell display ───────────────────────────────────────────────────────────
-    st.markdown(
-        f"<div class='chord-cell-display'>{_chord_display_html(state, _current_song())}</div>",
-        unsafe_allow_html=True,
-    )
+    display_mode = _normalize_song_display_mode(st.session_state.get("_song_display_mode"))
+    st.session_state["_song_display_mode"] = display_mode
+
+    if display_mode == _SONG_DISPLAY_CLOUD_GRAPH:
+        _render_cloud_voice_leading_graph(_current_song(), settings)
+    else:
+        st.markdown(
+            f"<div class='chord-cell-display'>{_chord_display_html(state, _current_song())}</div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2261,7 +2495,9 @@ def _render_status_slot(statuses: list[tuple[str, str | None]]) -> None:
         items.append(
             f'<div class="eub-status-line eub-status-line-{normalized_kind}">{safe_message}</div>'
         )
-    st.markdown("Status: none" if not items else
+    if not items:
+        return
+    st.markdown(
         f'<div class="eub-status-slot">{"".join(items)}</div>',
         unsafe_allow_html=True,
     )
@@ -2364,6 +2600,7 @@ def _render_section_filter(song: SongModel) -> None:
 
     song_path = st.session_state.get("_selected_path")
     selected = _get_or_init_section_filter(song, song_path)
+    old_selected = set(selected)
     ns = _section_checkbox_namespace(song_path)
 
     st.caption("Sections to send:")
@@ -2375,6 +2612,8 @@ def _render_section_filter(song: SongModel) -> None:
             new_selected.add(sec_id)
 
     st.session_state._section_filter_selected = new_selected
+    if new_selected != old_selected:
+        _request_rerun(reason="section_filter_changed")
 
 
 def _render_preview_send() -> None:

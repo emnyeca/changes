@@ -41,6 +41,7 @@ class AppSettings:
 
     # Display
     note_accidental: str = "flat"  # "flat" | "sharp"
+    song_display_mode: str = "chord_cells"  # "chord_cells" | "cloud_graph"
 
 
 def _migrate_raw(raw: dict[str, Any]) -> dict[str, Any]:
@@ -49,6 +50,8 @@ def _migrate_raw(raw: dict[str, Any]) -> dict[str, Any]:
         base = int(raw["cloud_track_base"])
         raw["cloud_tracks"] = [base + i for i in range(6)]
     raw.pop("cloud_track_base", None)
+    if raw.get("song_display_mode") not in (None, "chord_cells", "cloud_graph"):
+        raw["song_display_mode"] = "chord_cells"
     return raw
 
 

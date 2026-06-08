@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from fractions import Fraction
+
 import pytest
 
 from changes.app_settings import AppSettings
+from changes.models.song_model import HarmonyEvent, Measure, SongModel
 from changes.ui_pipeline import (
+    CLOUD_VOICE_COLUMNS,
+    build_cloud_voice_leading_dataframe,
     count_auto_split_patterns,
     count_linear_patterns,
     settings_to_render_profile,
@@ -13,6 +18,37 @@ from changes.ui_pipeline import (
     song_to_syx_bytes_linear_split,
 )
 from changes.importers.compact_progression import compact_progression_to_song_model
+
+
+def _measure(number: int, symbol: str, start: Fraction) -> Measure:
+    return Measure(
+        number=number,
+        section_id="A",
+        meter_numerator=4,
+        meter_denominator=4,
+        absolute_start_quarters=start,
+        harmony=(
+            HarmonyEvent(
+                id=f"h{number}",
+                symbol=symbol,
+                measure_number=number,
+                offset_quarters=Fraction(0),
+                duration_quarters=Fraction(4),
+            ),
+        ),
+    )
+
+
+def _two_chord_song() -> SongModel:
+    return SongModel(
+        title="Graph",
+        working_key="C",
+        performance_tempo=Fraction(120),
+        measures=(
+            _measure(1, "Cmaj7", Fraction(0)),
+            _measure(2, "Dm7", Fraction(4)),
+        ),
+    )
 
 
 # ── settings_to_render_profile ────────────────────────────────────────────────
@@ -48,6 +84,14 @@ def test_render_profile_bass_enabled_when_bass_track_set() -> None:
     s = AppSettings(bass_track=7)
     rp = settings_to_render_profile(s)
     assert rp.bass_enabled is True
+
+
+def test_cloud_voice_leading_dataframe_has_voice_columns_and_step_index() -> None:
+    df = build_cloud_voice_leading_dataframe(_two_chord_song(), AppSettings())
+
+    assert list(df.columns) == list(CLOUD_VOICE_COLUMNS)
+    assert list(df.index) == [0, 1]
+    assert bool(df.notna().to_numpy().any())
 
 
 # ── settings_to_target_profile — routing ─────────────────────────────────────

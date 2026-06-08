@@ -664,6 +664,77 @@ def test_filtered_song_for_send_empty_selection_not_full_song(monkeypatch) -> No
     assert len(result.measures) == 0
 
 
+def test_render_section_filter_requests_rerun_when_selection_changes(monkeypatch) -> None:
+    path = Path("song.json")
+    song = _song_with_sections("A1", "B1")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"A1", "B1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "caption", lambda *args, **kwargs: None)
+
+    checkbox_values = iter([True, False])
+
+    class _Column:
+        def checkbox(self, *args, **kwargs):
+            return next(checkbox_values)
+
+    monkeypatch.setattr(main_ui.st, "columns", lambda *args, **kwargs: [_Column(), _Column()])
+
+    reasons: list[str | None] = []
+
+    def _rerun(*, reason: str | None = None, **kwargs) -> None:
+        reasons.append(reason)
+        raise RuntimeError("rerun")
+
+    monkeypatch.setattr(main_ui, "_request_rerun", _rerun)
+
+    with pytest.raises(RuntimeError, match="rerun"):
+        main_ui._render_section_filter(song)
+
+    assert state["_section_filter_selected"] == {"A1"}
+    assert reasons == ["section_filter_changed"]
+
+
+def test_render_section_filter_does_not_request_rerun_when_selection_is_same(monkeypatch) -> None:
+    path = Path("song.json")
+    song = _song_with_sections("A1", "B1")
+    state = _SessionState(
+        {
+            "_selected_path": path,
+            "_section_filter_song_identity": main_ui._section_filter_song_identity(song, path),
+            "_section_filter_song_path": str(path),
+            "_section_filter_signature": main_ui._section_filter_signature(song, path),
+            "_section_filter_selected": {"A1"},
+        }
+    )
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    monkeypatch.setattr(main_ui.st, "caption", lambda *args, **kwargs: None)
+
+    checkbox_values = iter([True, False])
+
+    class _Column:
+        def checkbox(self, *args, **kwargs):
+            return next(checkbox_values)
+
+    monkeypatch.setattr(main_ui.st, "columns", lambda *args, **kwargs: [_Column(), _Column()])
+    monkeypatch.setattr(
+        main_ui,
+        "_request_rerun",
+        lambda **kwargs: pytest.fail("_request_rerun should not be called"),
+    )
+
+    main_ui._render_section_filter(song)
+
+    assert state["_section_filter_selected"] == {"A1"}
+
+
 # Test 5: stale non-empty section selection resets
 
 def test_stale_nonempty_selection_resets_to_all_sections(monkeypatch) -> None:

@@ -2600,6 +2600,7 @@ def _render_section_filter(song: SongModel) -> None:
 
     song_path = st.session_state.get("_selected_path")
     selected = _get_or_init_section_filter(song, song_path)
+    old_selected = set(selected)
     ns = _section_checkbox_namespace(song_path)
 
     st.caption("Sections to send:")
@@ -2611,6 +2612,8 @@ def _render_section_filter(song: SongModel) -> None:
             new_selected.add(sec_id)
 
     st.session_state._section_filter_selected = new_selected
+    if new_selected != old_selected:
+        _request_rerun(reason="section_filter_changed")
 
 
 def _render_preview_send() -> None:

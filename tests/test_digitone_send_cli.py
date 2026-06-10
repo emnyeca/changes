@@ -78,20 +78,6 @@ def test_argparse_requires_syx_and_port(monkeypatch: pytest.MonkeyPatch, tmp_pat
         cli.main()
 
 
-def test_send_command_does_not_call_export_path(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    syx_path = tmp_path / "test.syx"
-    syx_path.write_bytes(bytes([0xF0, 0x7D, 0x00, 0xF7]))
-
-    def _boom(*args, **kwargs):
-        raise AssertionError("export path should not be called by send command")
-
-    monkeypatch.setattr(cli, "export_track8_artifacts_from_song", _boom)
-    _run_send_cli(
-        monkeypatch,
-        ["--syx", str(syx_path), "--port", "Digitone II", "--dry-run"],
-    )
-
-
 def test_send_command_does_not_require_backend_dependencies(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     syx_path = tmp_path / "test.syx"
     syx_path.write_bytes(bytes([0xF0, 0x7D, 0x00, 0xF7]))

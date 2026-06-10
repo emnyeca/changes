@@ -5,8 +5,6 @@ from pathlib import Path
 
 import pytest
 
-from changes.digitone.track8_demo_songs import build_demo_cmaj7_song
-from changes.digitone.track8_export_api import build_track8_export_yaml_payload_from_song
 from changes.models.song_model_yaml import (
     dump_song_model_yaml,
     format_fraction_value,
@@ -64,7 +62,7 @@ def test_load_minimal_cmaj7_yaml_dict():
 
 
 def test_dump_minimal_cmaj7_song_model_to_dict():
-    song = build_demo_cmaj7_song()
+    song = song_model_from_dict(_minimal_payload())
 
     payload = song_model_to_dict(song)
 
@@ -89,7 +87,7 @@ def test_dump_minimal_cmaj7_song_model_to_dict():
 
 
 def test_yaml_roundtrip(tmp_path: Path):
-    song = build_demo_cmaj7_song()
+    song = song_model_from_dict(_minimal_payload())
 
     yaml_text = dump_song_model_yaml(song)
     path = tmp_path / "demo.changes.yaml"
@@ -116,18 +114,6 @@ def test_example_file_loads():
     assert song.title == "Demo Cmaj7"
     assert song.working_key == "C"
     assert song.measures[0].harmony[0].symbol == "Cmaj7"
-
-
-def test_loaded_song_model_feeds_track8_export_api():
-    path = Path("examples/song_models/demo_cmaj7.changes.yaml")
-    song = load_song_model_yaml(path)
-
-    payload = build_track8_export_yaml_payload_from_song(song)
-
-    assert payload["device"] == "digitone2"
-    assert payload["pattern"]["mode"] == "per-track"
-    assert payload["events"]
-    assert [event["note"] for event in payload["events"]] == ["C4", "E4", "G4", "B4", "D5", "A5"]
 
 
 def test_invalid_version_or_type_errors():
@@ -178,7 +164,7 @@ def test_fraction_parser():
 
 
 def test_no_floats_in_dumped_yaml():
-    song = build_demo_cmaj7_song()
+    song = song_model_from_dict(_minimal_payload())
     yaml_text = dump_song_model_yaml(song)
 
     assert "0.0" not in yaml_text

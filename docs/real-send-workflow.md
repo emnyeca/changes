@@ -82,7 +82,6 @@ Port selected: Elektron Digitone II 2
 - `docs/index.md`
 - `docs/cli.md`
 - `docs/e2e-user-workflow.md`
-- `docs/manifest-aware-validation.md`
 - `docs/generated-artifacts-policy.md`
 - `docs/current-state.md`
 - `docs/current-state.md`

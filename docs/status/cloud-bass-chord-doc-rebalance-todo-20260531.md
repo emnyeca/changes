@@ -35,7 +35,7 @@ Cloud / Bass / Chord を同等比重で扱う文書体系に再編する。
 
 ## 直近実施済み（追加整理）
 
-- Track 8 履歴系文書をさらに統合し、`chord-export-api.md` / `track8-product-like-pattern-settings-spec.md` / `chord-internal-implementation-notes.md` を中心に集約
+- Track 8 履歴系文書をさらに統合し、product workflow の文書へ集約
 - design/readiness/follow-up/capability-check/template-fixture の分散文書を削除し、リンク先を更新
 
 ## 現在地情報の置き場（運用ルール反映）

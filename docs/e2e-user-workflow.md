@@ -1,94 +1,62 @@
-# End-to-end Digitone Track 8 SysEx ワークフロー
+# E2E user workflow
 
-## 目的
+This document describes the supported non-hardware and guarded hardware workflow.
 
-この文書は、現在安定化している Chord RC ワークフロー（Digitone Track 8）を示します。
-EUB Changes 全体の完成形ワークフローを示すものではありません。
+## Main path
 
-上位のプロダクト方針は `docs/product-architecture.md` と `docs/current-state.md` を参照してください。
+```text
+compact progression or MusicXML
+  -> product export (Cloud/Bass/Chord, Tracks 1-8)
+  -> SysEx file check
+  -> dry-run
+  -> guarded real-send
+```
 
-実運用フロー:
+## Product export
 
-SongModel YAML -> Chord export (Digitone Track 8) -> manifest-aware SysEx check -> dry-run -> guarded real-send
+```powershell
+changes export digitone-product `
+  --input examples/ii_v_i_intro_a.progression.yaml `
+  --output-dir out/digitone-product `
+  --layers cloud,bass,chord `
+  --write-syx
+```
 
-## 安全境界
+The product export path writes artifacts only. It does not send MIDI.
 
-Export は送信しません。
+## SysEx check
 
-Check は送信しません。
+```powershell
+changes check digitone-syx --syx out/digitone-product/digitone_product.syx
+```
 
-Dry-run はハードウェアに書き込みません。
+The check command validates the SysEx file envelope and does not touch MIDI hardware.
 
-Guarded real-send は明示確認が必須です。
+## Dry-run send
 
-`mido` と `python-rtmidi` は `changes send digitone-syx --list-ports` と guarded real-send にのみ必要です。
+```powershell
+changes send digitone-syx `
+  --syx out/digitone-product/digitone_product.syx `
+  --port "Elektron Digitone II 2" `
+  --dry-run
+```
 
-## ワークフロー
+Dry-run validates the selected port name and SysEx bytes without writing hardware.
 
-1. Export Chord artifacts（Digitone Track 8, `changes export digitone-track8`）
-2. Check `.syx` envelope and optional manifest (`changes check digitone-syx`)
-3. List ports (`changes send digitone-syx --list-ports`)
-4. Dry-run (`changes send digitone-syx --dry-run`)
-5. Guarded real-send (`changes send digitone-syx --real-send --yes-i-understand-this-writes-to-hardware`)
+## Guarded real-send
 
-厳密なコマンドオプションは `docs/cli.md` を参照してください。
+```powershell
+changes send digitone-syx `
+  --syx out/digitone-product/digitone_product.syx `
+  --port "Elektron Digitone II 2" `
+  --real-send `
+  --yes-i-understand-this-writes-to-hardware
+```
 
-## 検証済み fixture
+Real-send writes to hardware and therefore requires explicit confirmation.
 
-現在の検証済み fixture:
-
-- `examples/song_models/demo_ii_v_i.changes.yaml`
-- Dm7 at step1
-- G7 at step5
-- Cmaj7 at step9
-- Digitone II firmware 1.10D で検証済み
-
-## 追加ソフトウェア fixture
-
-ソフトウェア検証・回帰用の SongModel fixture:
-
-- `examples/song_models/demo_multibar_turnaround.changes.yaml`
-- `examples/song_models/demo_multisection_form.changes.yaml`
-
-II-V-I fixture は既知のハードウェア検証済みパスとして使用します。
-
-`demo_multibar_turnaround` はソフトウェア E2E export/check/dry-run 検証に使用します。
-
-`demo_multisection_form` は export/manifest 回帰に使用します。
-
-fixture ごとの正確な検証範囲は `docs/validation-matrix.md` を参照してください。
-
-## 要件
-
-export/check/dry-run に必要:
-
-- 通常の開発インストール
-- `.syx` 生成時は digitone-syx-toolkit
-
-これらの手順に `mido` は不要です。
-
-port 一覧 / real-send に必要:
+`mido` and `python-rtmidi` are only required for port listing and real-send:
 
 ```powershell
 python -m pip install -e ".[midi]"
 ```
-
-これにより optional MIDI backend がない環境でも check と dry-run を維持できます。
-
-## バージョン確認
-
-MIDI backend のトラブルシュート時は `docs/real-send-workflow.md` の version-check コマンドを使います。
-
-## 中止条件
-
-次の場合は real-send 前に中止します:
-
-- SysEx check が失敗した
-- Digitone II port が見えない
-- port 名が曖昧
-- `.syx` が想定ファイルでない
-- 重要な Digitone データをバックアップしていない
-
-manifest-aware check の詳細と警告挙動は `docs/manifest-aware-validation.md` を参照してください。
-
-現在の RC 範囲と検証済み fixture 状態は `docs/current-state.md` と `docs/validation-matrix.md` を参照してください。

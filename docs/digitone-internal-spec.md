@@ -12,7 +12,7 @@ Export / Transport / Backend の責務境界と現在スコープを定義しま
 
 ```text
 SongModel YAML
-  -> Chord export (Digitone Track 8)
+  -> Product export (Digitone Tracks 1-8)
   -> .syx bytes
   -> transport layer
   -> MIDI backend
@@ -128,5 +128,3 @@ validation scope:
 
 - `docs/cli.md`
 - `docs/real-send-workflow.md`
-- `docs/generated-artifacts-policy.md`
-- `docs/manifest-aware-validation.md`

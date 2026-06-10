@@ -1,6 +1,6 @@
 [project]
 name = "changes"
-version = "0.1.0"
+version = "0.2.0"
 description = "A machine-jazz harmony engine with generic MIDI output and Digitone Native SysEx backend preparation."
 authors = [
     { name = "Emnyeca" },

@@ -47,7 +47,7 @@ _ICON_HOME = ':material/home:'
 _ICON_CODE = ':material/code:'
 _ICON_GUIDE = ':material/menu_book:'
 _ICON_LICENSE = ':material/balance:'
-_ICON_REPO = ':material/database:'
+_ICON_THIRD_PARTY_NOTICES = ':material/database:'
 _ICON_CLOUD = ':material/cloud:'
 _ICON_CHORD = ':material/queue_music:'
 
@@ -70,8 +70,9 @@ _ICON_PATH_BASS = existing_resource_path("docs/assets/1x/icon_bass.png")
 _ICON_PATH_CHORD = existing_resource_path("docs/assets/1x/icon_chord.png")
 _ICON_PATH_EMNYECA = existing_resource_path("docs/assets/1x/eub_changes_emnyeca_icon_300x300.png")
 _LICENSE_PATH = existing_resource_path("LICENSE")
-_APP_VERSION = "v0.1.0"
-_APP_BUILD_METADATA = "Initial Preview"
+_THIRD_PARTY_NOTICES_PATH = existing_resource_path("THIRD_PARTY_NOTICES.md")
+_APP_VERSION = "v0.2.0"
+_APP_BUILD_METADATA = "iReal Import Preview"
 
 # ── Music constants ───────────────────────────────────────────────────────────
 
@@ -1185,9 +1186,9 @@ def _render_import_section(disabled: bool = False) -> None:
         )
     with playlist_col:
         selected_playlist = st.selectbox(
-            "Official iReal Pro Playlist (fetched at import time; requires network)",
+            "Public iReal Pro playlist (fetched at import time; requires network)",
             options=[""] + list(OFFICIAL_PLAYLIST_NAMES),
-            format_func=lambda x: "— and/or select an official iReal Pro playlist —" if x == "" else x,
+            format_func=lambda x: "— and/or select a public iReal Pro playlist —" if x == "" else x,
             key="_sl_official_playlist",
             disabled=disabled,
             label_visibility="collapsed",
@@ -2421,11 +2422,12 @@ def _render_settings() -> None:
             _show_license_dialog()
 
     with repository_col:
-        st.link_button(
-            f"{_ICON_REPO} EUB Changes Repository",
-            "https://github.com/emnyeca/changes",
+        if st.button(
+            f"{_ICON_THIRD_PARTY_NOTICES} Third-party Notices",
             width="stretch",
-        )
+            key="_notices_btn",
+        ):
+            _show_notices_dialog()
 
     # ── Advanced ──────────────────────────────────────────────────────────────
     st.divider()
@@ -3379,6 +3381,21 @@ def _show_license_dialog() -> None:
         return
 
     st.markdown(license_text)
+
+
+@st.dialog("Third-party Notices")
+def _show_notices_dialog() -> None:
+    if _THIRD_PARTY_NOTICES_PATH is None:
+        st.warning("THIRD_PARTY_NOTICES.md was not found in this build.")
+        return
+
+    try:
+        notices_text = _THIRD_PARTY_NOTICES_PATH.read_text(encoding="utf-8")
+    except Exception as exc:
+        st.warning(f"Failed to read THIRD_PARTY_NOTICES.md: {type(exc).__name__}: {exc}")
+        return
+
+    st.markdown(notices_text)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

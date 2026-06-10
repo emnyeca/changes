@@ -18,17 +18,19 @@ def check_bundled_ireal_tools() -> bool:
     """
     repo_root = Path(__file__).resolve().parent.parent
     required = [
+        repo_root / "THIRD_PARTY_NOTICES.md",
         repo_root / "tools" / "eub-ireal-wrapper.mjs",
         repo_root / "tools" / "bundled" / "ireal-musicxml" / "build" / "ireal-musicxml.mjs",
         repo_root / "tools" / "bundled" / "node" / "node.exe",
+        repo_root / "tools" / "bundled" / "node" / "LICENSE",
     ]
     missing = [p for p in required if not p.is_file()]
     if missing:
         for p in missing:
-            print(f"FAIL: bundled iReal converter file missing: {p}")
+            print(f"FAIL: required build file missing: {p}")
         print("Stage with: .\\scripts\\PrepareBundledIRealMusicXML.ps1 -IncludeNode")
         return False
-    print("OK: bundled ireal-musicxml + node.exe staged")
+    print("OK: THIRD_PARTY_NOTICES.md, bundled ireal-musicxml, node.exe, and node/LICENSE staged")
     return True
 
 

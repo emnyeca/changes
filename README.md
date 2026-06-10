@@ -101,13 +101,15 @@ Sorry, developer docs are written in only Japanese.
 
 EUB Changes exists because many people have shared their knowledge, tools, formats, and musical practice openly.
 
-As a jazz musician, I am deeply grateful to iReal Pro. It has been an essential part of my practice, rehearsals, sessions, and chart preparation for many years, and EUB Changes relies heavily on iReal Pro song data as one of its most important practical sources.
+As a jazz musician, I am deeply grateful to iReal Pro. It has been an essential for many jazz musicians including me, and EUB Changes relies heavily on iReal Pro song data as one of its most important practical sources.
 
 EUB Changes includes an iReal Pro import path powered by `ireal-musicxml`, created by Karim Ratib / infojunkie.
 
 I am also grateful to the open-source developers, music software communities, Elektron users, and musicians whose work made this project possible.
 
 EUB Changes also uses and builds upon `digitone-syx-toolkit`, a related Emnyeca utility project for working with Digitone II SysEx data.
+
+The application UI is built with [Streamlit](https://github.com/streamlit/streamlit) and packaged for desktop by [streamlit-desktop-app](https://github.com/whitphx/streamlit-desktop-app) (whitphx).
 
 Third-party software included in release builds is listed in [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 

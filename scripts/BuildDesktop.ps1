@@ -36,9 +36,10 @@ Write-Host "Building desktop app..."
     --hidden-import rtmidi `
     --add-data "docs\assets\1x;docs\assets\1x" `
     --add-data "LICENSE;." `
+    --add-data "THIRD_PARTY_NOTICES.md;." `
     --add-data "tools\eub-ireal-wrapper.mjs;tools" `
     --add-data "tools\bundled\ireal-musicxml;tools\bundled\ireal-musicxml" `
-    --add-data "tools\bundled\node\node.exe;tools\bundled\node" `
+    --add-data "tools\bundled\node;tools\bundled\node" `
     --splash docs\assets\1x\eub_changes_splash_960x540.png `
     --noconsole `
     --noconfirm `

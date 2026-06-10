@@ -19,6 +19,15 @@ The repository does not contain the converter payload itself; release builds bun
 - Purpose in EUB Changes: Runtime used to execute the bundled ireal-musicxml converter.
 - Bundled version: portable Windows runtime staged at build time by `scripts/PrepareBundledIRealMusicXML.ps1 -IncludeNode` (default 22.14.0; the exact version is recorded by the staged `tools/bundled/node/LICENSE`)
 
-## Not bundled
+## Streamlit
 
-`musicxml-midi` (<https://github.com/infojunkie/musicxml-midi>) is **not** bundled or used. MIDI backing-track generation from iReal data is a possible future consideration only.
+- Repository: <https://github.com/streamlit/streamlit>
+- License: Apache License 2.0
+- Purpose in EUB Changes: Web UI framework used to build the application interface.
+
+## streamlit-desktop-app
+
+- Repository: <https://github.com/whitphx/streamlit-desktop-app>
+- Author: Yuichiro Tachibana (whitphx)
+- License: MIT License
+- Purpose in EUB Changes: Packages the Streamlit app as a standalone Windows desktop executable for distribution.

@@ -48,7 +48,7 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 - **Linear send** — minimal patterns, continuous arrangement
 - **Bundle by Section** — one pattern per section, Song Mode–ready
 - **Pattern Change** — automatic Song Mode pattern transition settings
-- **Automatic Track Length** - Speed setup based on source tempo and chord timing
+- **Automatic Track Length / Speed** - setup based on source tempo and chord timing
 
 ### Note on tempo and speed
 
@@ -94,5 +94,10 @@ Sorry, developer docs are written in only Japanese.
 
 ## License
 
-EUB Changes is released under the MIT License.  
-See [LICENSE](./LICENSE) for details.
+EUB Changes v0.1.1 and later are distributed under the GNU General Public License v3.0.
+
+Copyright (C) 2026 Emnyeca.
+
+Earlier releases may have been distributed under the MIT License. Those earlier releases remain available under their original license terms.
+
+Corresponding source code for release builds is available from the matching GitHub release tag.

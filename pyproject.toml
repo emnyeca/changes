@@ -6,7 +6,7 @@ authors = [
     { name = "Emnyeca" },
 ]
 readme = "README.md"
-license = "MIT"
+license = "GPL-3.0-only"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = [

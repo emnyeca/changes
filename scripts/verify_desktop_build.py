@@ -40,7 +40,8 @@ def check_digitone_syx_toolkit() -> bool:
         if builder is None:
             print("FAIL: digitone_syx_toolkit.events_to_syx.build_syx_from_events not found")
             return False
-        print(f"OK: digitone_syx_toolkit {getattr(digitone_syx_toolkit, '__version__', '(no version)')} — build_syx_from_events available")
+        # ASCII only: this runs in consoles that may use cp932, where em-dash fails to encode.
+        print(f"OK: digitone_syx_toolkit {getattr(digitone_syx_toolkit, '__version__', '(no version)')} - build_syx_from_events available")
         return True
     except ImportError as exc:
         print(f"FAIL: digitone_syx_toolkit import failed: {exc}")

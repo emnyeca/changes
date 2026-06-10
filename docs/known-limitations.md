@@ -49,6 +49,13 @@ Real-send には次が必要です。
 
 現時点では permanent release asset ではありません。
 
+### iReal Pro import は変換ベース
+
+- iReal import は同梱の `ireal-musicxml` で iReal data を MusicXML へ変換してから取り込みます。
+- iReal固有の layout / alternate chord / repeat / comment / backing track 情報は、完全には再現されない場合があります。
+- converter の warning は、取得できた場合に import warning として表示されます。
+- MIDI生成（`musicxml-midi`）は同梱していません。tempo / key / meter は MusicXML 変換結果と style default から決まります。
+
 ### consumer installer ではない
 
 現在は developer / technical CLI workflow です。

@@ -28,7 +28,7 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 
 ## Workflow
 
-1. Export a MusicXML chord chart from iReal Pro or another source
+1. Export an iReal Pro song / playlist (html) or a MusicXML chord chart from another source
 2. Open EUB Changes and import the file
 3. Select a song from the Song Library
 4. Optionally transpose to your performance key
@@ -40,6 +40,7 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 ## Features
 
 - **Song Library** — import, search, select, and manage songs
+- **iReal Pro import** — import iReal Pro song / playlist html directly
 - **Chord Cells** — view chord progression layout by section
 - **Cloud Voice Leading Graph** — visualize 6-voice movement across the song
 - **Section Filter** — target only selected sections
@@ -49,6 +50,10 @@ Tracks 9–16 remain available for your own arrangement and live performance mat
 - **Bundle by Section** — one pattern per section, Song Mode–ready
 - **Pattern Change** — automatic Song Mode pattern transition settings
 - **Automatic Track Length / Speed** - setup based on source tempo and chord timing
+
+### iReal Pro import
+
+EUB Changes can import iReal Pro song or playlist html by converting it to MusicXML with the bundled `ireal-musicxml` converter, then passing the result through the normal MusicXML import pipeline. Some iReal-specific information (layout, alternate chords, backing tracks) is not fully represented; see [`docs/known-limitations.md`](docs/known-limitations.md).
 
 ### Note on tempo and speed
 
@@ -101,3 +106,5 @@ Copyright (C) 2026 Emnyeca.
 Earlier releases may have been distributed under the MIT License. Those earlier releases remain available under their original license terms.
 
 Corresponding source code for release builds is available from the matching GitHub release tag.
+
+Bundled third-party software (such as the `ireal-musicxml` converter and the Node.js runtime) is listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).

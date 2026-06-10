@@ -1,4 +1,4 @@
-"""Official iReal Pro playlist fetching.
+"""Public iReal Pro playlist fetching.
 
 Playlists are fetched at runtime from the ireal-musicxml demo server
 (https://blog.karimratib.me/demos/chirp/), which hosts the same playlists
@@ -46,7 +46,7 @@ def fetch_official_playlist(
     *,
     timeout_seconds: float = DEFAULT_FETCH_TIMEOUT,
 ) -> bytes:
-    """Fetch a named official iReal Pro playlist and return the raw bytes.
+    """Fetch a named public iReal Pro playlist and return the raw bytes.
 
     The returned bytes contain a raw irealb:// URI.  The iReal converter
     pipeline accepts this directly (the wrapper regex handles plain text

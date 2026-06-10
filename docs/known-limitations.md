@@ -56,7 +56,7 @@ Real-send には次が必要です。
 - converter の warning は、取得できた場合に import warning として表示されます。
 - MIDI生成（`musicxml-midi`）は同梱していません。tempo / key / meter は MusicXML 変換結果と style default から決まります。
 
-### 公式プレイリストのインポートはネットワーク必須
+### 公開プレイリストのインポートはネットワーク必須
 
 - Import セクションのプルダウンから公式 iReal Pro プレイリスト（Jazz 1460 など）を選ぶと、インポート実行時にネットワーク経由で取得します。
 - オフライン環境ではエラーが表示されます。iReal Pro の .html ファイルを手動でダウンロードしてファイルアップロードからインポートすることで回避できます。

@@ -2392,8 +2392,8 @@ def _render_settings() -> None:
 
     with github_col:
         st.link_button(
-            f"{_ICON_CODE} Emnyeca's GitHub",
-            "https://github.com/emnyeca",
+            f"{_ICON_CODE} Source Code",
+            "https://github.com/emnyeca/changes",
             width="stretch",
         )
 

@@ -117,7 +117,7 @@ EUB Changes is not affiliated with or endorsed by iReal Pro.
 
 ## License
 
-EUB Changes v0.1.1 and later are distributed under the GNU General Public License v3.0.
+EUB Changes v0.2.0 and later are distributed under the GNU General Public License v3.0.
 
 Copyright (C) 2026 Emnyeca.
 

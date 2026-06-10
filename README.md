@@ -94,5 +94,8 @@ Sorry, developer docs are written in only Japanese.
 
 ## License
 
-EUB Changes is released under the MIT License.  
-See [LICENSE](./LICENSE) for details.
+EUB Changes v0.1.1 and later are distributed under the GNU General Public License v3.0.
+
+Earlier releases may have been distributed under the MIT License. Those earlier releases remain available under their original license terms.
+
+Corresponding source code for release builds is available from the matching GitHub release tag.

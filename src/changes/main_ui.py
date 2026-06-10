@@ -846,6 +846,7 @@ def _dialog_import_progress() -> None:
 
 def _run_import_progress_request(request: dict, progress, message) -> None:
     stage_base = {
+        "fetch": 2,
         "zip_open": 2,
         "zip_scan": 8,
         "zip_read": 18,
@@ -859,6 +860,7 @@ def _run_import_progress_request(request: dict, progress, message) -> None:
         "error": 100,
     }
     stage_span = {
+        "fetch": 20,
         "zip_open": 4,
         "zip_scan": 10,
         "zip_read": 10,
@@ -881,7 +883,11 @@ def _run_import_progress_request(request: dict, progress, message) -> None:
 
     kind = request.get("kind")
     if kind == "prepare":
-        _start_import(request.get("files", []), progress_callback=_progress)
+        _start_import(
+            request.get("files", []),
+            progress_callback=_progress,
+            official_playlist=request.get("official_playlist"),
+        )
         result = st.session_state.get("_import_result")
         conflicts = st.session_state.get("_import_conflict_titles") or []
         if conflicts:
@@ -1162,6 +1168,8 @@ def _render_songlist(show_import: bool = True) -> None:
 
 
 def _render_import_section(disabled: bool = False) -> None:
+    from changes.importers.official_playlists import OFFICIAL_PLAYLIST_NAMES
+
     # ── Import ────────────────────────────────────────────────────────────────
     st.subheader(f"{_ICON_IMPORT} Import")
     uploaded = st.file_uploader(
@@ -1175,14 +1183,24 @@ def _render_import_section(disabled: bool = False) -> None:
         "iReal Pro .html (song or playlist) is converted to MusicXML with the bundled "
         "ireal-musicxml converter, then imported through the normal MusicXML pipeline."
     )
-    if uploaded and st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled):
+
+    st.divider()
+
+    selected_playlist = st.selectbox(
+        "Official iReal Pro Playlist (fetched at import time; requires network)",
+        options=[""] + list(OFFICIAL_PLAYLIST_NAMES),
+        format_func=lambda x: "— or select an official iReal Pro playlist —" if x == "" else x,
+        key="_sl_official_playlist",
+        disabled=disabled,
+    )
+
+    can_import = bool(uploaded) or bool(selected_playlist)
+    if st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled or not can_import):
         st.session_state._import_progress_status = None
         st.session_state._import_progress_request = {
             "kind": "prepare",
-            "files": [
-                {"name": f.name, "data": f.getvalue()}
-                for f in uploaded
-            ],
+            "files": [{"name": f.name, "data": f.getvalue()} for f in (uploaded or [])],
+            "official_playlist": selected_playlist or None,
         }
         _request_rerun()
 
@@ -1394,7 +1412,7 @@ def _import_files_with_optional_progress(import_files_func, file_data: dict[str,
     return result
 
 
-def _start_import(files: list, progress_callback=None) -> None:
+def _start_import(files: list, progress_callback=None, *, official_playlist: str | None = None) -> None:
     from changes.importers.import_bundle import (
         MIDI_EXTS,
         MUSICXML_EXTS,
@@ -1403,7 +1421,12 @@ def _start_import(files: list, progress_callback=None) -> None:
         find_midi_update_candidates,
         import_files,
     )
-    from changes.importers.ireal_converter import expand_ireal_inputs, is_ireal_html_name
+    from changes.importers.ireal_converter import (
+        PLAYLIST_TIMEOUT_SECONDS,
+        expand_ireal_inputs,
+        is_ireal_html_name,
+    )
+    from changes.importers.official_playlists import PlaylistFetchError, fetch_official_playlist
     from changes.library import list_songs
 
     s = st.session_state._settings
@@ -1413,6 +1436,26 @@ def _start_import(files: list, progress_callback=None) -> None:
     file_data: dict[str, bytes] = {}
     upload_failed: list[tuple[str, str]] = []
     total_files = max(len(files), 1)
+
+    # Fetch official playlist if selected (before ZIP / file processing)
+    if official_playlist:
+        if progress_callback:
+            progress_callback("fetch", 0, 1, f"Fetching {official_playlist} from iReal Pro...")
+        try:
+            playlist_bytes = fetch_official_playlist(official_playlist)
+            # Use .html extension so the iReal pipeline picks it up
+            file_data[f"{official_playlist}.html"] = playlist_bytes
+            if progress_callback:
+                progress_callback("fetch", 1, 1, f"Fetched {official_playlist}")
+        except PlaylistFetchError as exc:
+            detail = f" ({exc.details.strip()})" if exc.details.strip() else ""
+            upload_failed.append((official_playlist, f"{exc.message}{detail}"))
+            if not files:
+                st.session_state._import_bundle_result = None
+                st.session_state._import_pending = []
+                st.session_state._import_pending_failed = upload_failed
+                st.session_state._import_result = {"ok": 0, "failed": upload_failed}
+                return
     for idx, f in enumerate(files, start=1):
         name = str(f["name"]) if isinstance(f, dict) else str(f.name)
         raw = f["data"] if isinstance(f, dict) else f.read()
@@ -1433,8 +1476,10 @@ def _start_import(files: list, progress_callback=None) -> None:
     # a missing bundled converter must not crash the app.
     ireal_warnings: list[tuple[str, str]] = []
     if any(is_ireal_html_name(n) for n in file_data):
+        # Official playlists can be large (e.g. Jazz 1460); give extra time
+        ireal_timeout = 300.0 if official_playlist else PLAYLIST_TIMEOUT_SECONDS
         file_data, ireal_warnings, ireal_failed = expand_ireal_inputs(
-            file_data, progress_callback=progress_callback
+            file_data, timeout_seconds=ireal_timeout, progress_callback=progress_callback
         )
         upload_failed.extend(ireal_failed)
 

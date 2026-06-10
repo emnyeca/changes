@@ -1,6 +1,8 @@
 # Changes CLI reference
 
-This document describes the currently supported CLI surface.
+This document describes developer/maintenance CLI commands that remain available for validation and internal workflows.
+
+The primary user-facing interface of EUB Changes is the Windows desktop app.
 
 ## Current Commands
 

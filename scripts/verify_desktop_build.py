@@ -8,6 +8,28 @@ Usage:
 """
 
 import sys
+from pathlib import Path
+
+
+def check_bundled_ireal_tools() -> bool:
+    """Desktop builds bundle the iReal converter; staging must exist before build.
+
+    CI unit tests do not require these files — only the desktop build does.
+    """
+    repo_root = Path(__file__).resolve().parent.parent
+    required = [
+        repo_root / "tools" / "eub-ireal-wrapper.mjs",
+        repo_root / "tools" / "bundled" / "ireal-musicxml" / "build" / "ireal-musicxml.mjs",
+        repo_root / "tools" / "bundled" / "node" / "node.exe",
+    ]
+    missing = [p for p in required if not p.is_file()]
+    if missing:
+        for p in missing:
+            print(f"FAIL: bundled iReal converter file missing: {p}")
+        print("Stage with: .\\scripts\\PrepareBundledIRealMusicXML.ps1 -IncludeNode")
+        return False
+    print("OK: bundled ireal-musicxml + node.exe staged")
+    return True
 
 
 def check_digitone_syx_toolkit() -> bool:
@@ -28,4 +50,5 @@ def check_digitone_syx_toolkit() -> bool:
 
 if __name__ == "__main__":
     ok = check_digitone_syx_toolkit()
+    ok = check_bundled_ireal_tools() and ok
     sys.exit(0 if ok else 1)

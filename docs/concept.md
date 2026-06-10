@@ -82,7 +82,7 @@ entrypoint:
 
 目的:
 
-- Chord export CLI（Digitone Track 8）へ渡す現行の安定入力フォーマット
+- product export pipeline へ渡す現行の安定入力フォーマット
 
 現在カバーする項目:
 
@@ -277,7 +277,7 @@ routing = {
 
 理由:
 
-- Chord export（Digitone Track 8）は `RenderedArrangement.occurrences[*].chord` を直接消費する必要がある
+- Product export は `RenderedArrangement.occurrences[*]` の Cloud / Bass / Chord layers を同じ pipeline で消費する必要がある
 - legacy `RenderedTimeline role="chord"` は旧 Cloud 系を表す場合があり安全ではない
 
 Core model:
@@ -370,13 +370,13 @@ root movement や slash bass を扱う grounding layer です。
 
 Digitone II 上で Chord を配置するトラック。
 
-現在の RC-stabilized subset では、主に Chord export / check / dry-run / guarded real-send（Digitone Track 8）の検証が進んでいます。
+現在の RC-stabilized subset では、Cloud / Bass / Chord をまとめた product export / check / dry-run / guarded real-send の検証が進んでいます。
 
-### Chord workflow（Digitone Track 8）
+### Product workflow（Tracks 1-8）
 
-Chord layer を Digitone II の Track 8 へ出力する現在の安定化済み subset。
+Cloud / Bass / Chord layers を Digitone II の Tracks 1-8 へ出力する現在の安定化済み subset。
 
-EUB Changes の現在の RC workflow では、この Chord workflow（Digitone Track 8）に関する export / check / dry-run / guarded real-send が先行して整備されています。
+EUB Changes の現在の RC workflow では、この product workflow に関する export / check / dry-run / guarded real-send が先行して整備されています。
 
 ### RC / Release Candidate
 
@@ -384,11 +384,11 @@ Release Candidate の略。
 
 EUB Changes では、正式リリースではないが、一定の実用・検証フローとして候補扱いできる段階を指します。
 
-現在の文脈で RC と言う場合、多くは Chord の export / check / dry-run / guarded real-send workflow（Digitone Track 8）を指します。これは EUB Changes 全体が完成間近であるという意味ではありません。
+現在の文脈で RC と言う場合、多くは product export / check / dry-run / guarded real-send workflow を指します。これは EUB Changes 全体が完成間近であるという意味ではありません。
 
 ### RC-stabilized subset
 
-EUB Changes 全体のうち、現在比較的安定して検証されている一部分。現在は主に Chord workflow（Digitone Track 8）を指します。
+EUB Changes 全体のうち、現在比較的安定して検証されている一部分。現在は主に product workflow を指します。
 
 RC-stabilized subset は、レイヤー構成とは別軸で扱います。安定化済みであることは、その機能が主機能であることを意味しません。
 

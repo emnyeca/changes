@@ -17,21 +17,19 @@ def test_top_level_help_mentions_modern_commands(monkeypatch: pytest.MonkeyPatch
     assert "export" in out
     assert "check" in out
     assert "send" in out
-    assert "digitone-track8" in out
     assert "digitone-product" in out
     assert "digitone-syx" in out
     assert "Legacy commands:" in out
 
 
 
-def test_export_group_help_mentions_digitone_track8(monkeypatch: pytest.MonkeyPatch, capsys):
+def test_export_group_help_mentions_digitone_product(monkeypatch: pytest.MonkeyPatch, capsys):
     monkeypatch.setattr(sys, "argv", ["changes", "export", "--help"])
 
     cli.main()
 
     out = capsys.readouterr().out
     assert "Available export commands:" in out
-    assert "digitone-track8" in out
     assert "digitone-product" in out
 
 
@@ -55,17 +53,6 @@ def test_check_group_help_mentions_digitone_syx(monkeypatch: pytest.MonkeyPatch,
     assert "digitone-syx" in out
 
 
-def test_modern_export_dispatch_routes_to_track8_helper(monkeypatch: pytest.MonkeyPatch):
-    called: dict[str, list[str]] = {}
-
-    monkeypatch.setattr(cli, "_run_track8_export_cli", lambda argv: called.setdefault("argv", argv))
-    monkeypatch.setattr(sys, "argv", ["changes", "export", "digitone-track8", "--demo", "cmaj7"])
-
-    cli.main()
-
-    assert called["argv"] == ["--demo", "cmaj7"]
-
-
 def test_modern_export_dispatch_routes_to_product_helper(monkeypatch: pytest.MonkeyPatch):
     called: dict[str, list[str]] = {}
 
@@ -75,6 +62,13 @@ def test_modern_export_dispatch_routes_to_product_helper(monkeypatch: pytest.Mon
     cli.main()
 
     assert called["argv"] == ["--input", "demo.yaml"]
+
+
+def test_track8_export_command_is_not_available(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(sys, "argv", ["changes", "export", "digitone-track8", "--demo", "cmaj7"])
+
+    with pytest.raises(SystemExit, match="Unknown export command: digitone-track8"):
+        cli.main()
 
 
 def test_modern_send_dispatch_routes_to_sysex_helper(monkeypatch: pytest.MonkeyPatch):

@@ -12,7 +12,6 @@
 
 ## 現在の practical workflow
 
-- Chord export API: `chord-export-api.md`
 - Chord internal implementation notes: `chord-internal-implementation-notes.md`
 - End-to-end workflow: `e2e-user-workflow.md`
 - Digitone SysEx real-send workflow: `real-send-workflow.md`
@@ -32,6 +31,3 @@
 ## Safety and validation
 
 - MIDI hardware validation checklist: `midi-hardware-validation-checklist.md`
-- First Digitone real-send validation: `hardware-validation/digitone-syx-real-send-first-validation.md`
-- Generated artifacts policy: `generated-artifacts-policy.md`
-- Manifest-aware validation: `manifest-aware-validation.md`

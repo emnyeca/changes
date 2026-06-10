@@ -41,7 +41,7 @@ From `changes` repository:
 ```powershell
 python -m pip install -e .
 python -m pip install -e ..\digitone-syx-toolkit
-python -m pytest tests/test_track8_toolkit_loader_validation.py tests/test_track8_sysex_export.py tests/test_track8_fixture_generation.py tests/test_track8_product_like_fixture_generation.py -q
+python -m pytest tests/test_track8_toolkit_loader_validation.py tests/test_track8_sysex_export.py -q
 ```
 
 ## Scope boundary

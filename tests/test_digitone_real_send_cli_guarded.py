@@ -135,23 +135,3 @@ def test_guarded_real_send_with_fake_backend_records_send(tmp_path: Path, monkey
     assert "warning: hardware was written" in out
 
 
-def test_export_cli_still_has_no_send_option(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    output_dir = tmp_path / "out"
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "changes",
-            "export",
-            "digitone-track8",
-            "--demo",
-            "cmaj7",
-            "--output-dir",
-            str(output_dir),
-            "--events-yaml-only",
-            "--send",
-        ],
-    )
-
-    with pytest.raises(SystemExit):
-        cli.main()

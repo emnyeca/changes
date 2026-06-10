@@ -56,10 +56,8 @@ def test_docs_do_not_overclaim_consumer_readiness_or_total_validation():
     assert "broad hardware validation" not in text
 
 
-def test_cli_docs_mention_manifest_aware_check_flags():
+def test_cli_docs_mention_sysex_check():
     text = _read("docs/cli.md")
 
-    assert "--manifest" in text
-    assert "--expect-source-title" in text
-    assert "--expect-chord-events" in text
-    assert "--expect-note-rows" in text
+    assert "changes check digitone-syx" in text
+    assert "--syx" in text

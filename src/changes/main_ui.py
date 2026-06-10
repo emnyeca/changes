@@ -1165,11 +1165,15 @@ def _render_import_section(disabled: bool = False) -> None:
     # ── Import ────────────────────────────────────────────────────────────────
     st.subheader(f"{_ICON_IMPORT} Import")
     uploaded = st.file_uploader(
-        "Accepts: .zip (iReal-musicxml), .musicxml, .xml / .mid, .midi is for tempo metadata only",
-        type=["zip", "musicxml", "xml", "mid", "midi"],
+        "Accepts: iReal Pro .html / .zip (iReal-musicxml) / .musicxml, .xml / .mid, .midi is for tempo metadata only",
+        type=["html", "htm", "zip", "musicxml", "xml", "mid", "midi"],
         accept_multiple_files=True,
         key=f"_sl_uploader_{st.session_state._import_uploader_reset_token}",
         disabled=disabled,
+    )
+    st.caption(
+        "iReal Pro .html (song or playlist) is converted to MusicXML with the bundled "
+        "ireal-musicxml converter, then imported through the normal MusicXML pipeline."
     )
     if uploaded and st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled):
         st.session_state._import_progress_status = None
@@ -1197,8 +1201,12 @@ def _render_import_section(disabled: bool = False) -> None:
                 f"- Default: {sc.get('default', 0)}"
             )
             if bundle_result.warnings:
-                lines.append("\n**Warnings:**\n" + "\n".join(
-                    f"- {w.song_name}: {w.message}" for w in bundle_result.warnings[:20]
+                shown = bundle_result.warnings[:20]
+                header = "\n**Warnings:**"
+                if len(bundle_result.warnings) > len(shown):
+                    header += f" (showing first {len(shown)} of {len(bundle_result.warnings)})"
+                lines.append(header + "\n" + "\n".join(
+                    f"- {w.song_name}: {w.message}" for w in shown
                 ))
         if result["failed"]:
             lines.append("\n**Failed:**\n" + "\n".join(
@@ -1390,10 +1398,12 @@ def _start_import(files: list, progress_callback=None) -> None:
     from changes.importers.import_bundle import (
         MIDI_EXTS,
         MUSICXML_EXTS,
+        ImportWarning,
         extract_zip,
         find_midi_update_candidates,
         import_files,
     )
+    from changes.importers.ireal_converter import expand_ireal_inputs, is_ireal_html_name
     from changes.library import list_songs
 
     s = st.session_state._settings
@@ -1417,6 +1427,16 @@ def _start_import(files: list, progress_callback=None) -> None:
                 upload_failed.append((name, str(exc)))
         else:
             file_data[name] = raw
+
+    # iReal Pro html → MusicXML via bundled ireal-musicxml (also covers html
+    # extracted from ZIPs). Conversion failures are reported per source file;
+    # a missing bundled converter must not crash the app.
+    ireal_warnings: list[tuple[str, str]] = []
+    if any(is_ireal_html_name(n) for n in file_data):
+        file_data, ireal_warnings, ireal_failed = expand_ireal_inputs(
+            file_data, progress_callback=progress_callback
+        )
+        upload_failed.extend(ireal_failed)
 
     has_xml = any(Path(n).suffix.lower() in MUSICXML_EXTS for n in file_data)
     has_mid = any(Path(n).suffix.lower() in MIDI_EXTS for n in file_data)
@@ -1448,6 +1468,11 @@ def _start_import(files: list, progress_callback=None) -> None:
     st.session_state._midi_update_unmatched = None
 
     bundle_result = _import_files_with_optional_progress(import_files, file_data, progress_callback)
+    if ireal_warnings:
+        bundle_result.warnings.extend(
+            ImportWarning(song_name=source, message=message)
+            for source, message in ireal_warnings
+        )
     st.session_state._import_bundle_result = bundle_result
 
     pending = [(c.source_name, c.song) for c in bundle_result.songs]

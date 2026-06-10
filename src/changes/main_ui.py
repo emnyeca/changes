@@ -1172,27 +1172,27 @@ def _render_import_section(disabled: bool = False) -> None:
 
     # ── Import ────────────────────────────────────────────────────────────────
     st.subheader(f"{_ICON_IMPORT} Import")
-    uploaded = st.file_uploader(
-        "Accepts: iReal Pro .html / .zip (iReal-musicxml) / .musicxml, .xml / .mid, .midi is for tempo metadata only",
-        type=["html", "htm", "zip", "musicxml", "xml", "mid", "midi"],
-        accept_multiple_files=True,
-        key=f"_sl_uploader_{st.session_state._import_uploader_reset_token}",
-        disabled=disabled,
-    )
-    st.caption(
-        "iReal Pro .html (song or playlist) is converted to MusicXML with the bundled "
-        "ireal-musicxml converter, then imported through the normal MusicXML pipeline."
-    )
-
-    st.divider()
-
-    selected_playlist = st.selectbox(
-        "Official iReal Pro Playlist (fetched at import time; requires network)",
-        options=[""] + list(OFFICIAL_PLAYLIST_NAMES),
-        format_func=lambda x: "— or select an official iReal Pro playlist —" if x == "" else x,
-        key="_sl_official_playlist",
-        disabled=disabled,
-    )
+    st.caption("Accepts: iReal .html / .zip (iReal-musicxml) / .musicxml / .midi is for metadata only", text_alignment="left")
+    uploader_col, playlist_col = st.columns(2, vertical_alignment="center")
+    with uploader_col:
+        uploaded = st.file_uploader(
+            "Accepts: iReal .html / .zip (iReal-musicxml) / .musicxml / .midi is for metadata only",
+            type=["html", "htm", "zip", "musicxml", "xml", "mid", "midi"],
+            accept_multiple_files=True,
+            key=f"_sl_uploader_{st.session_state._import_uploader_reset_token}",
+            disabled=disabled,
+            label_visibility="collapsed",
+        )
+    with playlist_col:
+        selected_playlist = st.selectbox(
+            "Official iReal Pro Playlist (fetched at import time; requires network)",
+            options=[""] + list(OFFICIAL_PLAYLIST_NAMES),
+            format_func=lambda x: "— and/or select an official iReal Pro playlist —" if x == "" else x,
+            key="_sl_official_playlist",
+            disabled=disabled,
+            label_visibility="collapsed",
+        )
+        st.caption("This requires network access and may take a few moments.", text_alignment="left")
 
     can_import = bool(uploaded) or bool(selected_playlist)
     if st.button("Import", type="primary", key="_sl_import_btn", disabled=disabled or not can_import):
@@ -2138,7 +2138,7 @@ def _render_settings() -> None:
             st.image(str(_ICON_PATH), width=60)
     with c1:
         new_cloud_trigger = "retrigger" if _toggle(
-            "Retrigger", "_s_cloud_trig",
+            "Cloud retrigger", "_s_cloud_trig",
             settings.cloud_trigger_policy == "retrigger"
         ) else "hold_until_change"
         if new_cloud_trigger != settings.cloud_trigger_policy:
@@ -2189,7 +2189,7 @@ def _render_settings() -> None:
             st.image(str(_ICON_PATH_BASS), width=60)
     with b1:
         new_bass_trigger = "retrigger" if _toggle(
-            "Retrigger", "_s_bass_trig",
+            "Bass retrigger", "_s_bass_trig",
             settings.bass_trigger_policy == "retrigger"
         ) else "hold_until_change"
         if new_bass_trigger != settings.bass_trigger_policy:
@@ -2220,7 +2220,7 @@ def _render_settings() -> None:
             settings.bass_track = new_bass_track; changed = True
     bass_annotation = st.columns([1, 6])
     bass_annotation[0].write(" ")
-    bass_annotation[1].caption("Bass Repeat Variation: planned")
+    # bass_annotation[1].caption("Bass Repeat Variation: planned")
     st.space("small")
 
     # ── Chord ─────────────────────────────────────────────────────────────────
@@ -2232,7 +2232,7 @@ def _render_settings() -> None:
 
     with ch1:
         new_chord_trigger = "retrigger" if _toggle(
-            "Retrigger", "_s_chord_trig",
+            "Chord retrigger", "_s_chord_trig",
             settings.chord_trigger_policy == "retrigger",
         ) else "hold_until_change"
         if new_chord_trigger != settings.chord_trigger_policy:

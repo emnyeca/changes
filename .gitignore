@@ -37,3 +37,9 @@ local_samples/
 # Streamlit Desktop App
 desktop_app.py
 EUB Changes.spec
+
+# Bundled external tool payloads (fetched by scripts/PrepareBundledIRealMusicXML.ps1)
+tools/bundled/ireal-musicxml/*
+!tools/bundled/ireal-musicxml/SOURCE_INFO.md
+tools/bundled/node/*
+!tools/bundled/node/README.md

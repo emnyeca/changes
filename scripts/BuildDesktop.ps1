@@ -4,6 +4,12 @@ Write-Host "Installing dependencies..."
 python -m pip install -e ".[ui,midi,realtime,sysex]"
 if (-not $?) { Write-Error "pip install failed"; exit 1 }
 
+Write-Host "Staging bundled iReal converter tools..."
+if (-not (Test-Path "tools\bundled\ireal-musicxml\build\ireal-musicxml.mjs") -or -not (Test-Path "tools\bundled\node\node.exe")) {
+    & "$PSScriptRoot\PrepareBundledIRealMusicXML.ps1" -IncludeNode
+    if (-not $?) { Write-Error "Bundled tool staging failed"; exit 1 }
+}
+
 Write-Host "Verifying build environment..."
 python scripts\verify_desktop_build.py
 if (-not $?) { Write-Error "Build verification failed"; exit 1 }
@@ -30,6 +36,10 @@ Write-Host "Building desktop app..."
     --hidden-import rtmidi `
     --add-data "docs\assets\1x;docs\assets\1x" `
     --add-data "LICENSE;." `
+    --add-data "THIRD_PARTY_NOTICES.md;." `
+    --add-data "tools\eub-ireal-wrapper.mjs;tools" `
+    --add-data "tools\bundled\ireal-musicxml;tools\bundled\ireal-musicxml" `
+    --add-data "tools\bundled\node;tools\bundled\node" `
     --splash docs\assets\1x\eub_changes_splash_960x540.png `
     --noconsole `
     --noconfirm `

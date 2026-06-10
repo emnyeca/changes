@@ -6,7 +6,7 @@
 
 これは stabilized subset であり、full product architecture ではありません。
 
-## 既知の制約
+## 制約一覧
 
 ### hardware validation の範囲は狭い
 
@@ -48,6 +48,19 @@ Real-send には次が必要です。
 `out/digitone-track8/` 配下の file は reproducibility のため一時的に保持しています。
 
 現時点では permanent release asset ではありません。
+
+### iReal Pro import は変換ベース
+
+- iReal import は同梱の `ireal-musicxml` で iReal data を MusicXML へ変換してから取り込みます。
+- iReal固有の layout / alternate chord / repeat / comment / backing track 情報は、完全には再現されない場合があります。
+- converter の warning は、取得できた場合に import warning として表示されます。
+- MIDI生成（`musicxml-midi`）は同梱していません。tempo / key / meter は MusicXML 変換結果と style default から決まります。
+
+### 公開プレイリストのインポートはネットワーク必須
+
+- Import セクションのプルダウンから公式 iReal Pro プレイリスト（Jazz 1460 など）を選ぶと、インポート実行時にネットワーク経由で取得します。
+- オフライン環境ではエラーが表示されます。iReal Pro の .html ファイルを手動でダウンロードしてファイルアップロードからインポートすることで回避できます。
+- Jazz 1460 などの大規模プレイリストは変換に数分かかる場合があります。
 
 ### consumer installer ではない
 

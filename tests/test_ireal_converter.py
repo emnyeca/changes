@@ -183,6 +183,83 @@ def test_expand_ireal_inputs_survives_missing_tool(monkeypatch):
     assert failed == [("song.html", "iReal converter is not available.")]
 
 
+# ── Import UI flow (_start_import) ────────────────────────────────────────────
+
+_MINIMAL_MUSICXML = """<?xml version="1.0" encoding="UTF-8"?>
+<score-partwise version="4.0">
+    <work><work-title>iReal UI Song</work-title></work>
+    <part-list><score-part id="P1"><part-name>Music</part-name></score-part></part-list>
+    <part id="P1">
+        <measure number="1">
+            <attributes><divisions>1</divisions><time><beats>4</beats><beat-type>4</beat-type></time></attributes>
+            <harmony>
+                <root><root-step>C</root-step></root>
+                <kind text="7">dominant</kind>
+            </harmony>
+        </measure>
+    </part>
+</score-partwise>
+"""
+
+
+class _SessionState(dict):
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name, value):
+        self[name] = value
+
+
+def _patched_main_ui(monkeypatch, tmp_path):
+    pytest.importorskip("streamlit")
+    from types import SimpleNamespace
+
+    from changes import main_ui
+
+    state = _SessionState({"_settings": SimpleNamespace(library_path=str(tmp_path / "library"))})
+    monkeypatch.setattr(main_ui.st, "session_state", state)
+    return main_ui, state
+
+
+def test_start_import_html_with_unavailable_converter_does_not_crash(monkeypatch, tmp_path):
+    main_ui, state = _patched_main_ui(monkeypatch, tmp_path)
+
+    def raise_not_found(text, **kw):
+        raise ic.IRealToolNotFoundError("iReal converter is not available.")
+
+    monkeypatch.setattr(ic, "convert_ireal_playlist_to_musicxml", raise_not_found)
+
+    main_ui._start_import([{"name": "song.html", "data": b"<html/>"}])
+
+    result = state["_import_result"]
+    assert result["ok"] == 0
+    assert result["failed"][0][0] == "song.html"
+    assert "iReal converter is not available" in result["failed"][0][1]
+
+
+def test_start_import_html_saves_converted_song_to_library(monkeypatch, tmp_path):
+    main_ui, state = _patched_main_ui(monkeypatch, tmp_path)
+
+    conversion = ic.IRealPlaylistConversion(
+        songs=(ic.IRealConversionResult(_MINIMAL_MUSICXML, (), "iReal UI Song"),),
+        warnings=("[ireal-musicxml] [iReal UI Song] sample warning",),
+    )
+    monkeypatch.setattr(ic, "convert_ireal_playlist_to_musicxml", lambda text, **kw: conversion)
+
+    main_ui._start_import([{"name": "song.html", "data": b"<html/>"}])
+
+    result = state["_import_result"]
+    assert result["ok"] == 1
+    assert result["failed"] == []
+    saved = list((tmp_path / "library").glob("*"))
+    assert len(saved) == 1
+    bundle_result = state["_import_bundle_result"]
+    assert any("sample warning" in w.message for w in bundle_result.warnings)
+
+
 # ── Optional: real converter end-to-end ───────────────────────────────────────
 
 @pytest.mark.skipif(not ic.bundled_ireal_available(), reason="bundled ireal-musicxml not available")

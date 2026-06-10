@@ -38,28 +38,3 @@ jobs:
       - name: Run tests
         run: |
           pytest -q
-
-  toolkit-integration:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout changes
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Install changes with sysex dependency
-        run: python -m pip install -e '.[test,sysex]'
-
-      - name: Run Track 8 toolkit integration tests
-        run: |
-          python -m pytest -q \
-            tests/test_track8_toolkit_loader_validation.py \
-            tests/test_track8_sysex_export.py \
-            tests/test_track8_fixture_generation.py \
-            tests/test_track8_product_like_fixture_generation.py \
-            tests/test_track8_export_api.py \
-            tests/test_track8_export_cli.py \
-            tests/test_track8_multichord_export.py

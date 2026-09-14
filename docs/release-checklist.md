@@ -13,9 +13,10 @@
 
 ## 3. Bundled ツールのステージング
 
-- [ ] `.\scripts\PrepareBundledIRealMusicXML.ps1 -IncludeNode` を実行
+- [ ] Windows: `.\scripts\PrepareBundledIRealMusicXML.ps1 -IncludeNode` を実行
+- [ ] macOS: `./scripts/PrepareBundledIRealMusicXML.sh` を実行
 - [ ] `tools\bundled\ireal-musicxml\build\ireal-musicxml.mjs` が存在する
-- [ ] `tools\bundled\node\node.exe` が存在する
+- [ ] Windowsでは`tools\bundled\node\node.exe`、macOSでは`tools/bundled/node/node`が存在する
 - [ ] `tools\bundled\node\LICENSE` が存在する
 
 ## 4. ビルド前検証
@@ -23,7 +24,7 @@
 - [ ] `python scripts\verify_desktop_build.py` が全チェック通過
   - `THIRD_PARTY_NOTICES.md` の存在確認
   - bundled ireal-musicxml の存在確認
-  - `node.exe` と `node/LICENSE` の存在確認
+  - platform用Node.js実行ファイルと`node/LICENSE`の存在確認
   - `digitone_syx_toolkit` のインポート確認
 
 ## 5. Desktop ビルド（事前確認）
@@ -31,6 +32,9 @@
 - [ ] `.\scripts\BuildDesktop.ps1` が正常完了
 - [ ] 生成された exe を起動してUIが表示されることを確認
 - [ ] exe 内に `LICENSE`、`THIRD_PARTY_NOTICES.md`、`tools/bundled/node/LICENSE` が含まれていることを確認
+- [ ] GitHub Actionsの`Build macOS app`を手動実行し、arm64 artifactが生成されることを確認
+- [ ] Macで`.app`を起動してUIが表示されることを確認
+- [ ] Digitone IIをUSB接続し、MIDI port一覧とguarded real-sendを実機確認
 
 ## 6. feature/develop から main へのマージ
 

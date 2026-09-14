@@ -58,6 +58,21 @@ def test_env_var_override_resolves_tools(monkeypatch, tmp_path):
     assert ic.find_ireal_musicxml_lib() == lib
 
 
+@pytest.mark.parametrize(
+    ("platform", "filename"),
+    [("win32", "node.exe"), ("darwin", "node")],
+)
+def test_bundled_node_filename_matches_platform(monkeypatch, tmp_path, platform, filename):
+    node = tmp_path / "tools" / "bundled" / "node" / filename
+    node.parent.mkdir(parents=True)
+    node.write_bytes(b"")
+
+    monkeypatch.setattr(ic.sys, "platform", platform)
+    monkeypatch.setattr(ic, "resource_path", lambda relative: tmp_path / relative)
+
+    assert ic.find_node_exe() == node
+
+
 def test_missing_tools_raise_user_readable_error(monkeypatch, tmp_path):
     # Env vars pointing at nonexistent paths fail closed (no silent fallback).
     monkeypatch.setenv(ic.NODE_EXE_ENV, str(tmp_path / "missing-node.exe"))

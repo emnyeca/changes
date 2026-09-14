@@ -2,7 +2,7 @@
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
 
-**EUB Changes is a Windows desktop app for Digitone II machine-live performance.**  
+**EUB Changes is a Windows and macOS desktop app for Digitone II machine-live performance.**
 It turns MusicXML chord charts into playable Cloud, Bass, and Chord patterns for Digitone II.
 
 ![EUB Changes UI1](docs/assets/1x/EUB-Changes_Screenshot1.png)
@@ -10,7 +10,7 @@ It turns MusicXML chord charts into playable Cloud, Bass, and Chord patterns for
 
 ## Download
 
-Available as a Windows executable. No Python, pip, or command-line setup required.
+Available as a Windows executable and an unsigned Apple Silicon macOS app. No Python, pip, or command-line setup is required after download.
 
 → Releases: TBA
 
@@ -92,6 +92,14 @@ To build the Windows desktop executable:
 ```powershell
 scripts\BuildDesktop.ps1
 ```
+
+To build the unsigned Apple Silicon macOS app on a Mac:
+
+```bash
+./scripts/BuildDesktopMac.sh
+```
+
+The `Build macOS app` GitHub Actions workflow can also be started manually. Download `EUB-Changes-macOS-arm64` from the completed workflow run. Because the app is not notarized, macOS may require the first launch to be approved in **System Settings > Privacy & Security**.
 
 See [`docs/`](docs/) for architecture, implementation notes, and CLI reference.
 

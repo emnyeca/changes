@@ -121,8 +121,8 @@ def _resolve_tools() -> tuple[Path, Path, Path]:
         raise IRealToolNotFoundError(
             "iReal converter is not available. Bundled Node.js was not found.",
             details=(
-                f"Set {NODE_EXE_ENV} or place node.exe under {_BUNDLED_NODE_DIR}/ "
-                "(scripts/PrepareBundledIRealMusicXML.ps1 -IncludeNode)."
+                f"Set {NODE_EXE_ENV} or stage the platform Node.js runtime under "
+                f"{_BUNDLED_NODE_DIR}/ using the matching script in scripts/."
             ),
         )
     lib = find_ireal_musicxml_lib()

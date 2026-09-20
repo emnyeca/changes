@@ -14,8 +14,17 @@ permissions:
   contents: read
 
 jobs:
-  build-macos-arm64:
-    runs-on: macos-14
+  build-macos:
+    name: build-macos-${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            label: Apple-Silicon
+          - runner: macos-15-intel
+            label: Intel
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v6
 
@@ -29,12 +38,20 @@ jobs:
       - name: Build EUB Changes.app
         run: ./scripts/BuildDesktopMac.sh
 
-      - name: Package app bundle
-        run: ditto -c -k --keepParent "dist/EUB Changes.app" "dist/EUB-Changes-macOS-arm64.zip"
+      - name: Create disk image
+        run: |
+          mkdir -p build/dmg
+          cp -R "dist/EUB Changes.app" build/dmg/
+          hdiutil create \
+            -volname "EUB Changes" \
+            -srcfolder build/dmg \
+            -ov \
+            -format UDZO \
+            "dist/EUB-Changes-macOS-${{ matrix.label }}.dmg"
 
       - name: Upload macOS app
         uses: actions/upload-artifact@v6
         with:
-          name: EUB-Changes-macOS-arm64
-          path: dist/EUB-Changes-macOS-arm64.zip
+          name: EUB-Changes-macOS-${{ matrix.label }}
+          path: dist/EUB-Changes-macOS-${{ matrix.label }}.dmg
           if-no-files-found: error

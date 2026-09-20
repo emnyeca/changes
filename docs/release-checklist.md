@@ -32,8 +32,8 @@
 - [ ] `.\scripts\BuildDesktop.ps1` が正常完了
 - [ ] 生成された exe を起動してUIが表示されることを確認
 - [ ] exe 内に `LICENSE`、`THIRD_PARTY_NOTICES.md`、`tools/bundled/node/LICENSE` が含まれていることを確認
-- [ ] GitHub Actionsの`Build macOS app`を手動実行し、arm64 artifactが生成されることを確認
-- [ ] Macで`.app`を起動してUIが表示されることを確認
+- [ ] GitHub Actionsの`Build macOS app`を手動実行し、Apple Silicon用とIntel用のDMG artifactが生成されることを確認
+- [ ] 対応するMacでDMGを開き、`.app`を起動してUIが表示されることを確認
 - [ ] Digitone IIをUSB接続し、MIDI port一覧とguarded real-sendを実機確認
 
 ## 6. feature/develop から main へのマージ

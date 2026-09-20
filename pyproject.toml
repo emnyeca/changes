@@ -33,6 +33,9 @@ ui = [
 sysex = [
     "digitone-syx-toolkit @ git+https://github.com/emnyeca/digitone-syx-toolkit.git@v0.1.0",
 ]
+desktop = [
+    "streamlit-desktop-app==0.3.4",
+]
 
 [project.scripts]
 changes = "changes.cli:main"

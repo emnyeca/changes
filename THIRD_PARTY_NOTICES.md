@@ -17,7 +17,7 @@ The repository does not contain the converter payload itself; release builds bun
 - Repository: <https://github.com/nodejs/node>
 - License: MIT License and other licenses; see the LICENSE file included in the Node.js distribution
 - Purpose in EUB Changes: Runtime used to execute the bundled ireal-musicxml converter.
-- Bundled version: portable Windows runtime staged at build time by `scripts/PrepareBundledIRealMusicXML.ps1 -IncludeNode` (default 22.14.0; the exact version is recorded by the staged `tools/bundled/node/LICENSE`)
+- Bundled version: platform runtime staged at build time by `scripts/PrepareBundledIRealMusicXML.ps1 -IncludeNode` on Windows or `scripts/PrepareBundledIRealMusicXML.sh` on macOS (default 22.14.0; the exact version is recorded by the staged `tools/bundled/node/LICENSE`)
 
 ## Streamlit
 
@@ -30,4 +30,4 @@ The repository does not contain the converter payload itself; release builds bun
 - Repository: <https://github.com/whitphx/streamlit-desktop-app>
 - Author: Yuichiro Tachibana (whitphx)
 - License: MIT License
-- Purpose in EUB Changes: Packages the Streamlit app as a standalone Windows desktop executable for distribution.
+- Purpose in EUB Changes: Packages the Streamlit app as a standalone Windows or macOS desktop application for distribution.

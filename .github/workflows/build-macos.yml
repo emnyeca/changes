@@ -1,0 +1,57 @@
+name: Build macOS app
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - feature/develop
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: build-macos-${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            label: Apple-Silicon
+          - runner: macos-15-intel
+            label: Intel
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Build EUB Changes.app
+        run: ./scripts/BuildDesktopMac.sh
+
+      - name: Create disk image
+        run: |
+          mkdir -p build/dmg
+          cp -R "dist/EUB Changes.app" build/dmg/
+          hdiutil create \
+            -volname "EUB Changes" \
+            -srcfolder build/dmg \
+            -ov \
+            -format UDZO \
+            "dist/EUB-Changes-macOS-${{ matrix.label }}.dmg"
+
+      - name: Upload macOS app
+        uses: actions/upload-artifact@v6
+        with:
+          name: EUB-Changes-macOS-${{ matrix.label }}
+          path: dist/EUB-Changes-macOS-${{ matrix.label }}.dmg
+          if-no-files-found: error

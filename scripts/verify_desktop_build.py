@@ -11,6 +11,10 @@ import sys
 from pathlib import Path
 
 
+def bundled_node_name() -> str:
+    return "node.exe" if sys.platform == "win32" else "node"
+
+
 def check_bundled_ireal_tools() -> bool:
     """Desktop builds bundle the iReal converter; staging must exist before build.
 
@@ -21,16 +25,22 @@ def check_bundled_ireal_tools() -> bool:
         repo_root / "THIRD_PARTY_NOTICES.md",
         repo_root / "tools" / "eub-ireal-wrapper.mjs",
         repo_root / "tools" / "bundled" / "ireal-musicxml" / "build" / "ireal-musicxml.mjs",
-        repo_root / "tools" / "bundled" / "node" / "node.exe",
+        repo_root / "tools" / "bundled" / "node" / bundled_node_name(),
         repo_root / "tools" / "bundled" / "node" / "LICENSE",
     ]
     missing = [p for p in required if not p.is_file()]
     if missing:
         for p in missing:
             print(f"FAIL: required build file missing: {p}")
-        print("Stage with: .\\scripts\\PrepareBundledIRealMusicXML.ps1 -IncludeNode")
+        if sys.platform == "win32":
+            print("Stage with: .\\scripts\\PrepareBundledIRealMusicXML.ps1 -IncludeNode")
+        else:
+            print("Stage with: ./scripts/PrepareBundledIRealMusicXML.sh")
         return False
-    print("OK: THIRD_PARTY_NOTICES.md, bundled ireal-musicxml, node.exe, and node/LICENSE staged")
+    print(
+        "OK: THIRD_PARTY_NOTICES.md, bundled ireal-musicxml, "
+        f"{bundled_node_name()}, and node/LICENSE staged"
+    )
     return True
 
 

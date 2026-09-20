@@ -1,7 +1,7 @@
 Set-Location "$PSScriptRoot\.."
 
 Write-Host "Installing dependencies..."
-python -m pip install -e ".[ui,midi,realtime,sysex]"
+python -m pip install -e ".[ui,midi,realtime,sysex,desktop]"
 if (-not $?) { Write-Error "pip install failed"; exit 1 }
 
 Write-Host "Staging bundled iReal converter tools..."

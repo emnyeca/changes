@@ -1,3 +1,12 @@
+# EUB Changes Desktop Legacy
+
+デスクトップ版の開発、新規パッケージの配布、サポートは終了しました。今後の開発は [EUB Changes の Web 版](https://emnyeca.com/eub/changes/) で行います。Windows・macOS の Chrome または Edge を推奨します。元の MusicXML などは Web 版で再取り込みできます。既存の GPL ライセンスと対応ソースは維持します。
+
+Desktop development, new executable packages and support have ended. Development continues in the [EUB Changes Web edition](https://emnyeca.com/eub/changes/). Use Chrome or Edge on Windows or macOS. Reimport original MusicXML or other supported chart files in the Web app. Existing GPL rights and corresponding sources remain available.
+
+<details>
+<summary>Historical desktop documentation / 旧版の資料</summary>
+
 # EUB Changes (EUB-SW01)
 
 ![EUB Changes logo](docs/assets/1x/eub_changes_logo.png)
@@ -126,3 +135,5 @@ Earlier releases may have been distributed under the MIT License. Those earlier 
 Corresponding source code for release builds is available from the matching GitHub release tag.
 
 Bundled third-party software (such as the `ireal-musicxml` converter and the Node.js runtime) is listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+
+</details>
